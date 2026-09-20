@@ -1,6 +1,6 @@
 # AdNabbit Web MVP
 
-Advertiser signup/login, creative upload (image/video), submit for review, admin approve/reject, **Ticket A — Host/screen inventory**, and **Ticket B — Advertiser public profiles**, and **Ticket C — Placement requests**, and **Ticket D — Scheduling**, and **Ticket E — Recurring dayparts**.
+Advertiser signup/login, creative upload (image/video), submit for review, admin approve/reject, **Ticket A — Host/screen inventory**, and **Ticket B — Advertiser public profiles**, and **Ticket C — Placement requests**, and **Ticket D — Scheduling**, and **Ticket E — Recurring dayparts**, and **Ticket E2 — Schedule calendar view**.
 
 **Repo target:** https://github.com/Sm0kdChikn/adnabbit
 
@@ -221,7 +221,7 @@ Admin creates play windows for **APPROVED** placements. Advertisers view their o
 
 ## Ticket E — Recurring dayparts
 
-Extends Ticket D with weekly dayparts in the **host timezone** (screens inherit). No calendar UI, no instance expansion, no overnight spans, no OptiSigns.
+Extends Ticket D with weekly dayparts in the **host timezone** (screens inherit). No instance expansion DB rows, no overnight spans, no OptiSigns. Calendar UI is Ticket E2.
 
 ### Data model (Pulse / Forge lock)
 
@@ -243,9 +243,40 @@ Same paths as Ticket D (`/admin/schedules`, `/schedules`, APIs). Create/edit for
 2. Admin → **Schedules** → New → kind RECURRING → Mon–Fri 09:00–11:00 → Cancel
 3. `demo.advertiser@adnabbit.com` → **Schedules** → see daypart summary
 
+
+
+## Ticket E2 — Schedule calendar view
+
+Client-side expand of schedules into **week / month** calendar blocks in each screen’s **host timezone** (`date-fns` + `date-fns-tz`). No schema change; no `ScheduleInstance` rows; no drag-drop edit; no OptiSigns.
+
+### Behavior
+
+- **Views:** week (Mon–Sun time grid) and month (day cells); toggle via `?view=week|month` (default week)
+- **Anchor:** `?date=YYYY-MM-DD` (host-local “today” default)
+- **Default statuses:** ACTIVE + DRAFT; CANCELLED/ENDED hidden unless “Show CANCELLED / ENDED” or status filter
+- **ONE_OFF:** per-day segments from `startAt`–`endAt` in host TZ
+- **RECURRING:** for each visible day within `campaignStartDate`–`campaignEndDate` matching `weekdays`, block at `startTime`–`endTime` in host TZ
+- **Click (admin):** `/admin/schedules/[id]`
+- **Advertiser:** same expand, read-only (no detail link)
+
+### Paths
+
+| Path | Purpose |
+|------|---------|
+| `/admin/schedules/calendar` | Admin week/month calendar |
+| `/schedules/calendar` | Advertiser read-only calendar |
+| `/admin/schedules`, `/schedules` | Existing list views (unchanged) |
+
+### Demo
+
+1. Seed → ACTIVE RECURRING Mon–Fri 09:00–11:00 (+ ONE_OFF samples)
+2. Admin → **Calendar** → week view (use `?date=` on a weekday inside the campaign if today is outside Mon–Fri span) → Mon–Fri 09–11 blocks
+3. Click block → schedule detail
+4. `demo.advertiser@adnabbit.com` → **Calendar** → same expand, read-only
+
 ## Out of scope (later tickets)
 
-- Host self-serve portal, player, OptiSigns sync, proof-of-play, marketplace, billing, calendar UI, multi-screen assign, monthly RRULE
+- Host self-serve portal, player, OptiSigns sync, proof-of-play, marketplace, billing, drag-drop calendar edit, multi-screen assign, monthly RRULE, overnight dayparts
 
 ## Push to GitHub
 

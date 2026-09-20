@@ -9,7 +9,7 @@ export function Nav() {
 
   return (
     <header className="border-b border-slate-200 bg-white">
-      <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-3">
+      <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
         <Link href="/" className="text-lg font-bold tracking-tight text-indigo-700">
           AdNabbit
         </Link>
@@ -30,6 +30,9 @@ export function Nav() {
                   <Link href="/schedules" className="text-slate-700 hover:text-indigo-600">
                     Schedules
                   </Link>
+                  <Link href="/schedules/calendar" className="text-slate-700 hover:text-indigo-600">
+                    Calendar
+                  </Link>
                   <Link href="/profile" className="text-slate-700 hover:text-indigo-600">
                     Profile
                   </Link>
@@ -48,6 +51,9 @@ export function Nav() {
                   </Link>
                   <Link href="/admin/schedules" className="text-slate-700 hover:text-indigo-600">
                     Schedules
+                  </Link>
+                  <Link href="/admin/schedules/calendar" className="text-slate-700 hover:text-indigo-600">
+                    Calendar
                   </Link>
                   <Link href="/admin/hosts" className="text-slate-700 hover:text-indigo-600">
                     Hosts

@@ -685,3 +685,111 @@ None for local Ticket E.
 | E7 Host.timezone default America/Denver | **PASS** all seeded hosts |
 
 Demo: `admin@adnabbit.com` / `admin123!` → Schedules (ONE_OFF + RECURRING); Hosts → timezone. `demo.advertiser@adnabbit.com` / `demo123!` → Schedules read-only.
+
+
+---
+
+
+---
+
+# Ticket E2 — Schedule calendar smoke
+
+**Date:** 2026-09-20 (America/Denver)  
+**Prereq:** Ticket E seed (RECURRING Mon–Fri 09:00–11:00), `date-fns` + `date-fns-tz`, `npm run dev` on :3000. No new migration.
+
+## Setup
+
+```bash
+cd /workspace/adnabbit-web
+npm run db:seed
+# Seeded RECURRING Mon–Fri 09:00–11:00 (campaign starts on seed day)
+npm run dev
+```
+
+Login (NextAuth CSRF + credentials → cookie jar):
+
+```bash
+# admin@adnabbit.com / admin123!  → /tmp/admin-cookies.txt
+# demo.advertiser@adnabbit.com / demo123! → /tmp/demo-cookies.txt
+```
+
+## E2-1. Expand unit — RECURRING Mon–Fri 09–11 — PASS expected
+
+```bash
+cd /workspace/adnabbit-web && npx tsx -e '
+import { expandSchedulesToBlocks, weekRange, isoWeekdayFromYmd } from "./src/lib/calendar-expand";
+const { start, end, days } = weekRange("2026-09-22");
+const schedules = [{
+  id: "seed-rec", kind: "RECURRING", status: "ACTIVE",
+  startAt: null, endAt: null,
+  weekdays: "1,2,3,4,5", startTime: "09:00", endTime: "11:00",
+  campaignStartDate: "2026-09-20", campaignEndDate: "2026-11-19",
+  screen: { name: "Lobby", host: { name: "Demo", timezone: "America/Denver" } },
+  placement: { creative: { name: "Demo Banner" } },
+}];
+const blocks = expandSchedulesToBlocks(schedules, start, end);
+const mf = blocks.filter(b => b.startMinutes===540 && b.endMinutes===660);
+const set = new Set(mf.map(b => b.dayYmd));
+for (const d of days) {
+  const iso = isoWeekdayFromYmd(d);
+  if (iso<=5 && !set.has(d)) throw new Error("missing "+d);
+  if (iso>=6 && set.has(d)) throw new Error("weekend "+d);
+}
+if (mf.length < 5) throw new Error("count "+mf.length);
+console.log("PASS", start, "→", end, mf.map(b=>b.dayYmd));
+'
+```
+
+## E2-2. Admin calendar week shows seeded daypart — PASS expected
+
+```bash
+# Prefer a date inside the campaign Mon–Fri span (seed campaign starts on seed day)
+curl -s -o /dev/null -w "%{http_code}
+" -b /tmp/admin-cookies.txt -L   'http://localhost:3000/admin/schedules/calendar?view=week&date=2026-09-22'
+# expect 200
+curl -s -b /tmp/admin-cookies.txt -L   'http://localhost:3000/admin/schedules/calendar?view=week&date=2026-09-22'   | grep -oE '09:00|11:00|Schedule calendar|RECURRING' | sort | uniq -c
+# expect Schedule calendar + multiple 09:00–11:00 block markers
+```
+
+## E2-3. Advertiser calendar read-only 200 — PASS expected
+
+```bash
+curl -s -o /dev/null -w "%{http_code}
+" -b /tmp/demo-cookies.txt -L   'http://localhost:3000/schedules/calendar?view=week&date=2026-09-22'
+# expect 200
+curl -s -b /tmp/demo-cookies.txt -L http://localhost:3000/schedules/calendar   | grep -o 'My schedule calendar' | head -1
+```
+
+## E2-4. List routes unchanged — PASS expected
+
+```bash
+curl -s -o /dev/null -w "%{http_code}
+" -b /tmp/admin-cookies.txt -L http://localhost:3000/admin/schedules
+curl -s -o /dev/null -w "%{http_code}
+" -b /tmp/demo-cookies.txt -L http://localhost:3000/schedules
+# expect 200 / 200
+```
+
+## Demo path
+
+1. `admin@adnabbit.com` / `admin123!` → **Calendar** (or Schedules → Calendar) → week → Mon–Fri 09–11 → click block → detail
+2. Toggle **Month** / Show CANCELLED·ENDED
+3. `demo.advertiser@adnabbit.com` / `demo123!` → **Calendar** → read-only
+
+## Screenshot-worthy URL
+
+http://localhost:3000/admin/schedules/calendar?view=week&date=2026-09-22
+
+## Ticket E2 verified results (2026-09-20 ~11:00 AM MT)
+
+| Check | Result |
+|-------|--------|
+| E2-1 Expand unit Mon–Fri 09–11 | **PASS** |
+| E2-2 Admin calendar week HTML | **PASS** 200 + 09:00–11:00 blocks |
+| E2-3 Advertiser calendar | **PASS** 200 read-only |
+| E2-4 List routes | **PASS** 200 |
+
+## Blockers
+
+None for local Ticket E2.
+
