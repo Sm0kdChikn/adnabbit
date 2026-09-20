@@ -1,6 +1,6 @@
 # AdNabbit Web MVP
 
-Advertiser signup/login, creative upload (image/video), submit for review, admin approve/reject, **Ticket A — Host/screen inventory**, and **Ticket B — Advertiser public profiles**, and **Ticket C — Placement requests**, and **Ticket D — Scheduling**.
+Advertiser signup/login, creative upload (image/video), submit for review, admin approve/reject, **Ticket A — Host/screen inventory**, and **Ticket B — Advertiser public profiles**, and **Ticket C — Placement requests**, and **Ticket D — Scheduling**, and **Ticket E — Recurring dayparts**.
 
 **Repo target:** https://github.com/Sm0kdChikn/adnabbit
 
@@ -38,7 +38,7 @@ Open http://localhost:3000
 
 Change `ADMIN_EMAIL` / `ADMIN_PASSWORD` before seeding in non-dev environments.
 
-Seed also creates sample **hosts** / **screens** (Ticket A), a **published demo advertiser profile** at `/a/front-range-hvac` (Ticket B), an **APPROVED** creative + placement (Ticket C), and **1–2 sample schedules** (Ticket D).
+Seed also creates sample **hosts** / **screens** (Ticket A), a **published demo advertiser profile** at `/a/front-range-hvac` (Ticket B), an **APPROVED** creative + placement (Ticket C), **ONE_OFF sample schedules** (Ticket D), and a **RECURRING Mon–Fri 09:00–11:00 daypart** (Ticket E).
 
 ### Default seed demo advertiser
 
@@ -53,7 +53,7 @@ Seed also creates sample **hosts** / **screens** (Ticket A), a **published demo 
 | `npm run dev` | Next.js dev server |
 | `npm run db:migrate` | Prisma migrate (interactive) |
 | `npm run db:push` | Push schema without migration history |
-| `npm run db:seed` | Create/update ADMIN + hosts/screens + demo profile + APPROVED creative/placement + sample schedules |
+| `npm run db:seed` | Create/update ADMIN + hosts/screens (w/ timezone) + demo profile + APPROVED creative/placement + ONE_OFF + RECURRING schedules |
 | `npm run build` / `start` | Production build & serve |
 
 ## Creative statuses
@@ -69,7 +69,7 @@ Admin-only CRUD for venues (hosts) and screens.
 
 ### Data model
 
-- **Host**: `name`, required `vertical` (Forge enum below), optional `otherLabel` **iff** `vertical === OTHER`, optional `notes`
+- **Host**: `name`, required `vertical` (Forge enum below), optional `otherLabel` **iff** `vertical === OTHER`, `timezone` (IANA, default `America/Denver`; screens inherit), optional `notes`
 - **Screen**: `name`, `city`, `zip`, `inventoryStatus` (`OPEN` | `LIMITED` | `FULL`), optional `notes`, `hostId`
 - Screens **do not** store vertical — join `Screen.host.vertical`
 
@@ -218,9 +218,34 @@ Admin creates play windows for **APPROVED** placements. Advertisers view their o
 2. Admin → **Schedules** → New / Edit / Cancel
 3. `demo.advertiser@adnabbit.com` → **Schedules** → see windows
 
+
+## Ticket E — Recurring dayparts
+
+Extends Ticket D with weekly dayparts in the **host timezone** (screens inherit). No calendar UI, no instance expansion, no overnight spans, no OptiSigns.
+
+### Data model (Pulse / Forge lock)
+
+- **Host.timezone**: IANA string, default `America/Denver` (screens inherit; schedules evaluate overlap in this zone)
+- **Schedule.kind**: `ONE_OFF` | `RECURRING`
+  - **ONE_OFF**: `startAt` / `endAt` (absolute instants) — Ticket D behavior
+  - **RECURRING**: `weekdays` (ISO Mon=1..Sun=7 CSV), `startTime` / `endTime` (`HH:mm`, same-day, `endTime > startTime`, **no overnight**), `campaignStartDate` / `campaignEndDate` (`YYYY-MM-DD`, end ≥ start)
+- Status unchanged: `DRAFT` | `ACTIVE` | `ENDED` | `CANCELLED`; cancel; `ACTIVE` → `ENDED` when ONE_OFF `endAt` passed or RECURRING `campaignEndDate` < today in host TZ
+- Only **APPROVED** placements; admin mutate; advertiser read-only
+- Overlap: **warn-first** on same-screen **ACTIVE** across kinds — date∩ + weekday∩ + time∩ in host TZ (409 + `requireAcknowledge`; retry with `acknowledgeOverlap: true`)
+
+### Admin / advertiser
+
+Same paths as Ticket D (`/admin/schedules`, `/schedules`, APIs). Create/edit forms toggle ONE_OFF vs RECURRING. Host create/edit includes timezone.
+
+### Demo
+
+1. Seed creates ACTIVE RECURRING Mon–Fri 09:00–11:00 + ONE_OFF samples
+2. Admin → **Schedules** → New → kind RECURRING → Mon–Fri 09:00–11:00 → Cancel
+3. `demo.advertiser@adnabbit.com` → **Schedules** → see daypart summary
+
 ## Out of scope (later tickets)
 
-- Host self-serve portal, player, OptiSigns sync, proof-of-play, marketplace, billing, daypart templates AI
+- Host self-serve portal, player, OptiSigns sync, proof-of-play, marketplace, billing, calendar UI, multi-screen assign, monthly RRULE
 
 ## Push to GitHub
 

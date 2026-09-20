@@ -582,3 +582,106 @@ None for local Ticket D.
 | ACTIVE→ENDED on list | **PASS** past ACTIVE materialised ENDED |
 
 Demo: `admin@adnabbit.com` / `admin123!` → Schedules; `demo.advertiser@adnabbit.com` / `demo123!` → Schedules (read-only).
+
+
+---
+
+# Ticket E — Recurring dayparts smoke
+
+**Date:** 2026-09-20 (America/Denver)  
+**Prereq:** migration `ticket_e_recurring_dayparts`, `npm run db:seed` (RECURRING Mon–Fri 09:00–11:00), `npm run dev` on :3000
+
+## Setup
+
+```bash
+cd /workspace/adnabbit-web
+npx prisma migrate deploy
+npm run db:seed
+# Seeded RECURRING Mon–Fri 09:00–11:00 + ONE_OFF samples
+npm run dev
+```
+
+## E1. Admin list includes RECURRING — PASS expected
+
+```bash
+curl -s -b /tmp/admin-cookies.txt http://localhost:3000/api/admin/schedules | python3 -c "import sys,json; ss=json.load(sys.stdin)['schedules']; print(sum(1 for x in ss if x['kind']=='RECURRING'), 'recurring')"
+# expect ≥1 recurring
+```
+
+## E2. Admin create Mon–Fri 09:00–11:00 ACTIVE — PASS expected
+
+```bash
+PLACEMENT_ID=$(curl -s -b /tmp/admin-cookies.txt "http://localhost:3000/api/admin/placements?status=APPROVED" | python3 -c "import sys,json; print(json.load(sys.stdin)['placements'][0]['id'])")
+START=$(date -u -d '+7 days' +%Y-%m-%d 2>/dev/null || python3 -c "from datetime import date,timedelta; print((date.today()+timedelta(days=7)).isoformat())")
+END=$(python3 -c "from datetime import date,timedelta; print((date.today()+timedelta(days=37)).isoformat())")
+
+curl -s -b /tmp/admin-cookies.txt -X POST http://localhost:3000/api/admin/schedules \
+  -H 'Content-Type: application/json' \
+  -d "{\"placementId\":\"$PLACEMENT_ID\",\"kind\":\"RECURRING\",\"weekdays\":\"1,2,3,4,5\",\"startTime\":\"09:00\",\"endTime\":\"11:00\",\"campaignStartDate\":\"$START\",\"campaignEndDate\":\"$END\",\"status\":\"ACTIVE\",\"note\":\"Smoke Mon-Fri daypart\",\"acknowledgeOverlap\":true}"
+# expect 201 RECURRING (acknowledgeOverlap if overlaps seeded daypart)
+```
+
+## E3. Non-APPROVED placement blocked — PASS expected
+
+```bash
+REQ_ID=$(curl -s -b /tmp/admin-cookies.txt "http://localhost:3000/api/admin/placements?status=REQUESTED" | python3 -c "import sys,json; ps=json.load(sys.stdin).get('placements') or []; print(ps[0]['id'] if ps else '')")
+curl -s -b /tmp/admin-cookies.txt -X POST http://localhost:3000/api/admin/schedules \
+  -H 'Content-Type: application/json' \
+  -d "{\"placementId\":\"$REQ_ID\",\"kind\":\"RECURRING\",\"weekdays\":\"1\",\"startTime\":\"09:00\",\"endTime\":\"10:00\",\"campaignStartDate\":\"$START\",\"campaignEndDate\":\"$END\"}"
+# expect 400 Only APPROVED…
+```
+
+## E4. Overnight / invalid daypart rejected — PASS expected
+
+```bash
+curl -s -b /tmp/admin-cookies.txt -X POST http://localhost:3000/api/admin/schedules \
+  -H 'Content-Type: application/json' \
+  -d "{\"placementId\":\"$PLACEMENT_ID\",\"kind\":\"RECURRING\",\"weekdays\":\"1\",\"startTime\":\"22:00\",\"endTime\":\"06:00\",\"campaignStartDate\":\"$START\",\"campaignEndDate\":\"$END\"}"
+# expect 400 endTime must be after startTime (no overnight)
+```
+
+## E5. Advertiser sees RECURRING — PASS expected
+
+```bash
+curl -s -b /tmp/demo-cookies.txt http://localhost:3000/api/schedules | python3 -c "import sys,json; ss=json.load(sys.stdin)['schedules']; print([(x['kind'], x.get('weekdays'), x.get('startTime'), x.get('endTime'), x['status']) for x in ss if x['kind']=='RECURRING'][:3])"
+```
+
+## E6. Cancel RECURRING — PASS expected
+
+```bash
+SID=$(curl -s -b /tmp/admin-cookies.txt http://localhost:3000/api/admin/schedules | python3 -c "import sys,json; ss=json.load(sys.stdin)['schedules']; print(next(x['id'] for x in ss if x['kind']=='RECURRING' and x['status']=='ACTIVE' and 'Smoke' in (x.get('note') or '')))")
+curl -s -b /tmp/admin-cookies.txt -X POST http://localhost:3000/api/admin/schedules/$SID/cancel
+# expect CANCELLED
+```
+
+## E7. Host timezone default — PASS expected
+
+```bash
+curl -s -b /tmp/admin-cookies.txt http://localhost:3000/api/admin/hosts | python3 -c "import sys,json; hs=json.load(sys.stdin)['hosts']; print(all(h.get('timezone')=='America/Denver' for h in hs), [h['timezone'] for h in hs[:2]])"
+# expect True America/Denver
+```
+
+## Demo path
+
+1. `admin@adnabbit.com` / `admin123!` → **Schedules** → see seeded RECURRING Mon–Fri 09:00–11:00 → New RECURRING → Cancel
+2. `demo.advertiser@adnabbit.com` / `demo123!` → **Schedules** → read-only daypart rows
+3. Admin → **Hosts** → timezone field (default America/Denver)
+
+## Blockers
+
+None for local Ticket E.
+
+
+## Ticket E verified results (2026-09-20 ~10:40 AM MT)
+
+| Check | Result |
+|-------|--------|
+| E1 Admin list includes RECURRING | **PASS** 2 ONE_OFF + 1 RECURRING seeded |
+| E2 Admin create Mon–Fri 09:00–11:00 ACTIVE | **PASS** 201 RECURRING |
+| E3 Non-APPROVED placement | **PASS** 400 Only APPROVED… |
+| E4 Overnight daypart rejected | **PASS** 400 endTime after startTime |
+| E5 Advertiser GET `/api/schedules` | **PASS** sees RECURRING dayparts |
+| E6 Cancel RECURRING | **PASS** CANCELLED + cancelledAt |
+| E7 Host.timezone default America/Denver | **PASS** all seeded hosts |
+
+Demo: `admin@adnabbit.com` / `admin123!` → Schedules (ONE_OFF + RECURRING); Hosts → timezone. `demo.advertiser@adnabbit.com` / `demo123!` → Schedules read-only.

@@ -86,3 +86,13 @@ export type ScheduleStatus = (typeof SCHEDULE_STATUSES)[number];
 export function isScheduleStatus(v: string): v is ScheduleStatus {
   return (SCHEDULE_STATUSES as readonly string[]).includes(v);
 }
+
+/** Ticket E — schedule kind */
+export const SCHEDULE_KINDS = ["ONE_OFF", "RECURRING"] as const;
+export type ScheduleKind = (typeof SCHEDULE_KINDS)[number];
+
+export function isScheduleKind(v: string): v is ScheduleKind {
+  return (SCHEDULE_KINDS as readonly string[]).includes(v);
+}
+
+export const DEFAULT_HOST_TIMEZONE = "America/Denver";

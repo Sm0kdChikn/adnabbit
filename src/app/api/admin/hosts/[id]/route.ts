@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAdminApi } from "@/lib/admin";
 import { isHostVertical } from "@/lib/types";
+import { isValidTimeZone } from "@/lib/schedules";
 
 type Ctx = { params: { id: string } };
 
@@ -29,6 +30,7 @@ export async function PATCH(req: Request, { params }: Ctx) {
     vertical?: string;
     otherLabel?: string | null;
     notes?: string | null;
+    timezone?: string;
   };
   try {
     body = await req.json();
@@ -45,6 +47,10 @@ export async function PATCH(req: Request, { params }: Ctx) {
       : existing.otherLabel;
   const notes =
     body.notes !== undefined ? body.notes?.trim() || null : existing.notes;
+  const timezone =
+    body.timezone !== undefined
+      ? body.timezone.trim() || "America/Denver"
+      : existing.timezone;
 
   if (!name) {
     return NextResponse.json({ error: "name is required" }, { status: 400 });
@@ -62,9 +68,13 @@ export async function PATCH(req: Request, { params }: Ctx) {
     otherLabel = null;
   }
 
+  if (!isValidTimeZone(timezone)) {
+    return NextResponse.json({ error: "Invalid IANA timezone" }, { status: 400 });
+  }
+
   const host = await prisma.host.update({
     where: { id: params.id },
-    data: { name, vertical, otherLabel, notes },
+    data: { name, vertical, otherLabel, notes, timezone },
   });
 
   return NextResponse.json({ host });

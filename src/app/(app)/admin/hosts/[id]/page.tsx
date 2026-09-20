@@ -38,6 +38,7 @@ export default async function EditHostPage({ params }: { params: { id: string } 
           vertical: host.vertical,
           otherLabel: host.otherLabel,
           notes: host.notes,
+          timezone: host.timezone,
         }}
       />
 

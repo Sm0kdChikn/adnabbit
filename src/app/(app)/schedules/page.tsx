@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 import { ScheduleBadge } from "@/components/StatusBadge";
-import { materializeEndedSchedules } from "@/lib/schedules";
+import { formatScheduleSummary, materializeEndedSchedules } from "@/lib/schedules";
 import { formatVertical } from "@/lib/types";
 
 export default async function AdvertiserSchedulesPage() {
@@ -24,7 +24,7 @@ export default async function AdvertiserSchedulesPage() {
         },
       },
       screen: {
-        include: { host: { select: { name: true, vertical: true, otherLabel: true } } },
+        include: { host: { select: { name: true, vertical: true, otherLabel: true, timezone: true } } },
       },
     },
   });
@@ -65,7 +65,10 @@ export default async function AdvertiserSchedulesPage() {
                 {s.screen.city} {s.screen.zip}
               </p>
               <p className="text-sm text-slate-500">
-                {new Date(s.startAt).toLocaleString()} → {new Date(s.endAt).toLocaleString()}
+                <span className="mr-2 rounded bg-slate-100 px-1.5 py-0.5 text-xs font-medium text-slate-600">
+                  {s.kind}
+                </span>
+                {formatScheduleSummary(s, s.screen.host.timezone)}
               </p>
               {s.note && <p className="text-sm text-slate-500">Note: {s.note}</p>}
             </li>

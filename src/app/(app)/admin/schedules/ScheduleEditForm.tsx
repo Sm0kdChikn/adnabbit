@@ -1,7 +1,8 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useMemo, useState } from "react";
+import { WEEKDAY_LABELS } from "@/lib/schedules";
 
 function toLocalInput(d: string | Date) {
   const dt = new Date(d);
@@ -9,22 +10,48 @@ function toLocalInput(d: string | Date) {
   return `${dt.getFullYear()}-${pad(dt.getMonth() + 1)}-${pad(dt.getDate())}T${pad(dt.getHours())}:${pad(dt.getMinutes())}`;
 }
 
+const WEEKDAY_OPTS = [1, 2, 3, 4, 5, 6, 7] as const;
+
 export function ScheduleEditForm({
   scheduleId,
   initial,
 }: {
   scheduleId: string;
   initial: {
-    startAt: string;
-    endAt: string;
+    kind: string;
+    startAt: string | null;
+    endAt: string | null;
+    weekdays: string | null;
+    startTime: string | null;
+    endTime: string | null;
+    campaignStartDate: string | null;
+    campaignEndDate: string | null;
     status: string;
     note: string | null;
   };
 }) {
   const router = useRouter();
   const locked = initial.status === "CANCELLED" || initial.status === "ENDED";
-  const [startAt, setStartAt] = useState(toLocalInput(initial.startAt));
-  const [endAt, setEndAt] = useState(toLocalInput(initial.endAt));
+  const [kind, setKind] = useState<"ONE_OFF" | "RECURRING">(
+    initial.kind === "RECURRING" ? "RECURRING" : "ONE_OFF"
+  );
+  const [startAt, setStartAt] = useState(
+    initial.startAt ? toLocalInput(initial.startAt) : ""
+  );
+  const [endAt, setEndAt] = useState(initial.endAt ? toLocalInput(initial.endAt) : "");
+  const [weekdays, setWeekdays] = useState<number[]>(() => {
+    if (!initial.weekdays) return [1, 2, 3, 4, 5];
+    return initial.weekdays
+      .split(",")
+      .map((x) => Number(x.trim()))
+      .filter((n) => n >= 1 && n <= 7);
+  });
+  const [startTime, setStartTime] = useState(initial.startTime || "09:00");
+  const [endTime, setEndTime] = useState(initial.endTime || "11:00");
+  const [campaignStartDate, setCampaignStartDate] = useState(
+    initial.campaignStartDate || ""
+  );
+  const [campaignEndDate, setCampaignEndDate] = useState(initial.campaignEndDate || "");
   const [status, setStatus] = useState<"DRAFT" | "ACTIVE">(
     initial.status === "ACTIVE" ? "ACTIVE" : "DRAFT"
   );
@@ -33,24 +60,56 @@ export function ScheduleEditForm({
   const [error, setError] = useState("");
   const [overlapWarning, setOverlapWarning] = useState<{
     message: string;
-    overlaps: Array<{ id: string; startAt: string; endAt: string }>;
+    overlaps: Array<{
+      id: string;
+      kind?: string;
+      startAt?: string | null;
+      endAt?: string | null;
+      weekdays?: string | null;
+      startTime?: string | null;
+      endTime?: string | null;
+      campaignStartDate?: string | null;
+      campaignEndDate?: string | null;
+    }>;
   } | null>(null);
+
+  const weekdaysCsv = useMemo(
+    () => weekdays.slice().sort((a, b) => a - b).join(","),
+    [weekdays]
+  );
+
+  function toggleDay(d: number) {
+    setWeekdays((prev) =>
+      prev.includes(d) ? prev.filter((x) => x !== d) : [...prev, d].sort((a, b) => a - b)
+    );
+  }
 
   async function save(acknowledgeOverlap: boolean) {
     setLoading("save");
     setError("");
     if (!acknowledgeOverlap) setOverlapWarning(null);
 
+    const body: Record<string, unknown> = {
+      kind,
+      status,
+      note: note.trim() || null,
+      acknowledgeOverlap,
+    };
+    if (kind === "ONE_OFF") {
+      body.startAt = new Date(startAt).toISOString();
+      body.endAt = new Date(endAt).toISOString();
+    } else {
+      body.weekdays = weekdaysCsv;
+      body.startTime = startTime;
+      body.endTime = endTime;
+      body.campaignStartDate = campaignStartDate;
+      body.campaignEndDate = campaignEndDate;
+    }
+
     const res = await fetch(`/api/admin/schedules/${scheduleId}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        startAt: new Date(startAt).toISOString(),
-        endAt: new Date(endAt).toISOString(),
-        status,
-        note: note.trim() || null,
-        acknowledgeOverlap,
-      }),
+      body: JSON.stringify(body),
     });
     const data = await res.json().catch(() => ({}));
     setLoading(null);
@@ -73,7 +132,9 @@ export function ScheduleEditForm({
     if (!confirm("Cancel this schedule?")) return;
     setLoading("cancel");
     setError("");
-    const res = await fetch(`/api/admin/schedules/${scheduleId}/cancel`, { method: "POST" });
+    const res = await fetch(`/api/admin/schedules/${scheduleId}/cancel`, {
+      method: "POST",
+    });
     const data = await res.json().catch(() => ({}));
     setLoading(null);
     if (!res.ok) {
@@ -93,26 +154,111 @@ export function ScheduleEditForm({
 
   return (
     <div className="space-y-4 rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-      <div className="grid gap-4 sm:grid-cols-2">
-        <div>
-          <label className="mb-1 block text-sm font-medium text-slate-700">Start</label>
-          <input
-            type="datetime-local"
-            value={startAt}
-            onChange={(e) => setStartAt(e.target.value)}
-            className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
-          />
-        </div>
-        <div>
-          <label className="mb-1 block text-sm font-medium text-slate-700">End</label>
-          <input
-            type="datetime-local"
-            value={endAt}
-            onChange={(e) => setEndAt(e.target.value)}
-            className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
-          />
-        </div>
+      <div>
+        <label className="mb-1 block text-sm font-medium text-slate-700">Kind</label>
+        <select
+          value={kind}
+          onChange={(e) => setKind(e.target.value as "ONE_OFF" | "RECURRING")}
+          className="rounded-md border border-slate-300 px-3 py-2 text-sm"
+        >
+          <option value="ONE_OFF">ONE_OFF</option>
+          <option value="RECURRING">RECURRING</option>
+        </select>
       </div>
+
+      {kind === "ONE_OFF" ? (
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div>
+            <label className="mb-1 block text-sm font-medium text-slate-700">Start</label>
+            <input
+              type="datetime-local"
+              value={startAt}
+              onChange={(e) => setStartAt(e.target.value)}
+              className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
+            />
+          </div>
+          <div>
+            <label className="mb-1 block text-sm font-medium text-slate-700">End</label>
+            <input
+              type="datetime-local"
+              value={endAt}
+              onChange={(e) => setEndAt(e.target.value)}
+              className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
+            />
+          </div>
+        </div>
+      ) : (
+        <div className="space-y-4">
+          <div>
+            <label className="mb-1 block text-sm font-medium text-slate-700">Weekdays</label>
+            <div className="flex flex-wrap gap-2">
+              {WEEKDAY_OPTS.map((d) => (
+                <label
+                  key={d}
+                  className={`cursor-pointer rounded-md border px-2.5 py-1 text-sm ${
+                    weekdays.includes(d)
+                      ? "border-indigo-500 bg-indigo-50 text-indigo-800"
+                      : "border-slate-300 text-slate-600"
+                  }`}
+                >
+                  <input
+                    type="checkbox"
+                    className="sr-only"
+                    checked={weekdays.includes(d)}
+                    onChange={() => toggleDay(d)}
+                  />
+                  {WEEKDAY_LABELS[d]}
+                </label>
+              ))}
+            </div>
+          </div>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div>
+              <label className="mb-1 block text-sm font-medium text-slate-700">Start time</label>
+              <input
+                type="time"
+                value={startTime}
+                onChange={(e) => setStartTime(e.target.value)}
+                className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
+              />
+            </div>
+            <div>
+              <label className="mb-1 block text-sm font-medium text-slate-700">End time</label>
+              <input
+                type="time"
+                value={endTime}
+                onChange={(e) => setEndTime(e.target.value)}
+                className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
+              />
+            </div>
+          </div>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div>
+              <label className="mb-1 block text-sm font-medium text-slate-700">
+                Campaign start
+              </label>
+              <input
+                type="date"
+                value={campaignStartDate}
+                onChange={(e) => setCampaignStartDate(e.target.value)}
+                className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
+              />
+            </div>
+            <div>
+              <label className="mb-1 block text-sm font-medium text-slate-700">
+                Campaign end
+              </label>
+              <input
+                type="date"
+                value={campaignEndDate}
+                onChange={(e) => setCampaignEndDate(e.target.value)}
+                className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
       <div>
         <label className="mb-1 block text-sm font-medium text-slate-700">Status</label>
         <select
@@ -140,7 +286,12 @@ export function ScheduleEditForm({
           <ul className="list-inside list-disc text-xs">
             {overlapWarning.overlaps.map((o) => (
               <li key={o.id}>
-                {new Date(o.startAt).toLocaleString()} → {new Date(o.endAt).toLocaleString()}
+                {o.kind || "?"} ·{" "}
+                {o.kind === "RECURRING"
+                  ? `${o.weekdays} ${o.startTime}–${o.endTime}`
+                  : `${o.startAt ? new Date(o.startAt).toLocaleString() : "?"} → ${
+                      o.endAt ? new Date(o.endAt).toLocaleString() : "?"
+                    }`}
               </li>
             ))}
           </ul>
@@ -160,7 +311,7 @@ export function ScheduleEditForm({
       <div className="flex flex-wrap gap-2">
         <button
           type="button"
-          disabled={!!loading}
+          disabled={!!loading || (kind === "RECURRING" && weekdays.length === 0)}
           onClick={() => save(false)}
           className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-60"
         >

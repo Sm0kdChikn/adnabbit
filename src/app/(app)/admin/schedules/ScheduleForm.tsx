@@ -1,43 +1,81 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useMemo, useState } from "react";
+import { WEEKDAY_LABELS } from "@/lib/schedules";
 
-type PlacementOpt = {
-  id: string;
-  label: string;
-};
+type PlacementOpt = { id: string; label: string };
+
+const WEEKDAY_OPTS = [1, 2, 3, 4, 5, 6, 7] as const;
 
 export function ScheduleCreateForm({ placements }: { placements: PlacementOpt[] }) {
   const router = useRouter();
   const [placementId, setPlacementId] = useState(placements[0]?.id || "");
+  const [kind, setKind] = useState<"ONE_OFF" | "RECURRING">("ONE_OFF");
   const [startAt, setStartAt] = useState("");
   const [endAt, setEndAt] = useState("");
+  const [weekdays, setWeekdays] = useState<number[]>([1, 2, 3, 4, 5]);
+  const [startTime, setStartTime] = useState("09:00");
+  const [endTime, setEndTime] = useState("11:00");
+  const [campaignStartDate, setCampaignStartDate] = useState("");
+  const [campaignEndDate, setCampaignEndDate] = useState("");
   const [status, setStatus] = useState<"DRAFT" | "ACTIVE">("DRAFT");
   const [note, setNote] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [overlapWarning, setOverlapWarning] = useState<{
     message: string;
-    overlaps: Array<{ id: string; startAt: string; endAt: string }>;
+    overlaps: Array<{
+      id: string;
+      kind?: string;
+      startAt?: string | null;
+      endAt?: string | null;
+      weekdays?: string | null;
+      startTime?: string | null;
+      endTime?: string | null;
+      campaignStartDate?: string | null;
+      campaignEndDate?: string | null;
+    }>;
   } | null>(null);
+
+  const weekdaysCsv = useMemo(
+    () => weekdays.slice().sort((a, b) => a - b).join(","),
+    [weekdays]
+  );
+
+  function toggleDay(d: number) {
+    setWeekdays((prev) =>
+      prev.includes(d) ? prev.filter((x) => x !== d) : [...prev, d].sort((a, b) => a - b)
+    );
+  }
 
   async function submit(acknowledgeOverlap: boolean) {
     setLoading(true);
     setError("");
     if (!acknowledgeOverlap) setOverlapWarning(null);
 
+    const body: Record<string, unknown> = {
+      placementId,
+      kind,
+      status,
+      note: note.trim() || null,
+      acknowledgeOverlap,
+    };
+    if (kind === "ONE_OFF") {
+      body.startAt = new Date(startAt).toISOString();
+      body.endAt = new Date(endAt).toISOString();
+    } else {
+      body.weekdays = weekdaysCsv;
+      body.startTime = startTime;
+      body.endTime = endTime;
+      body.campaignStartDate = campaignStartDate;
+      body.campaignEndDate = campaignEndDate;
+    }
+
     const res = await fetch("/api/admin/schedules", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        placementId,
-        startAt: new Date(startAt).toISOString(),
-        endAt: new Date(endAt).toISOString(),
-        status,
-        note: note.trim() || null,
-        acknowledgeOverlap,
-      }),
+      body: JSON.stringify(body),
     });
     const data = await res.json().catch(() => ({}));
     setLoading(false);
@@ -88,28 +126,124 @@ export function ScheduleCreateForm({ placements }: { placements: PlacementOpt[] 
           </select>
         )}
       </div>
-      <div className="grid gap-4 sm:grid-cols-2">
-        <div>
-          <label className="mb-1 block text-sm font-medium text-slate-700">Start</label>
-          <input
-            type="datetime-local"
-            required
-            value={startAt}
-            onChange={(e) => setStartAt(e.target.value)}
-            className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
-          />
-        </div>
-        <div>
-          <label className="mb-1 block text-sm font-medium text-slate-700">End</label>
-          <input
-            type="datetime-local"
-            required
-            value={endAt}
-            onChange={(e) => setEndAt(e.target.value)}
-            className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
-          />
-        </div>
+
+      <div>
+        <label className="mb-1 block text-sm font-medium text-slate-700">Kind</label>
+        <select
+          value={kind}
+          onChange={(e) => setKind(e.target.value as "ONE_OFF" | "RECURRING")}
+          className="rounded-md border border-slate-300 px-3 py-2 text-sm"
+        >
+          <option value="ONE_OFF">ONE_OFF (absolute window)</option>
+          <option value="RECURRING">RECURRING (weekly daypart)</option>
+        </select>
       </div>
+
+      {kind === "ONE_OFF" ? (
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div>
+            <label className="mb-1 block text-sm font-medium text-slate-700">Start</label>
+            <input
+              type="datetime-local"
+              required
+              value={startAt}
+              onChange={(e) => setStartAt(e.target.value)}
+              className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
+            />
+          </div>
+          <div>
+            <label className="mb-1 block text-sm font-medium text-slate-700">End</label>
+            <input
+              type="datetime-local"
+              required
+              value={endAt}
+              onChange={(e) => setEndAt(e.target.value)}
+              className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
+            />
+          </div>
+        </div>
+      ) : (
+        <div className="space-y-4">
+          <div>
+            <label className="mb-1 block text-sm font-medium text-slate-700">
+              Weekdays (ISO Mon=1 … Sun=7)
+            </label>
+            <div className="flex flex-wrap gap-2">
+              {WEEKDAY_OPTS.map((d) => (
+                <label
+                  key={d}
+                  className={`cursor-pointer rounded-md border px-2.5 py-1 text-sm ${
+                    weekdays.includes(d)
+                      ? "border-indigo-500 bg-indigo-50 text-indigo-800"
+                      : "border-slate-300 text-slate-600"
+                  }`}
+                >
+                  <input
+                    type="checkbox"
+                    className="sr-only"
+                    checked={weekdays.includes(d)}
+                    onChange={() => toggleDay(d)}
+                  />
+                  {WEEKDAY_LABELS[d]}
+                </label>
+              ))}
+            </div>
+          </div>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div>
+              <label className="mb-1 block text-sm font-medium text-slate-700">
+                Start time (HH:mm, host TZ)
+              </label>
+              <input
+                type="time"
+                required
+                value={startTime}
+                onChange={(e) => setStartTime(e.target.value)}
+                className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
+              />
+            </div>
+            <div>
+              <label className="mb-1 block text-sm font-medium text-slate-700">
+                End time (same-day; no overnight)
+              </label>
+              <input
+                type="time"
+                required
+                value={endTime}
+                onChange={(e) => setEndTime(e.target.value)}
+                className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
+              />
+            </div>
+          </div>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div>
+              <label className="mb-1 block text-sm font-medium text-slate-700">
+                Campaign start
+              </label>
+              <input
+                type="date"
+                required
+                value={campaignStartDate}
+                onChange={(e) => setCampaignStartDate(e.target.value)}
+                className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
+              />
+            </div>
+            <div>
+              <label className="mb-1 block text-sm font-medium text-slate-700">
+                Campaign end
+              </label>
+              <input
+                type="date"
+                required
+                value={campaignEndDate}
+                onChange={(e) => setCampaignEndDate(e.target.value)}
+                className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
       <div>
         <label className="mb-1 block text-sm font-medium text-slate-700">Status</label>
         <select
@@ -137,13 +271,18 @@ export function ScheduleCreateForm({ placements }: { placements: PlacementOpt[] 
           <ul className="list-inside list-disc text-xs">
             {overlapWarning.overlaps.map((o) => (
               <li key={o.id}>
-                {new Date(o.startAt).toLocaleString()} → {new Date(o.endAt).toLocaleString()}
+                {o.kind || "?"} ·{" "}
+                {o.kind === "RECURRING"
+                  ? `${o.weekdays} ${o.startTime}–${o.endTime} (${o.campaignStartDate}→${o.campaignEndDate})`
+                  : `${o.startAt ? new Date(o.startAt).toLocaleString() : "?"} → ${
+                      o.endAt ? new Date(o.endAt).toLocaleString() : "?"
+                    }`}
               </li>
             ))}
           </ul>
           <button
             type="button"
-            disabled={loading || !placementId}
+            disabled={loading || !placementId || (kind === "RECURRING" && weekdays.length === 0)}
             onClick={() => submit(true)}
             className="rounded-md bg-amber-600 px-3 py-1.5 text-white hover:bg-amber-700 disabled:opacity-60"
           >
@@ -156,7 +295,7 @@ export function ScheduleCreateForm({ placements }: { placements: PlacementOpt[] 
 
       <button
         type="submit"
-        disabled={loading || !placementId}
+        disabled={loading || !placementId || (kind === "RECURRING" && weekdays.length === 0)}
         className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-60"
       >
         {loading ? "Saving…" : "Create schedule"}

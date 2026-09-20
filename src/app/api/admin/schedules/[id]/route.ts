@@ -4,8 +4,13 @@ import { prisma } from "@/lib/prisma";
 import { requireAdminApi } from "@/lib/admin";
 import {
   findOverlappingActiveSchedules,
+  isValidYmd,
   materializeEndedSchedules,
+  parseHHMM,
+  parseWeekdaysCsv,
   scheduleInclude,
+  weekdaysToCsv,
+  ymdCompare,
 } from "@/lib/schedules";
 
 type Ctx = { params: { id: string } };
@@ -27,14 +32,20 @@ export async function GET(_req: Request, { params }: Ctx) {
 }
 
 const patchSchema = z.object({
-  startAt: z.string().min(1).optional(),
-  endAt: z.string().min(1).optional(),
+  kind: z.enum(["ONE_OFF", "RECURRING"]).optional(),
+  startAt: z.string().min(1).optional().nullable(),
+  endAt: z.string().min(1).optional().nullable(),
+  weekdays: z.string().min(1).optional().nullable(),
+  startTime: z.string().min(1).optional().nullable(),
+  endTime: z.string().min(1).optional().nullable(),
+  campaignStartDate: z.string().min(1).optional().nullable(),
+  campaignEndDate: z.string().min(1).optional().nullable(),
   status: z.enum(["DRAFT", "ACTIVE"]).optional(),
   note: z.string().max(2000).optional().nullable(),
   acknowledgeOverlap: z.boolean().optional().default(false),
 });
 
-/** Edit times / status (DRAFT|ACTIVE) / note. Cannot mutate CANCELLED. */
+/** Edit schedule fields / status (DRAFT|ACTIVE) / note. Cannot mutate CANCELLED/ENDED. */
 export async function PATCH(req: Request, { params }: Ctx) {
   const auth = await requireAdminApi();
   if (auth.error) return auth.error;
@@ -61,23 +72,128 @@ export async function PATCH(req: Request, { params }: Ctx) {
     );
   }
 
-  const startAt = parsed.data.startAt ? new Date(parsed.data.startAt) : existing.startAt;
-  const endAt = parsed.data.endAt ? new Date(parsed.data.endAt) : existing.endAt;
-  if (Number.isNaN(startAt.getTime()) || Number.isNaN(endAt.getTime())) {
-    return NextResponse.json({ error: "Invalid startAt or endAt" }, { status: 400 });
-  }
-  if (!(endAt > startAt)) {
-    return NextResponse.json({ error: "endAt must be after startAt" }, { status: 400 });
-  }
-
+  const kind = parsed.data.kind ?? existing.kind;
   const nextStatus = parsed.data.status ?? existing.status;
 
-  // Overlap warn when resulting status would be ACTIVE
+  let next: {
+    kind: string;
+    startAt: Date | null;
+    endAt: Date | null;
+    weekdays: string | null;
+    startTime: string | null;
+    endTime: string | null;
+    campaignStartDate: string | null;
+    campaignEndDate: string | null;
+    status: string;
+    note: string | null;
+  };
+
+  if (kind === "ONE_OFF") {
+    const startRaw =
+      parsed.data.startAt !== undefined ? parsed.data.startAt : existing.startAt?.toISOString();
+    const endRaw =
+      parsed.data.endAt !== undefined ? parsed.data.endAt : existing.endAt?.toISOString();
+    if (!startRaw || !endRaw) {
+      return NextResponse.json(
+        { error: "startAt and endAt are required for ONE_OFF" },
+        { status: 400 }
+      );
+    }
+    const startAt = new Date(startRaw);
+    const endAt = new Date(endRaw);
+    if (Number.isNaN(startAt.getTime()) || Number.isNaN(endAt.getTime())) {
+      return NextResponse.json({ error: "Invalid startAt or endAt" }, { status: 400 });
+    }
+    if (!(endAt > startAt)) {
+      return NextResponse.json({ error: "endAt must be after startAt" }, { status: 400 });
+    }
+    next = {
+      kind: "ONE_OFF",
+      startAt,
+      endAt,
+      weekdays: null,
+      startTime: null,
+      endTime: null,
+      campaignStartDate: null,
+      campaignEndDate: null,
+      status: nextStatus,
+      note:
+        parsed.data.note !== undefined
+          ? parsed.data.note?.trim() || null
+          : existing.note,
+    };
+  } else {
+    const weekdaysRaw =
+      parsed.data.weekdays !== undefined ? parsed.data.weekdays : existing.weekdays;
+    const days = weekdaysRaw ? parseWeekdaysCsv(weekdaysRaw) : null;
+    if (!days) {
+      return NextResponse.json(
+        { error: "weekdays must be ISO Mon=1..Sun=7 CSV" },
+        { status: 400 }
+      );
+    }
+    const startTime =
+      (parsed.data.startTime !== undefined ? parsed.data.startTime : existing.startTime)?.trim() ||
+      "";
+    const endTime =
+      (parsed.data.endTime !== undefined ? parsed.data.endTime : existing.endTime)?.trim() || "";
+    const t0 = parseHHMM(startTime);
+    const t1 = parseHHMM(endTime);
+    if (t0 === null || t1 === null) {
+      return NextResponse.json(
+        { error: "startTime and endTime must be HH:mm" },
+        { status: 400 }
+      );
+    }
+    if (!(t1 > t0)) {
+      return NextResponse.json(
+        { error: "endTime must be after startTime (same-day; no overnight)" },
+        { status: 400 }
+      );
+    }
+    const campaignStartDate =
+      (parsed.data.campaignStartDate !== undefined
+        ? parsed.data.campaignStartDate
+        : existing.campaignStartDate
+      )?.trim() || "";
+    const campaignEndDate =
+      (parsed.data.campaignEndDate !== undefined
+        ? parsed.data.campaignEndDate
+        : existing.campaignEndDate
+      )?.trim() || "";
+    if (!isValidYmd(campaignStartDate) || !isValidYmd(campaignEndDate)) {
+      return NextResponse.json(
+        { error: "campaignStartDate and campaignEndDate must be YYYY-MM-DD" },
+        { status: 400 }
+      );
+    }
+    if (ymdCompare(campaignEndDate, campaignStartDate) < 0) {
+      return NextResponse.json(
+        { error: "campaignEndDate must be on or after campaignStartDate" },
+        { status: 400 }
+      );
+    }
+    next = {
+      kind: "RECURRING",
+      startAt: null,
+      endAt: null,
+      weekdays: weekdaysToCsv(days),
+      startTime,
+      endTime,
+      campaignStartDate,
+      campaignEndDate,
+      status: nextStatus,
+      note:
+        parsed.data.note !== undefined
+          ? parsed.data.note?.trim() || null
+          : existing.note,
+    };
+  }
+
   if (nextStatus === "ACTIVE") {
     const overlaps = await findOverlappingActiveSchedules({
       screenId: existing.screenId,
-      startAt,
-      endAt,
+      candidate: { ...next, id: existing.id },
       excludeId: existing.id,
     });
     if (overlaps.length > 0 && !parsed.data.acknowledgeOverlap) {
@@ -94,14 +210,7 @@ export async function PATCH(req: Request, { params }: Ctx) {
 
   const schedule = await prisma.schedule.update({
     where: { id: params.id },
-    data: {
-      startAt,
-      endAt,
-      ...(parsed.data.status ? { status: parsed.data.status } : {}),
-      ...(parsed.data.note !== undefined
-        ? { note: parsed.data.note?.trim() || null }
-        : {}),
-    },
+    data: next,
     include: scheduleInclude,
   });
 

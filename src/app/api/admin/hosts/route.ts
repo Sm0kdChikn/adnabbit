@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAdminApi } from "@/lib/admin";
 import { isHostVertical } from "@/lib/types";
+import { isValidTimeZone } from "@/lib/schedules";
 
 export async function GET() {
   const auth = await requireAdminApi();
@@ -23,6 +24,7 @@ export async function POST(req: Request) {
     vertical?: string;
     otherLabel?: string | null;
     notes?: string | null;
+    timezone?: string;
   };
   try {
     body = await req.json();
@@ -34,6 +36,7 @@ export async function POST(req: Request) {
   const vertical = (body.vertical || "").trim();
   const otherLabel = body.otherLabel?.trim() || null;
   const notes = body.notes?.trim() || null;
+  const timezone = (body.timezone || "America/Denver").trim() || "America/Denver";
 
   if (!name) {
     return NextResponse.json({ error: "name is required" }, { status: 400 });
@@ -54,12 +57,17 @@ export async function POST(req: Request) {
     );
   }
 
+  if (!isValidTimeZone(timezone)) {
+    return NextResponse.json({ error: "Invalid IANA timezone" }, { status: 400 });
+  }
+
   const host = await prisma.host.create({
     data: {
       name,
       vertical,
       otherLabel: vertical === "OTHER" ? otherLabel : null,
       notes,
+      timezone,
     },
   });
 

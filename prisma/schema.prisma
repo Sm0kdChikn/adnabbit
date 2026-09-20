@@ -9,6 +9,7 @@
 // Valid HostVertical: see src/lib/types.ts
 // Valid InventoryStatus: OPEN | LIMITED | FULL
 // Valid Schedule status: DRAFT | ACTIVE | ENDED | CANCELLED
+// Valid Schedule kind: ONE_OFF | RECURRING
 
 generator client {
   provider = "prisma-client-js"
@@ -60,6 +61,8 @@ model Host {
   vertical   String
   /// Required when vertical is OTHER
   otherLabel String?
+  /// IANA timezone; screens inherit for daypart scheduling (Ticket E)
+  timezone   String   @default("America/Denver")
   notes      String?
   screens    Screen[]
   createdAt  DateTime @default(now())
@@ -140,7 +143,7 @@ model PlacementRequest {
   @@index([creativeId])
 }
 
-/// Ticket D — schedule a window for an APPROVED PlacementRequest
+/// Ticket D/E — schedule a window or recurring daypart for an APPROVED PlacementRequest
 model Schedule {
   id           String           @id @default(cuid())
   placementId  String
@@ -148,8 +151,19 @@ model Schedule {
   /// Cached from placement.screenId for same-screen overlap queries / filters
   screenId     String
   screen       Screen           @relation(fields: [screenId], references: [id], onDelete: Cascade)
-  startAt      DateTime
-  endAt        DateTime
+  /// ONE_OFF | RECURRING (Ticket E)
+  kind         String           @default("ONE_OFF")
+  /// ONE_OFF absolute window (nullable for RECURRING)
+  startAt      DateTime?
+  endAt        DateTime?
+  /// RECURRING: ISO weekdays Mon=1..Sun=7 as CSV e.g. "1,2,3,4,5"
+  weekdays     String?
+  /// RECURRING daypart HH:mm in host timezone (same-day, endTime > startTime; no overnight)
+  startTime    String?
+  endTime      String?
+  /// RECURRING campaign date range YYYY-MM-DD (end >= start)
+  campaignStartDate String?
+  campaignEndDate   String?
   /// DRAFT | ACTIVE | ENDED | CANCELLED
   status       String           @default("DRAFT")
   note         String?
@@ -160,8 +174,11 @@ model Schedule {
   updatedAt    DateTime         @updatedAt
 
   @@index([status])
+  @@index([kind])
   @@index([startAt])
   @@index([endAt])
+  @@index([campaignStartDate])
+  @@index([campaignEndDate])
   @@index([placementId])
   @@index([screenId])
 }

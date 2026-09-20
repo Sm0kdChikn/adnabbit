@@ -109,6 +109,7 @@ async function main() {
           name: s.name,
           vertical: s.vertical,
           otherLabel: s.otherLabel ?? null,
+          timezone: "America/Denver",
           notes: s.notes ?? null,
         },
       });
@@ -119,6 +120,7 @@ async function main() {
         data: {
           vertical: s.vertical,
           otherLabel: s.otherLabel ?? null,
+          timezone: "America/Denver",
           notes: s.notes ?? null,
         },
       });
@@ -307,20 +309,21 @@ async function main() {
       console.log(`APPROVED placement already present: ${approvedPlacement.id}`);
     }
 
-    const existingSchedules = await prisma.schedule.count({
-      where: { placementId: approvedPlacement.id },
+    const oneOffCount = await prisma.schedule.count({
+      where: { placementId: approvedPlacement.id, kind: "ONE_OFF" },
     });
-    if (existingSchedules === 0) {
+    if (oneOffCount === 0) {
       const now = new Date();
       const day = 24 * 60 * 60 * 1000;
       const s1 = await prisma.schedule.create({
         data: {
           placementId: approvedPlacement.id,
           screenId: approvedPlacement.screenId,
+          kind: "ONE_OFF",
           startAt: new Date(now.getTime() + 1 * day),
           endAt: new Date(now.getTime() + 8 * day),
           status: "ACTIVE",
-          note: "Seeded ACTIVE demo schedule (next week)",
+          note: "Seeded ACTIVE ONE_OFF demo schedule (next week)",
           createdById: admin.id,
         },
       });
@@ -328,16 +331,56 @@ async function main() {
         data: {
           placementId: approvedPlacement.id,
           screenId: approvedPlacement.screenId,
+          kind: "ONE_OFF",
           startAt: new Date(now.getTime() + 14 * day),
           endAt: new Date(now.getTime() + 21 * day),
           status: "DRAFT",
-          note: "Seeded DRAFT demo schedule (week+2)",
+          note: "Seeded DRAFT ONE_OFF demo schedule (week+2)",
           createdById: admin.id,
         },
       });
-      console.log(`Seeded schedules: ACTIVE ${s1.id}, DRAFT ${s2.id}`);
+      console.log(`Seeded ONE_OFF schedules: ACTIVE ${s1.id}, DRAFT ${s2.id}`);
     } else {
-      console.log(`Schedules already present for placement (${existingSchedules})`);
+      console.log(`ONE_OFF schedules already present (${oneOffCount})`);
+    }
+
+    // Ticket E — weekly daypart Mon–Fri 09:00–11:00 America/Denver
+    const recurring = await prisma.schedule.findFirst({
+      where: {
+        placementId: approvedPlacement.id,
+        kind: "RECURRING",
+        note: "Seeded RECURRING Mon–Fri 09:00–11:00 daypart",
+      },
+    });
+    if (!recurring) {
+      const today = new Date();
+      const y = today.getFullYear();
+      const m = String(today.getMonth() + 1).padStart(2, "0");
+      const d = String(today.getDate()).padStart(2, "0");
+      const startYmd = `${y}-${m}-${d}`;
+      const end = new Date(today.getTime() + 60 * 24 * 60 * 60 * 1000);
+      const ey = end.getFullYear();
+      const em = String(end.getMonth() + 1).padStart(2, "0");
+      const ed = String(end.getDate()).padStart(2, "0");
+      const endYmd = `${ey}-${em}-${ed}`;
+      const s3 = await prisma.schedule.create({
+        data: {
+          placementId: approvedPlacement.id,
+          screenId: approvedPlacement.screenId,
+          kind: "RECURRING",
+          weekdays: "1,2,3,4,5",
+          startTime: "09:00",
+          endTime: "11:00",
+          campaignStartDate: startYmd,
+          campaignEndDate: endYmd,
+          status: "ACTIVE",
+          note: "Seeded RECURRING Mon–Fri 09:00–11:00 daypart",
+          createdById: admin.id,
+        },
+      });
+      console.log(`Seeded RECURRING daypart: ${s3.id} (${startYmd}→${endYmd} Mon–Fri 09:00–11:00)`);
+    } else {
+      console.log(`RECURRING daypart already present: ${recurring.id}`);
     }
   }
 

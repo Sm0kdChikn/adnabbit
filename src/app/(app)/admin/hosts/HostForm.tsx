@@ -12,6 +12,7 @@ type Props = {
     vertical: string;
     otherLabel: string | null;
     notes: string | null;
+    timezone: string;
   };
 };
 
@@ -23,6 +24,7 @@ export function HostForm({ mode, hostId, initial }: Props) {
   );
   const [otherLabel, setOtherLabel] = useState(initial?.otherLabel || "");
   const [notes, setNotes] = useState(initial?.notes || "");
+  const [timezone, setTimezone] = useState(initial?.timezone || "America/Denver");
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
@@ -36,6 +38,7 @@ export function HostForm({ mode, hostId, initial }: Props) {
         vertical,
         otherLabel: vertical === "OTHER" ? otherLabel : null,
         notes: notes || null,
+        timezone,
       };
       const url =
         mode === "create" ? "/api/admin/hosts" : `/api/admin/hosts/${hostId}`;
@@ -125,6 +128,21 @@ export function HostForm({ mode, hostId, initial }: Props) {
           />
         </div>
       )}
+      <div>
+        <label className="mb-1 block text-sm font-medium text-slate-700">
+          Timezone (IANA)
+        </label>
+        <input
+          required
+          value={timezone}
+          onChange={(e) => setTimezone(e.target.value)}
+          placeholder="America/Denver"
+          className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+        />
+        <p className="mt-1 text-xs text-slate-500">
+          Screens inherit this zone for recurring dayparts (default America/Denver).
+        </p>
+      </div>
       <div>
         <label className="mb-1 block text-sm font-medium text-slate-700">
           Notes (optional)

@@ -4,7 +4,7 @@ import { redirect, notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 import { ScheduleBadge } from "@/components/StatusBadge";
-import { materializeEndedSchedules } from "@/lib/schedules";
+import { formatScheduleSummary, materializeEndedSchedules } from "@/lib/schedules";
 import { ScheduleEditForm } from "../ScheduleEditForm";
 import { formatVertical } from "@/lib/types";
 
@@ -29,7 +29,16 @@ export default async function AdminScheduleDetailPage({
         },
       },
       screen: {
-        include: { host: { select: { name: true, vertical: true, otherLabel: true } } },
+        include: {
+          host: {
+            select: {
+              name: true,
+              vertical: true,
+              otherLabel: true,
+              timezone: true,
+            },
+          },
+        },
       },
       createdBy: { select: { email: true, name: true } },
     },
@@ -47,11 +56,18 @@ export default async function AdminScheduleDetailPage({
             {schedule.screen.host.name} · {schedule.screen.name}
           </h1>
           <ScheduleBadge status={schedule.status} />
+          <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-semibold text-slate-700">
+            {schedule.kind}
+          </span>
         </div>
         <p className="text-sm text-slate-600">
           {schedule.placement.creative.name} ·{" "}
           {schedule.placement.advertiser.name || schedule.placement.advertiser.email} ·{" "}
-          {formatVertical(schedule.screen.host.vertical, schedule.screen.host.otherLabel)}
+          {formatVertical(schedule.screen.host.vertical, schedule.screen.host.otherLabel)} ·{" "}
+          {schedule.screen.host.timezone}
+        </p>
+        <p className="text-sm text-slate-500">
+          {formatScheduleSummary(schedule, schedule.screen.host.timezone)}
         </p>
         <p className="text-xs text-slate-400">
           Created by {schedule.createdBy.name || schedule.createdBy.email}
@@ -63,8 +79,14 @@ export default async function AdminScheduleDetailPage({
       <ScheduleEditForm
         scheduleId={schedule.id}
         initial={{
-          startAt: schedule.startAt.toISOString(),
-          endAt: schedule.endAt.toISOString(),
+          kind: schedule.kind,
+          startAt: schedule.startAt ? schedule.startAt.toISOString() : null,
+          endAt: schedule.endAt ? schedule.endAt.toISOString() : null,
+          weekdays: schedule.weekdays,
+          startTime: schedule.startTime,
+          endTime: schedule.endTime,
+          campaignStartDate: schedule.campaignStartDate,
+          campaignEndDate: schedule.campaignEndDate,
           status: schedule.status,
           note: schedule.note,
         }}

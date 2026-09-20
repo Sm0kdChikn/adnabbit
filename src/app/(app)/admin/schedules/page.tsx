@@ -5,7 +5,7 @@ import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 import { Suspense } from "react";
 import { ScheduleBadge } from "@/components/StatusBadge";
-import { materializeEndedSchedules } from "@/lib/schedules";
+import { formatScheduleSummary, materializeEndedSchedules } from "@/lib/schedules";
 import { isScheduleStatus } from "@/lib/types";
 import { ScheduleFilters } from "./ScheduleFilters";
 
@@ -53,13 +53,13 @@ export default async function AdminSchedulesPage({
           },
         },
         screen: {
-          include: { host: { select: { name: true } } },
+          include: { host: { select: { name: true, timezone: true } } },
         },
       },
     }),
     prisma.screen.findMany({
       orderBy: { name: "asc" },
-      include: { host: { select: { name: true } } },
+      include: { host: { select: { name: true, timezone: true } } },
     }),
   ]);
 
@@ -119,7 +119,10 @@ export default async function AdminSchedulesPage({
                     {s.placement.advertiser.name || s.placement.advertiser.email}
                   </p>
                   <p className="text-sm text-slate-500">
-                    {new Date(s.startAt).toLocaleString()} → {new Date(s.endAt).toLocaleString()}
+                    <span className="mr-2 rounded bg-slate-100 px-1.5 py-0.5 text-xs font-medium text-slate-600">
+                      {s.kind}
+                    </span>
+                    {formatScheduleSummary(s, s.screen.host.timezone)}
                   </p>
                   {s.note && <p className="text-sm text-slate-500">Note: {s.note}</p>}
                 </div>
