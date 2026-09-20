@@ -40,6 +40,9 @@ export default async function AdminPage() {
           <a href="/admin/placements" className="rounded-md bg-indigo-50 px-3 py-1.5 text-indigo-700 hover:bg-indigo-100">
             Placements
           </a>
+          <a href="/admin/schedules" className="rounded-md bg-indigo-50 px-3 py-1.5 text-indigo-700 hover:bg-indigo-100">
+            Schedules
+          </a>
           <a href="/admin/profiles" className="rounded-md bg-indigo-50 px-3 py-1.5 text-indigo-700 hover:bg-indigo-100">
             Profiles
           </a>

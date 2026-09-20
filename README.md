@@ -1,6 +1,6 @@
 # AdNabbit Web MVP
 
-Advertiser signup/login, creative upload (image/video), submit for review, admin approve/reject, **Ticket A — Host/screen inventory**, and **Ticket B — Advertiser public profiles**, and **Ticket C — Placement requests**.
+Advertiser signup/login, creative upload (image/video), submit for review, admin approve/reject, **Ticket A — Host/screen inventory**, and **Ticket B — Advertiser public profiles**, and **Ticket C — Placement requests**, and **Ticket D — Scheduling**.
 
 **Repo target:** https://github.com/Sm0kdChikn/adnabbit
 
@@ -38,7 +38,7 @@ Open http://localhost:3000
 
 Change `ADMIN_EMAIL` / `ADMIN_PASSWORD` before seeding in non-dev environments.
 
-Seed also creates sample **hosts** / **screens** (Ticket A), a **published demo advertiser profile** at `/a/front-range-hvac` (Ticket B), and an **APPROVED** creative for the demo advertiser (Ticket C).
+Seed also creates sample **hosts** / **screens** (Ticket A), a **published demo advertiser profile** at `/a/front-range-hvac` (Ticket B), an **APPROVED** creative + placement (Ticket C), and **1–2 sample schedules** (Ticket D).
 
 ### Default seed demo advertiser
 
@@ -53,7 +53,7 @@ Seed also creates sample **hosts** / **screens** (Ticket A), a **published demo 
 | `npm run dev` | Next.js dev server |
 | `npm run db:migrate` | Prisma migrate (interactive) |
 | `npm run db:push` | Push schema without migration history |
-| `npm run db:seed` | Create/update ADMIN + sample hosts/screens + demo advertiser profile + APPROVED creative |
+| `npm run db:seed` | Create/update ADMIN + hosts/screens + demo profile + APPROVED creative/placement + sample schedules |
 | `npm run build` / `start` | Production build & serve |
 
 ## Creative statuses
@@ -182,9 +182,45 @@ Advertisers browse requestable screens (OPEN / LIMITED), attach an **APPROVED** 
 3. Log in as admin → **Placements** → Approve or Reject with reason
 4. Back as advertiser → **Placements** → see status / reject reason
 
+## Ticket D — Scheduling
+
+Admin creates play windows for **APPROVED** placements. Advertisers view their own schedules read-only. No OptiSigns push / proof-of-play in MVP.
+
+### Data model (Pulse / Forge lock)
+
+- **Schedule**: `placementId` → PlacementRequest (many schedules per placement OK), cached `screenId` (from placement, for indexes/overlap), `startAt`, `endAt`, `status` (`DRAFT` | `ACTIVE` | `ENDED` | `CANCELLED`), optional `note`, `createdById` → admin User, optional `cancelledAt`, timestamps
+- Indexes: `status`, `startAt`, `endAt`, `placementId`, `screenId`
+- Rules: only APPROVED placements; `endAt > startAt`; admin mutate; advertiser read-only own
+- Overlap: **warn-first** on same-screen overlapping **ACTIVE** (409 + `requireAcknowledge`; client can retry with `acknowledgeOverlap: true`) — not a hard block
+- `ACTIVE` → `ENDED` materialised on list/read when `endAt < now`
+
+### Admin UI / API
+
+| Path | Purpose |
+|------|---------|
+| `/admin/schedules` | List; filter by screen, status, date range (`from`/`to`) |
+| `/admin/schedules/new` | Create from APPROVED placement |
+| `/admin/schedules/[id]` | Edit times / DRAFT or ACTIVE / note; cancel |
+| GET/POST | `/api/admin/schedules` (GET query: `screenId`, `status`, `from`, `to`, `placementId`) |
+| GET/PATCH | `/api/admin/schedules/[id]` |
+| POST | `/api/admin/schedules/[id]/cancel` |
+
+### Advertiser
+
+| Path | Purpose |
+|------|---------|
+| `/schedules` | Own schedules (read-only) |
+| GET | `/api/schedules` |
+
+### Demo
+
+1. Seed creates ACTIVE + DRAFT schedules for demo advertiser’s APPROVED placement
+2. Admin → **Schedules** → New / Edit / Cancel
+3. `demo.advertiser@adnabbit.com` → **Schedules** → see windows
+
 ## Out of scope (later tickets)
 
-- Host self-serve portal, player, OptiSigns sync, scheduling, proof-of-play, marketplace, billing
+- Host self-serve portal, player, OptiSigns sync, proof-of-play, marketplace, billing, daypart templates AI
 
 ## Push to GitHub
 

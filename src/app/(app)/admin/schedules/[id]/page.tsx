@@ -1,0 +1,74 @@
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import { redirect, notFound } from "next/navigation";
+import { prisma } from "@/lib/prisma";
+import Link from "next/link";
+import { ScheduleBadge } from "@/components/StatusBadge";
+import { materializeEndedSchedules } from "@/lib/schedules";
+import { ScheduleEditForm } from "../ScheduleEditForm";
+import { formatVertical } from "@/lib/types";
+
+export default async function AdminScheduleDetailPage({
+  params,
+}: {
+  params: { id: string };
+}) {
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.id) redirect("/login");
+  if (session.user.role !== "ADMIN") redirect("/dashboard");
+
+  await materializeEndedSchedules([params.id]);
+
+  const schedule = await prisma.schedule.findUnique({
+    where: { id: params.id },
+    include: {
+      placement: {
+        include: {
+          advertiser: { select: { email: true, name: true } },
+          creative: { select: { name: true, storedName: true } },
+        },
+      },
+      screen: {
+        include: { host: { select: { name: true, vertical: true, otherLabel: true } } },
+      },
+      createdBy: { select: { email: true, name: true } },
+    },
+  });
+  if (!schedule) notFound();
+
+  return (
+    <div className="mx-auto max-w-xl space-y-6">
+      <div>
+        <Link href="/admin/schedules" className="text-sm text-indigo-600 hover:underline">
+          ← Schedules
+        </Link>
+        <div className="mt-2 flex flex-wrap items-center gap-2">
+          <h1 className="text-2xl font-bold text-slate-900">
+            {schedule.screen.host.name} · {schedule.screen.name}
+          </h1>
+          <ScheduleBadge status={schedule.status} />
+        </div>
+        <p className="text-sm text-slate-600">
+          {schedule.placement.creative.name} ·{" "}
+          {schedule.placement.advertiser.name || schedule.placement.advertiser.email} ·{" "}
+          {formatVertical(schedule.screen.host.vertical, schedule.screen.host.otherLabel)}
+        </p>
+        <p className="text-xs text-slate-400">
+          Created by {schedule.createdBy.name || schedule.createdBy.email}
+          {schedule.cancelledAt &&
+            ` · Cancelled ${new Date(schedule.cancelledAt).toLocaleString()}`}
+        </p>
+      </div>
+
+      <ScheduleEditForm
+        scheduleId={schedule.id}
+        initial={{
+          startAt: schedule.startAt.toISOString(),
+          endAt: schedule.endAt.toISOString(),
+          status: schedule.status,
+          note: schedule.note,
+        }}
+      />
+    </div>
+  );
+}

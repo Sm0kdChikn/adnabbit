@@ -27,6 +27,9 @@ export function Nav() {
                   <Link href="/placements" className="text-slate-700 hover:text-indigo-600">
                     Placements
                   </Link>
+                  <Link href="/schedules" className="text-slate-700 hover:text-indigo-600">
+                    Schedules
+                  </Link>
                   <Link href="/profile" className="text-slate-700 hover:text-indigo-600">
                     Profile
                   </Link>
@@ -42,6 +45,9 @@ export function Nav() {
                   </Link>
                   <Link href="/admin/placements" className="text-slate-700 hover:text-indigo-600">
                     Placements
+                  </Link>
+                  <Link href="/admin/schedules" className="text-slate-700 hover:text-indigo-600">
+                    Schedules
                   </Link>
                   <Link href="/admin/hosts" className="text-slate-700 hover:text-indigo-600">
                     Hosts

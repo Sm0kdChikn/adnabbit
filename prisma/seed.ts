@@ -263,6 +263,84 @@ async function main() {
     console.log(`APPROVED creative already present: ${approvedCreative.id}`);
   }
 
+
+  // Ticket D — ensure APPROVED placement + 1–2 sample schedules
+  const openScreen = await prisma.screen.findFirst({
+    where: { inventoryStatus: "OPEN" },
+    orderBy: { name: "asc" },
+  });
+  if (!openScreen) {
+    console.log("No OPEN screen — skip schedule seed");
+  } else {
+    let approvedPlacement = await prisma.placementRequest.findFirst({
+      where: {
+        advertiserId: demoUser.id,
+        creativeId: approvedCreative.id,
+        screenId: openScreen.id,
+        status: "APPROVED",
+      },
+    });
+    if (!approvedPlacement) {
+      // Prefer any existing APPROVED for this advertiser+creative
+      approvedPlacement = await prisma.placementRequest.findFirst({
+        where: {
+          advertiserId: demoUser.id,
+          creativeId: approvedCreative.id,
+          status: "APPROVED",
+        },
+      });
+    }
+    if (!approvedPlacement) {
+      approvedPlacement = await prisma.placementRequest.create({
+        data: {
+          advertiserId: demoUser.id,
+          screenId: openScreen.id,
+          creativeId: approvedCreative.id,
+          status: "APPROVED",
+          note: "Seeded APPROVED placement for Ticket D schedules",
+          reviewedAt: new Date(),
+          reviewedById: admin.id,
+        },
+      });
+      console.log(`Seeded APPROVED placement: ${approvedPlacement.id} on ${openScreen.name}`);
+    } else {
+      console.log(`APPROVED placement already present: ${approvedPlacement.id}`);
+    }
+
+    const existingSchedules = await prisma.schedule.count({
+      where: { placementId: approvedPlacement.id },
+    });
+    if (existingSchedules === 0) {
+      const now = new Date();
+      const day = 24 * 60 * 60 * 1000;
+      const s1 = await prisma.schedule.create({
+        data: {
+          placementId: approvedPlacement.id,
+          screenId: approvedPlacement.screenId,
+          startAt: new Date(now.getTime() + 1 * day),
+          endAt: new Date(now.getTime() + 8 * day),
+          status: "ACTIVE",
+          note: "Seeded ACTIVE demo schedule (next week)",
+          createdById: admin.id,
+        },
+      });
+      const s2 = await prisma.schedule.create({
+        data: {
+          placementId: approvedPlacement.id,
+          screenId: approvedPlacement.screenId,
+          startAt: new Date(now.getTime() + 14 * day),
+          endAt: new Date(now.getTime() + 21 * day),
+          status: "DRAFT",
+          note: "Seeded DRAFT demo schedule (week+2)",
+          createdById: admin.id,
+        },
+      });
+      console.log(`Seeded schedules: ACTIVE ${s1.id}, DRAFT ${s2.id}`);
+    } else {
+      console.log(`Schedules already present for placement (${existingSchedules})`);
+    }
+  }
+
   // Ensure at least a couple OPEN screens exist (hosts/screens seeded above)
   const openCount = await prisma.screen.count({ where: { inventoryStatus: "OPEN" } });
   console.log(`OPEN screens available for placement browse: ${openCount}`);

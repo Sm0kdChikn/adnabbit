@@ -78,3 +78,11 @@ export type PlacementStatus = (typeof PLACEMENT_STATUSES)[number];
 export function isPlacementStatus(v: string): v is PlacementStatus {
   return (PLACEMENT_STATUSES as readonly string[]).includes(v);
 }
+
+/** Ticket D — schedule status machine */
+export const SCHEDULE_STATUSES = ["DRAFT", "ACTIVE", "ENDED", "CANCELLED"] as const;
+export type ScheduleStatus = (typeof SCHEDULE_STATUSES)[number];
+
+export function isScheduleStatus(v: string): v is ScheduleStatus {
+  return (SCHEDULE_STATUSES as readonly string[]).includes(v);
+}

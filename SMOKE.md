@@ -459,3 +459,126 @@ None for local Ticket C.
 | C7 Auth: advertiser 403 on admin API; UI 200 | **PASS** |
 
 Demo: `demo.advertiser@adnabbit.com` / `demo123!` (seeded APPROVED creative) → Screens → request → `admin@adnabbit.com` / `admin123!` → Placements queue.
+
+
+---
+
+# Ticket D — Scheduling smoke
+
+**Date:** 2026-09-20 (America/Denver)  
+**Prereq:** migration `schedules`, `npm run db:seed` (APPROVED placement + sample schedules), `npm run dev` on :3000
+
+## Setup
+
+```bash
+cd /workspace/adnabbit-web
+npx prisma migrate dev --name schedules   # already applied on this branch
+npm run db:seed
+# Seeded ACTIVE + DRAFT schedules for demo advertiser APPROVED placement
+npm run dev
+```
+
+## D1. Admin list schedules — PASS expected
+
+```bash
+# Admin login → /tmp/admin-cookies.txt
+curl -s -b /tmp/admin-cookies.txt http://localhost:3000/api/admin/schedules | head -c 800
+# expect schedules array (seeded ACTIVE + DRAFT)
+```
+
+## D2. Admin create from APPROVED placement — PASS expected
+
+```bash
+PLACEMENT_ID=$(curl -s -b /tmp/admin-cookies.txt "http://localhost:3000/api/admin/placements?status=APPROVED" | python3 -c "import sys,json; ps=json.load(sys.stdin)['placements']; print(ps[0]['id'])")
+START=$(python3 -c "from datetime import datetime,timedelta,timezone; print((datetime.now(timezone.utc)+timedelta(days=30)).strftime('%Y-%m-%dT%H:%M:%S.000Z'))")
+END=$(python3 -c "from datetime import datetime,timedelta,timezone; print((datetime.now(timezone.utc)+timedelta(days=37)).strftime('%Y-%m-%dT%H:%M:%S.000Z'))")
+
+curl -s -b /tmp/admin-cookies.txt -X POST http://localhost:3000/api/admin/schedules \
+  -H 'Content-Type: application/json' \
+  -d "{\"placementId\":\"$PLACEMENT_ID\",\"startAt\":\"$START\",\"endAt\":\"$END\",\"status\":\"ACTIVE\",\"note\":\"Smoke schedule\"}"
+# expect 201 (or 409 overlap warn — then retry with acknowledgeOverlap:true)
+```
+
+## D3. Non-APPROVED placement rejected — PASS expected
+
+```bash
+REQ_ID=$(curl -s -b /tmp/admin-cookies.txt "http://localhost:3000/api/admin/placements?status=REQUESTED" | python3 -c "import sys,json; ps=json.load(sys.stdin).get('placements') or []; print(ps[0]['id'] if ps else '')")
+# if empty, create a REQUESTED via demo advertiser first
+curl -s -b /tmp/admin-cookies.txt -X POST http://localhost:3000/api/admin/schedules \
+  -H 'Content-Type: application/json' \
+  -d "{\"placementId\":\"$REQ_ID\",\"startAt\":\"$START\",\"endAt\":\"$END\"}"
+# expect 400 Only APPROVED…
+```
+
+## D4. endAt must be after startAt — PASS expected
+
+```bash
+curl -s -b /tmp/admin-cookies.txt -X POST http://localhost:3000/api/admin/schedules \
+  -H 'Content-Type: application/json' \
+  -d "{\"placementId\":\"$PLACEMENT_ID\",\"startAt\":\"$END\",\"endAt\":\"$START\"}"
+# expect 400 endAt must be after startAt
+```
+
+## D5. Overlap warn-first — PASS expected
+
+```bash
+# Create overlapping ACTIVE on same screen without acknowledge → 409 requireAcknowledge
+# Retry with "acknowledgeOverlap": true → 201
+```
+
+## D6. Advertiser sees own schedules — PASS expected
+
+```bash
+# demo.advertiser login → /tmp/demo-cookies.txt
+curl -s -b /tmp/demo-cookies.txt http://localhost:3000/api/schedules | head -c 800
+# expect own schedules; admin-created smoke schedule visible
+```
+
+## D7. Cancel path — PASS expected
+
+```bash
+SCHEDULE_ID=…  # from create
+curl -s -b /tmp/admin-cookies.txt -X POST http://localhost:3000/api/admin/schedules/$SCHEDULE_ID/cancel
+# expect CANCELLED + cancelledAt
+
+curl -s -b /tmp/demo-cookies.txt http://localhost:3000/api/schedules | grep -o CANCELLED | head -1
+```
+
+## D8. Auth gates — PASS expected
+
+```bash
+curl -s -o /dev/null -w "%{http_code}" -b /tmp/demo-cookies.txt http://localhost:3000/api/admin/schedules
+# expect 403
+curl -s -o /dev/null -w "%{http_code}" -b /tmp/admin-cookies.txt -X POST http://localhost:3000/api/schedules
+# expect 405 or 403 (advertiser-only GET; no POST)
+curl -s -o /dev/null -w "%{http_code}" -b /tmp/demo-cookies.txt -L http://localhost:3000/schedules
+# expect 200
+curl -s -o /dev/null -w "%{http_code}" -b /tmp/admin-cookies.txt -L http://localhost:3000/admin/schedules
+# expect 200
+```
+
+## Demo path
+
+1. `admin@adnabbit.com` / `admin123!` → **Schedules** → see seeded ACTIVE/DRAFT → New schedule from APPROVED placement → Cancel one
+2. `demo.advertiser@adnabbit.com` / `demo123!` → **Schedules** → read-only list includes admin-created windows
+
+## Blockers
+
+None for local Ticket D.
+
+
+## Ticket D verified results (2026-09-20 ~10:22 AM MT)
+
+| Check | Result |
+|-------|--------|
+| D1 Admin list `/api/admin/schedules` | **PASS** seeded ACTIVE + DRAFT |
+| D2 Admin create from APPROVED | **PASS** 201 ACTIVE |
+| D3 Non-APPROVED placement | **PASS** 400 |
+| D4 endAt ≤ startAt | **PASS** 400 |
+| D5 Overlap warn-first | **PASS** 409 `requireAcknowledge` |
+| D6 Advertiser GET `/api/schedules` | **PASS** sees own (incl. after cancel) |
+| D7 Cancel | **PASS** CANCELLED + cancelledAt |
+| D8 Auth: advertiser 403 admin API; UI 200 | **PASS** |
+| ACTIVE→ENDED on list | **PASS** past ACTIVE materialised ENDED |
+
+Demo: `admin@adnabbit.com` / `admin123!` → Schedules; `demo.advertiser@adnabbit.com` / `demo123!` → Schedules (read-only).
