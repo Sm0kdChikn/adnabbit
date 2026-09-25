@@ -4,7 +4,14 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 import { formatVertical } from "@/lib/types";
-import { EmptyState, PageHeader } from "@/components/ui";
+import {
+  Card,
+  CardList,
+  CardListItem,
+  EmptyState,
+  PageHeader,
+  ViewToggle,
+} from "@/components/ui";
 
 export default async function AdminHostsPage() {
   const session = await getServerSession(authOptions);
@@ -26,12 +33,15 @@ export default async function AdminHostsPage() {
         title="Hosts"
         description="Venues with a primary vertical. Screens inherit vertical from their host."
         actions={
-          <Link
-            href="/admin/hosts/new"
-            className="rounded-md bg-accent px-4 py-2 text-sm font-medium text-on-accent shadow-glow-sm hover:brightness-110"
-          >
-            New host
-          </Link>
+          <>
+            <ViewToggle />
+            <Link
+              href="/admin/hosts/new"
+              className="rounded-md bg-accent px-4 py-2 text-sm font-medium text-on-accent shadow-glow-sm hover:brightness-110"
+            >
+              New host
+            </Link>
+          </>
         }
       />
 
@@ -44,36 +54,39 @@ export default async function AdminHostsPage() {
           .
         </EmptyState>
       ) : (
-        <ul className="divide-y divide-border rounded-xl border border-border bg-surface shadow-sm">
+        <CardList>
           {hosts.map((h) => (
-            <li
-              key={h.id}
-              className="flex flex-wrap items-center justify-between gap-2 px-4 py-3"
-            >
-              <div>
-                <Link
-                  href={`/admin/hosts/${h.id}`}
-                  className="font-medium text-accent hover:underline"
-                >
-                  {h.name}
-                </Link>
-                <p className="text-sm text-muted">
-                  {formatVertical(h.vertical, h.otherLabel)} · {h._count.screens} screen
-                  {h._count.screens === 1 ? "" : "s"}
-                  {" · "}
-                  {h.user ? `owner ${h.user.email}` : "unclaimed"}
-                </p>
-                {h.notes && <p className="text-xs text-muted-strong">{h.notes}</p>}
-              </div>
-              <Link
-                href={`/admin/hosts/${h.id}`}
-                className="text-sm text-muted hover:text-accent"
-              >
-                Edit
-              </Link>
-            </li>
+            <CardListItem key={h.id}>
+              <Card glow className="flex h-full flex-col p-4">
+                <div className="flex flex-1 flex-col gap-3">
+                  <div className="min-w-0 flex-1 space-y-1">
+                    <Link
+                      href={`/admin/hosts/${h.id}`}
+                      className="font-semibold text-accent hover:underline"
+                    >
+                      {h.name}
+                    </Link>
+                    <p className="text-sm text-muted">
+                      {formatVertical(h.vertical, h.otherLabel)} · {h._count.screens}{" "}
+                      screen{h._count.screens === 1 ? "" : "s"}
+                      {" · "}
+                      {h.user ? `owner ${h.user.email}` : "unclaimed"}
+                    </p>
+                    {h.notes && (
+                      <p className="text-xs text-muted-strong">{h.notes}</p>
+                    )}
+                  </div>
+                  <Link
+                    href={`/admin/hosts/${h.id}`}
+                    className="text-sm text-muted hover:text-accent"
+                  >
+                    Edit
+                  </Link>
+                </div>
+              </Card>
+            </CardListItem>
           ))}
-        </ul>
+        </CardList>
       )}
     </div>
   );

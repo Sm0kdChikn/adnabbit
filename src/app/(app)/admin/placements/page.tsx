@@ -6,7 +6,14 @@ import Link from "next/link";
 import { PlacementBadge } from "@/components/StatusBadge";
 import { PlacementActions } from "./PlacementActions";
 import { formatVertical } from "@/lib/types";
-import { EmptyState, PageHeader, SectionTitle } from "@/components/ui";
+import {
+  CardList,
+  CardListItem,
+  EmptyState,
+  PageHeader,
+  SectionTitle,
+  ViewToggle,
+} from "@/components/ui";
 
 export default async function AdminPlacementsPage() {
   const session = await getServerSession(authOptions);
@@ -52,6 +59,7 @@ export default async function AdminPlacementsPage() {
         description="Approve or reject REQUESTED placements (reject requires a reason)."
         actions={
           <>
+            <ViewToggle />
             <Link
               href="/admin"
               className="rounded-md bg-accent-dim px-3 py-1.5 text-sm text-accent hover:bg-accent/15"
@@ -73,44 +81,43 @@ export default async function AdminPlacementsPage() {
         {pending.length === 0 ? (
           <EmptyState>No pending placement requests.</EmptyState>
         ) : (
-          <ul className="space-y-3">
+          <CardList>
             {pending.map((p) => (
-              <li
-                key={p.id}
-                className="rounded-xl border border-border bg-surface p-4 shadow-sm"
-              >
-                <div className="flex flex-wrap items-start justify-between gap-4">
-                  <div className="min-w-0 flex-1 space-y-1">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <h3 className="font-semibold text-foreground">
-                        {p.screen.name} ← {p.creative.name}
-                      </h3>
-                      <PlacementBadge status={p.status} />
-                    </div>
-                    <p className="text-sm text-muted">
-                      By {p.advertiser.name || p.advertiser.email} · {p.screen.host.name} ·{" "}
-                      {formatVertical(p.screen.host.vertical, p.screen.host.otherLabel)} ·{" "}
-                      {p.screen.city} {p.screen.zip}
-                    </p>
-                    {p.note && (
+              <CardListItem key={p.id}>
+                <div className="flex h-full flex-col rounded-xl border border-border bg-surface p-4 shadow-sm">
+                  <div className="flex flex-1 flex-col gap-3">
+                    <div className="min-w-0 flex-1 space-y-1">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <h3 className="font-semibold text-foreground">
+                          {p.screen.name} ← {p.creative.name}
+                        </h3>
+                        <PlacementBadge status={p.status} />
+                      </div>
                       <p className="text-sm text-muted">
-                        <span className="font-medium">Note:</span> {p.note}
+                        By {p.advertiser.name || p.advertiser.email} · {p.screen.host.name} ·{" "}
+                        {formatVertical(p.screen.host.vertical, p.screen.host.otherLabel)} ·{" "}
+                        {p.screen.city} {p.screen.zip}
                       </p>
-                    )}
-                    <a
-                      href={`/api/uploads/${p.creative.storedName}`}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="inline-block text-sm text-accent hover:underline"
-                    >
-                      Preview creative
-                    </a>
+                      {p.note && (
+                        <p className="text-sm text-muted">
+                          <span className="font-medium">Note:</span> {p.note}
+                        </p>
+                      )}
+                      <a
+                        href={`/api/uploads/${p.creative.storedName}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-block text-sm text-accent hover:underline"
+                      >
+                        Preview creative
+                      </a>
+                    </div>
+                    <PlacementActions placementId={p.id} />
                   </div>
-                  <PlacementActions placementId={p.id} />
                 </div>
-              </li>
+              </CardListItem>
             ))}
-          </ul>
+          </CardList>
         )}
       </section>
 

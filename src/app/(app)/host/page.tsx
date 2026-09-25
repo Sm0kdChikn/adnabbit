@@ -7,11 +7,14 @@ import { InventoryBadge } from "@/components/StatusBadge";
 import { formatVertical } from "@/lib/types";
 import {
   Card,
+  CardList,
+  CardListItem,
   EmptyState,
   PageHeader,
   SectionTitle,
   StatPill,
   StatRow,
+  ViewToggle,
 } from "@/components/ui";
 
 export default async function HostPortalPage() {
@@ -59,6 +62,7 @@ export default async function HostPortalPage() {
         }
         actions={
           <>
+            <ViewToggle />
             <Link
               href="/host/edit"
               className="rounded-md border border-border bg-accent-dim px-3 py-1.5 text-sm text-accent hover:border-accent/40"
@@ -92,37 +96,36 @@ export default async function HostPortalPage() {
             .
           </EmptyState>
         ) : (
-          <Card className="overflow-hidden">
-            <ul className="divide-y divide-border">
-              {host.screens.map((s) => (
-                <li
-                  key={s.id}
-                  className="flex flex-wrap items-center justify-between gap-2 px-4 py-3"
-                >
-                  <div>
-                    <Link
-                      href={`/host/screens/${s.id}`}
-                      className="font-medium text-accent hover:underline"
-                    >
-                      {s.name}
-                    </Link>
-                    <p className="text-sm text-muted">
-                      {s.city}, {s.zip}
-                    </p>
+          <CardList>
+            {host.screens.map((s) => (
+              <CardListItem key={s.id}>
+                <Card glow className="flex h-full flex-col p-4">
+                  <div className="flex flex-1 flex-col gap-3">
+                    <div className="min-w-0 flex-1 space-y-1">
+                      <Link
+                        href={`/host/screens/${s.id}`}
+                        className="font-semibold text-accent hover:underline"
+                      >
+                        {s.name}
+                      </Link>
+                      <p className="text-sm text-muted">
+                        {s.city}, {s.zip}
+                      </p>
+                    </div>
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <InventoryBadge status={s.inventoryStatus} />
+                      <Link
+                        href={`/host/screens/${s.id}`}
+                        className="text-sm text-muted hover:text-accent"
+                      >
+                        Manage
+                      </Link>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-3">
-                    <InventoryBadge status={s.inventoryStatus} />
-                    <Link
-                      href={`/host/screens/${s.id}`}
-                      className="text-sm text-muted hover:text-accent"
-                    >
-                      Manage
-                    </Link>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          </Card>
+                </Card>
+              </CardListItem>
+            ))}
+          </CardList>
         )}
       </section>
 

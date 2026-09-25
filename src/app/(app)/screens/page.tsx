@@ -12,7 +12,13 @@ import {
   isHostVertical,
 } from "@/lib/types";
 import type { Prisma } from "@prisma/client";
-import { EmptyState, PageHeader } from "@/components/ui";
+import {
+  CardList,
+  CardListItem,
+  EmptyState,
+  PageHeader,
+  ViewToggle,
+} from "@/components/ui";
 
 export default async function ScreensBrowsePage({
   searchParams,
@@ -68,12 +74,15 @@ export default async function ScreensBrowsePage({
         title="Browse screens"
         description="Request placement on OPEN or LIMITED inventory. Attach an APPROVED creative."
         actions={
-          <Link
-            href="/placements"
-            className="rounded-md bg-accent-dim px-4 py-2 text-sm font-medium text-accent hover:bg-accent/15"
-          >
-            My placement requests
-          </Link>
+          <>
+            <ViewToggle />
+            <Link
+              href="/placements"
+              className="rounded-md bg-accent-dim px-4 py-2 text-sm font-medium text-accent hover:bg-accent/15"
+            >
+              My placement requests
+            </Link>
+          </>
         }
       />
 
@@ -84,34 +93,33 @@ export default async function ScreensBrowsePage({
       {screens.length === 0 ? (
         <EmptyState>No screens match your filters.</EmptyState>
       ) : (
-        <ul className="space-y-3">
+        <CardList>
           {screens.map((s) => {
             const requestable =
               s.inventoryStatus === "OPEN" || s.inventoryStatus === "LIMITED";
             return (
-              <li
-                key={s.id}
-                className="rounded-xl border border-border bg-surface p-4 shadow-sm"
-              >
-                <div className="flex flex-wrap items-start justify-between gap-4">
-                  <div className="min-w-0 flex-1 space-y-1">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <h2 className="font-semibold text-foreground">{s.name}</h2>
-                      <InventoryBadge status={s.inventoryStatus} />
+              <CardListItem key={s.id}>
+                <div className="flex h-full flex-col rounded-xl border border-border bg-surface p-4 shadow-sm">
+                  <div className="flex flex-1 flex-col gap-3">
+                    <div className="min-w-0 flex-1 space-y-1">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <h2 className="font-semibold text-foreground">{s.name}</h2>
+                        <InventoryBadge status={s.inventoryStatus} />
+                      </div>
+                      <p className="text-sm text-muted">
+                        {s.host.name} ·{" "}
+                        {formatVertical(s.host.vertical, s.host.otherLabel)} · {s.city}{" "}
+                        {s.zip}
+                      </p>
+                      {s.notes && <p className="text-sm text-muted">{s.notes}</p>}
                     </div>
-                    <p className="text-sm text-muted">
-                      {s.host.name} ·{" "}
-                      {formatVertical(s.host.vertical, s.host.otherLabel)} · {s.city}{" "}
-                      {s.zip}
-                    </p>
-                    {s.notes && <p className="text-sm text-muted">{s.notes}</p>}
+                    <RequestPlacementButton screenId={s.id} disabled={!requestable} />
                   </div>
-                  <RequestPlacementButton screenId={s.id} disabled={!requestable} />
                 </div>
-              </li>
+              </CardListItem>
             );
           })}
-        </ul>
+        </CardList>
       )}
     </div>
   );

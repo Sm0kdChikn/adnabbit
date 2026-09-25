@@ -45,7 +45,7 @@ export function ReviewActions({ creativeId }: { creativeId: string }) {
   }
 
   return (
-    <div className="w-full max-w-xs space-y-2 sm:w-64">
+    <div className="w-full max-w-full space-y-2">
       <Button
         variant="success"
         size="sm"

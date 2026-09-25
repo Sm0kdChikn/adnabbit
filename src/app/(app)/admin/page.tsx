@@ -5,11 +5,14 @@ import { prisma } from "@/lib/prisma";
 import { StatusBadge } from "@/components/StatusBadge";
 import {
   Card,
+  CardList,
+  CardListItem,
   EmptyState,
   PageHeader,
   SectionTitle,
   StatPill,
   StatRow,
+  ViewToggle,
 } from "@/components/ui";
 import { ReviewActions } from "./ReviewActions";
 
@@ -40,6 +43,7 @@ export default async function AdminPage() {
       <PageHeader
         title="Admin review queue"
         description="Approve or reject PENDING creatives."
+        actions={<ViewToggle />}
       />
 
       <StatRow>
@@ -53,11 +57,11 @@ export default async function AdminPage() {
         {pending.length === 0 ? (
           <EmptyState>No pending creatives.</EmptyState>
         ) : (
-          <ul className="space-y-3">
+          <CardList>
             {pending.map((c) => (
-              <li key={c.id}>
-                <Card glow className="p-4">
-                  <div className="flex flex-wrap items-start justify-between gap-4">
+              <CardListItem key={c.id}>
+                <Card glow className="flex h-full flex-col p-4">
+                  <div className="flex flex-1 flex-col gap-3">
                     <div className="min-w-0 flex-1 space-y-1">
                       <div className="flex flex-wrap items-center gap-2">
                         <h3 className="font-semibold text-foreground">{c.name}</h3>
@@ -80,9 +84,9 @@ export default async function AdminPage() {
                     <ReviewActions creativeId={c.id} />
                   </div>
                 </Card>
-              </li>
+              </CardListItem>
             ))}
-          </ul>
+          </CardList>
         )}
       </section>
 

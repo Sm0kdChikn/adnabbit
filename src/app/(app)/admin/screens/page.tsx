@@ -12,7 +12,14 @@ import {
   isInventoryStatus,
 } from "@/lib/types";
 import type { Prisma } from "@prisma/client";
-import { EmptyState, PageHeader } from "@/components/ui";
+import {
+  Card,
+  CardList,
+  CardListItem,
+  EmptyState,
+  PageHeader,
+  ViewToggle,
+} from "@/components/ui";
 
 export default async function AdminScreensPage({
   searchParams,
@@ -58,12 +65,15 @@ export default async function AdminScreensPage({
         title="Screens"
         description="Filter by city, ZIP, inventory status, or host vertical."
         actions={
-          <Link
-            href="/admin/screens/new"
-            className="rounded-md bg-accent px-4 py-2 text-sm font-medium text-on-accent shadow-glow-sm hover:brightness-110"
-          >
-            New screen
-          </Link>
+          <>
+            <ViewToggle />
+            <Link
+              href="/admin/screens/new"
+              className="rounded-md bg-accent px-4 py-2 text-sm font-medium text-on-accent shadow-glow-sm hover:brightness-110"
+            >
+              New screen
+            </Link>
+          </>
         }
       />
 
@@ -80,35 +90,38 @@ export default async function AdminScreensPage({
           .
         </EmptyState>
       ) : (
-        <ul className="divide-y divide-border rounded-xl border border-border bg-surface shadow-sm">
+        <CardList>
           {screens.map((s) => (
-            <li
-              key={s.id}
-              className="flex flex-wrap items-center justify-between gap-3 px-4 py-3"
-            >
-              <div className="min-w-0">
-                <Link
-                  href={`/admin/screens/${s.id}`}
-                  className="font-medium text-accent hover:underline"
-                >
-                  {s.name}
-                </Link>
-                <p className="text-sm text-muted">
-                  {s.city}, {s.zip} ·{" "}
-                  <Link
-                    href={`/admin/hosts/${s.host.id}`}
-                    className="hover:text-accent"
-                  >
-                    {s.host.name}
-                  </Link>{" "}
-                  · {formatVertical(s.host.vertical, s.host.otherLabel)}
-                </p>
-                {s.notes && <p className="text-xs text-muted-strong">{s.notes}</p>}
-              </div>
-              <InventoryBadge status={s.inventoryStatus} />
-            </li>
+            <CardListItem key={s.id}>
+              <Card glow className="flex h-full flex-col p-4">
+                <div className="flex flex-1 flex-col gap-3">
+                  <div className="min-w-0 flex-1 space-y-1">
+                    <Link
+                      href={`/admin/screens/${s.id}`}
+                      className="font-semibold text-accent hover:underline"
+                    >
+                      {s.name}
+                    </Link>
+                    <p className="text-sm text-muted">
+                      {s.city}, {s.zip} ·{" "}
+                      <Link
+                        href={`/admin/hosts/${s.host.id}`}
+                        className="hover:text-accent"
+                      >
+                        {s.host.name}
+                      </Link>{" "}
+                      · {formatVertical(s.host.vertical, s.host.otherLabel)}
+                    </p>
+                    {s.notes && (
+                      <p className="text-xs text-muted-strong">{s.notes}</p>
+                    )}
+                  </div>
+                  <InventoryBadge status={s.inventoryStatus} />
+                </div>
+              </Card>
+            </CardListItem>
           ))}
-        </ul>
+        </CardList>
       )}
     </div>
   );

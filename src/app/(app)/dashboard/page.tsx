@@ -6,10 +6,13 @@ import Link from "next/link";
 import { StatusBadge } from "@/components/StatusBadge";
 import {
   Card,
+  CardList,
+  CardListItem,
   EmptyState,
   PageHeader,
   StatPill,
   StatRow,
+  ViewToggle,
 } from "@/components/ui";
 import { SubmitButton } from "./SubmitButton";
 
@@ -36,12 +39,15 @@ export default async function DashboardPage() {
         title="Your creatives"
         description="Upload, submit for review, and track status."
         actions={
-          <Link
-            href="/creatives/new"
-            className="rounded-md bg-accent px-4 py-2 text-sm font-semibold text-on-accent shadow-glow-sm hover:brightness-110"
-          >
-            Upload creative
-          </Link>
+          <>
+            <ViewToggle />
+            <Link
+              href="/creatives/new"
+              className="rounded-md bg-accent px-4 py-2 text-sm font-semibold text-on-accent shadow-glow-sm hover:brightness-110"
+            >
+              Upload creative
+            </Link>
+          </>
         }
       />
 
@@ -69,11 +75,11 @@ export default async function DashboardPage() {
           .
         </EmptyState>
       ) : (
-        <ul className="space-y-3">
+        <CardList>
           {creatives.map((c) => (
-            <li key={c.id}>
-              <Card glow className="p-4">
-                <div className="flex flex-wrap items-start justify-between gap-3">
+            <CardListItem key={c.id}>
+              <Card glow className="flex h-full flex-col p-4">
+                <div className="flex flex-1 flex-col gap-3">
                   <div className="min-w-0 flex-1 space-y-1">
                     <div className="flex flex-wrap items-center gap-2">
                       <h2 className="font-semibold text-foreground">{c.name}</h2>
@@ -102,9 +108,9 @@ export default async function DashboardPage() {
                   )}
                 </div>
               </Card>
-            </li>
+            </CardListItem>
           ))}
-        </ul>
+        </CardList>
       )}
     </div>
   );
