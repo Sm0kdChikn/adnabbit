@@ -66,8 +66,8 @@ export default async function AdvertiserReportsPage({
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-slate-900">Proof of play</h1>
-        <p className="text-sm text-slate-600">
+        <h1 className="text-2xl font-bold text-foreground">Proof of play</h1>
+        <p className="text-sm text-muted">
           Plays matched to your creatives (by asset name). Unmatched OptiSigns assets are hidden.
           Host filler is excluded by default.
         </p>
@@ -77,7 +77,7 @@ export default async function AdvertiserReportsPage({
         <PopFilters basePath="/reports" />
       </Suspense>
 
-      <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-indigo-100 bg-indigo-50 px-4 py-3 text-sm text-indigo-900">
+      <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-accent/30 bg-accent-dim px-4 py-3 text-sm text-accent">
         <span>
           <strong>{count}</strong> event{count === 1 ? "" : "s"}
           {count > events.length ? ` (showing ${events.length})` : ""}
@@ -88,14 +88,14 @@ export default async function AdvertiserReportsPage({
       </div>
 
       {events.length === 0 ? (
-        <p className="rounded-xl border border-dashed border-slate-300 bg-white p-8 text-center text-slate-500">
+        <p className="rounded-xl border border-dashed border-border bg-surface p-8 text-center text-muted">
           No matched play events yet. Plays appear here once an admin imports OptiSigns PoP data
           that matches your creative names.
         </p>
       ) : (
-        <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm">
+        <div className="overflow-x-auto rounded-xl border border-border bg-surface shadow-sm">
           <table className="min-w-full text-left text-sm">
-            <thead className="border-b border-slate-200 bg-slate-50 text-xs uppercase text-slate-500">
+            <thead className="border-b border-border bg-background-elevated text-xs uppercase text-muted">
               <tr>
                 <th className="px-3 py-2">Start UTC</th>
                 <th className="px-3 py-2">Screen</th>
@@ -104,24 +104,24 @@ export default async function AdvertiserReportsPage({
                 <th className="px-3 py-2">Duration</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
+            <tbody className="divide-y divide-border">
               {events.map((e) => (
-                <tr key={e.id} className="hover:bg-slate-50">
-                  <td className="whitespace-nowrap px-3 py-2 text-slate-700">
+                <tr key={e.id} className="hover:bg-background-elevated">
+                  <td className="whitespace-nowrap px-3 py-2 text-muted">
                     {e.startTimeUtc.toISOString().replace("T", " ").slice(0, 19)}
                   </td>
                   <td className="px-3 py-2">
-                    <div className="font-medium text-slate-900">{e.screenName}</div>
-                    <div className="text-xs text-slate-400">{e.deviceTimezone || e.deviceLocalTime}</div>
+                    <div className="font-medium text-foreground">{e.screenName}</div>
+                    <div className="text-xs text-muted-strong">{e.deviceTimezone || e.deviceLocalTime}</div>
                   </td>
                   <td className="px-3 py-2">
-                    <div className="text-slate-900">{e.creative?.name || e.assetName}</div>
-                    <div className="text-xs text-slate-400">{e.assetId}</div>
+                    <div className="text-foreground">{e.creative?.name || e.assetName}</div>
+                    <div className="text-xs text-muted-strong">{e.assetId}</div>
                   </td>
-                  <td className="max-w-[12rem] truncate px-3 py-2 text-xs text-slate-500">
+                  <td className="max-w-[12rem] truncate px-3 py-2 text-xs text-muted">
                     {e.screenTags || "—"}
                   </td>
-                  <td className="px-3 py-2 text-slate-700">{e.durationSec}s</td>
+                  <td className="px-3 py-2 text-muted">{e.durationSec}s</td>
                 </tr>
               ))}
             </tbody>

@@ -32,11 +32,11 @@ export default async function NewSchedulePage() {
   return (
     <div className="mx-auto max-w-xl space-y-6">
       <div>
-        <Link href="/admin/schedules" className="text-sm text-indigo-600 hover:underline">
+        <Link href="/admin/schedules" className="text-sm text-accent hover:underline">
           ← Schedules
         </Link>
-        <h1 className="mt-2 text-2xl font-bold text-slate-900">New schedule</h1>
-        <p className="text-sm text-slate-600">
+        <h1 className="mt-2 text-2xl font-bold text-foreground">New schedule</h1>
+        <p className="text-sm text-muted">
           Only APPROVED placements. Overlapping ACTIVE on the same screen warns first (not a hard
           block).
         </p>

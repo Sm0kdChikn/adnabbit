@@ -73,10 +73,10 @@ export function AttachOwnerForm({ hostId, current }: Props) {
   }
 
   return (
-    <div className="max-w-lg space-y-4 rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+    <div className="max-w-lg space-y-4 rounded-xl border border-border bg-surface p-6 shadow-sm">
       <div>
-        <h2 className="text-lg font-semibold text-slate-800">Host login (owner)</h2>
-        <p className="text-sm text-slate-500">
+        <h2 className="text-lg font-semibold text-foreground">Host login (owner)</h2>
+        <p className="text-sm text-muted">
           Create or link a HOST user. No invite email — set the password here.
         </p>
         {current ? (
@@ -85,11 +85,11 @@ export function AttachOwnerForm({ hostId, current }: Props) {
             {current.name ? ` (${current.name})` : ""}
           </p>
         ) : (
-          <p className="mt-2 text-sm text-slate-500">Unclaimed — no owning user.</p>
+          <p className="mt-2 text-sm text-muted">Unclaimed — no owning user.</p>
         )}
       </div>
       {error && (
-        <p className="rounded-md bg-rose-50 px-3 py-2 text-sm text-rose-800">{error}</p>
+        <p className="rounded-md bg-[var(--status-danger-bg)] px-3 py-2 text-sm text-[var(--status-danger-fg)]">{error}</p>
       )}
       {message && (
         <p className="rounded-md bg-emerald-50 px-3 py-2 text-sm text-emerald-800">
@@ -98,25 +98,25 @@ export function AttachOwnerForm({ hostId, current }: Props) {
       )}
       <form onSubmit={onAttach} className="space-y-3">
         <div>
-          <label className="mb-1 block text-sm font-medium text-slate-700">Email</label>
+          <label className="mb-1 block text-sm font-medium text-muted">Email</label>
           <input
             type="email"
             required
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+            className="w-full rounded-md border border-border px-3 py-2 text-sm focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent/50"
           />
         </div>
         <div>
-          <label className="mb-1 block text-sm font-medium text-slate-700">Name</label>
+          <label className="mb-1 block text-sm font-medium text-muted">Name</label>
           <input
             value={name}
             onChange={(e) => setName(e.target.value)}
-            className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+            className="w-full rounded-md border border-border px-3 py-2 text-sm focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent/50"
           />
         </div>
         <div>
-          <label className="mb-1 block text-sm font-medium text-slate-700">
+          <label className="mb-1 block text-sm font-medium text-muted">
             Password {current ? "(optional to reset)" : "(required for new user)"}
           </label>
           <input
@@ -124,14 +124,14 @@ export function AttachOwnerForm({ hostId, current }: Props) {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             minLength={current ? undefined : 8}
-            className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+            className="w-full rounded-md border border-border px-3 py-2 text-sm focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent/50"
           />
         </div>
         <div className="flex flex-wrap gap-3">
           <button
             type="submit"
             disabled={saving}
-            className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-50"
+            className="rounded-md bg-accent px-4 py-2 text-sm font-medium text-brand-bg hover:brightness-110 disabled:opacity-50"
           >
             {saving ? "Saving…" : current ? "Update / re-link" : "Create & attach"}
           </button>
@@ -140,7 +140,7 @@ export function AttachOwnerForm({ hostId, current }: Props) {
               type="button"
               disabled={saving}
               onClick={onDetach}
-              className="rounded-md bg-slate-100 px-4 py-2 text-sm font-medium text-slate-800 hover:bg-slate-200 disabled:opacity-50"
+              className="rounded-md bg-surface-hover px-4 py-2 text-sm font-medium text-foreground hover:bg-surface-hover disabled:opacity-50"
             >
               Detach
             </button>

@@ -54,74 +54,74 @@ export function PopFilters({ basePath }: { basePath: string }) {
   return (
     <form
       onSubmit={apply}
-      className="flex flex-wrap items-end gap-3 rounded-xl border border-slate-200 bg-white p-4 shadow-sm"
+      className="flex flex-wrap items-end gap-3 rounded-xl border border-border bg-surface p-4 shadow-sm"
     >
       <div>
-        <label className="mb-1 block text-xs font-medium text-slate-600">From (UTC)</label>
+        <label className="mb-1 block text-xs font-medium text-muted">From (UTC)</label>
         <input
           type="date"
           value={from}
           onChange={(e) => setFrom(e.target.value)}
-          className="rounded-md border border-slate-300 px-2 py-1.5 text-sm"
+          className="rounded-md border border-border px-2 py-1.5 text-sm"
         />
       </div>
       <div>
-        <label className="mb-1 block text-xs font-medium text-slate-600">To (UTC)</label>
+        <label className="mb-1 block text-xs font-medium text-muted">To (UTC)</label>
         <input
           type="date"
           value={to}
           onChange={(e) => setTo(e.target.value)}
-          className="rounded-md border border-slate-300 px-2 py-1.5 text-sm"
+          className="rounded-md border border-border px-2 py-1.5 text-sm"
         />
       </div>
       <div>
-        <label className="mb-1 block text-xs font-medium text-slate-600">Screen name / UUID</label>
+        <label className="mb-1 block text-xs font-medium text-muted">Screen name / UUID</label>
         <input
           value={screen}
           onChange={(e) => setScreen(e.target.value)}
-          className="w-40 rounded-md border border-slate-300 px-2 py-1.5 text-sm"
+          className="w-40 rounded-md border border-border px-2 py-1.5 text-sm"
           placeholder="Lobby"
         />
       </div>
       <div>
-        <label className="mb-1 block text-xs font-medium text-slate-600">Asset name / ID</label>
+        <label className="mb-1 block text-xs font-medium text-muted">Asset name / ID</label>
         <input
           value={asset}
           onChange={(e) => setAsset(e.target.value)}
-          className="w-40 rounded-md border border-slate-300 px-2 py-1.5 text-sm"
+          className="w-40 rounded-md border border-border px-2 py-1.5 text-sm"
           placeholder="Banner"
         />
       </div>
       <div>
-        <label className="mb-1 block text-xs font-medium text-slate-600">
+        <label className="mb-1 block text-xs font-medium text-muted">
           Screen tags (geo-*, cat-*, …)
         </label>
         <input
           value={screenTags}
           onChange={(e) => setScreenTags(e.target.value)}
-          className="w-36 rounded-md border border-slate-300 px-2 py-1.5 text-sm"
+          className="w-36 rounded-md border border-border px-2 py-1.5 text-sm"
           placeholder="geo-denver"
         />
       </div>
-      <label className="flex items-center gap-2 pb-1.5 text-sm text-slate-700">
+      <label className="flex items-center gap-2 pb-1.5 text-sm text-muted">
         <input
           type="checkbox"
           checked={includeFiller}
           onChange={(e) => setIncludeFiller(e.target.checked)}
-          className="rounded border-slate-300"
+          className="rounded border-border"
         />
         Include host filler
       </label>
       <button
         type="submit"
-        className="rounded-md bg-indigo-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-indigo-700"
+        className="rounded-md bg-accent px-3 py-1.5 text-sm font-medium text-brand-bg hover:brightness-110"
       >
         Filter
       </button>
       <button
         type="button"
         onClick={clear}
-        className="rounded-md bg-slate-100 px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-200"
+        className="rounded-md bg-surface-hover px-3 py-1.5 text-sm text-muted hover:bg-surface-hover"
       >
         Clear
       </button>

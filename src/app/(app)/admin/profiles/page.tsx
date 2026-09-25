@@ -20,18 +20,18 @@ export default async function AdminProfilesPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-slate-900">Advertiser profiles</h1>
-        <p className="text-sm text-slate-600">
+        <h1 className="text-2xl font-bold text-foreground">Advertiser profiles</h1>
+        <p className="text-sm text-muted">
           View profiles and unpublish if needed. Admins cannot edit advertiser content.
         </p>
       </div>
 
       {profiles.length === 0 ? (
-        <p className="rounded-xl border border-dashed border-slate-300 bg-white p-8 text-center text-slate-500">
+        <p className="rounded-xl border border-dashed border-border bg-surface p-8 text-center text-muted">
           No advertiser profiles yet.
         </p>
       ) : (
-        <ul className="divide-y divide-slate-100 rounded-xl border border-slate-200 bg-white shadow-sm">
+        <ul className="divide-y divide-border rounded-xl border border-border bg-surface shadow-sm">
           {profiles.map((p) => (
             <li
               key={p.id}
@@ -39,18 +39,18 @@ export default async function AdminProfilesPage() {
             >
               <div className="min-w-0">
                 <div className="flex flex-wrap items-center gap-2">
-                  <span className="font-medium text-slate-900">{p.displayName}</span>
+                  <span className="font-medium text-foreground">{p.displayName}</span>
                   <span
                     className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold ${
                       p.published
                         ? "bg-emerald-100 text-emerald-800"
-                        : "bg-slate-100 text-slate-600"
+                        : "bg-surface-hover text-muted"
                     }`}
                   >
                     {p.published ? "PUBLISHED" : "UNPUBLISHED"}
                   </span>
                 </div>
-                <p className="text-sm text-slate-500">
+                <p className="text-sm text-muted">
                   {p.user.email}
                   {p.category
                     ? ` · ${ADVERTISER_CATEGORY_LABELS[p.category as AdvertiserCategory] || p.category}`
@@ -59,13 +59,13 @@ export default async function AdminProfilesPage() {
                   {p.published ? (
                     <Link
                       href={`/a/${p.slug}`}
-                      className="text-indigo-600 hover:underline"
+                      className="text-accent hover:underline"
                       target="_blank"
                     >
                       /a/{p.slug}
                     </Link>
                   ) : (
-                    <span className="text-slate-400">/a/{p.slug}</span>
+                    <span className="text-muted-strong">/a/{p.slug}</span>
                   )}
                 </p>
               </div>

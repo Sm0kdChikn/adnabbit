@@ -48,21 +48,21 @@ export default async function AdminPlacementsPage() {
     <div className="space-y-8">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">Placement queue</h1>
-          <p className="text-sm text-slate-600">
+          <h1 className="text-2xl font-bold text-foreground">Placement queue</h1>
+          <p className="text-sm text-muted">
             Approve or reject REQUESTED placements (reject requires a reason).
           </p>
         </div>
         <div className="flex gap-2 text-sm">
           <Link
             href="/admin"
-            className="rounded-md bg-indigo-50 px-3 py-1.5 text-indigo-700 hover:bg-indigo-100"
+            className="rounded-md bg-accent-dim px-3 py-1.5 text-accent hover:bg-accent/15"
           >
             Creatives
           </Link>
           <Link
             href="/admin/screens"
-            className="rounded-md bg-indigo-50 px-3 py-1.5 text-indigo-700 hover:bg-indigo-100"
+            className="rounded-md bg-accent-dim px-3 py-1.5 text-accent hover:bg-accent/15"
           >
             Screens
           </Link>
@@ -70,11 +70,11 @@ export default async function AdminPlacementsPage() {
       </div>
 
       <section className="space-y-3">
-        <h2 className="text-lg font-semibold text-slate-800">
+        <h2 className="text-lg font-semibold text-foreground">
           Requested ({pending.length})
         </h2>
         {pending.length === 0 ? (
-          <p className="rounded-xl border border-dashed border-slate-300 bg-white p-8 text-center text-slate-500">
+          <p className="rounded-xl border border-dashed border-border bg-surface p-8 text-center text-muted">
             No pending placement requests.
           </p>
         ) : (
@@ -82,23 +82,23 @@ export default async function AdminPlacementsPage() {
             {pending.map((p) => (
               <li
                 key={p.id}
-                className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm"
+                className="rounded-xl border border-border bg-surface p-4 shadow-sm"
               >
                 <div className="flex flex-wrap items-start justify-between gap-4">
                   <div className="min-w-0 flex-1 space-y-1">
                     <div className="flex flex-wrap items-center gap-2">
-                      <h3 className="font-semibold text-slate-900">
+                      <h3 className="font-semibold text-foreground">
                         {p.screen.name} ← {p.creative.name}
                       </h3>
                       <PlacementBadge status={p.status} />
                     </div>
-                    <p className="text-sm text-slate-500">
+                    <p className="text-sm text-muted">
                       By {p.advertiser.name || p.advertiser.email} · {p.screen.host.name} ·{" "}
                       {formatVertical(p.screen.host.vertical, p.screen.host.otherLabel)} ·{" "}
                       {p.screen.city} {p.screen.zip}
                     </p>
                     {p.note && (
-                      <p className="text-sm text-slate-600">
+                      <p className="text-sm text-muted">
                         <span className="font-medium">Note:</span> {p.note}
                       </p>
                     )}
@@ -106,7 +106,7 @@ export default async function AdminPlacementsPage() {
                       href={`/api/uploads/${p.creative.storedName}`}
                       target="_blank"
                       rel="noreferrer"
-                      className="inline-block text-sm text-indigo-600 hover:underline"
+                      className="inline-block text-sm text-accent hover:underline"
                     >
                       Preview creative
                     </a>
@@ -120,23 +120,23 @@ export default async function AdminPlacementsPage() {
       </section>
 
       <section className="space-y-3">
-        <h2 className="text-lg font-semibold text-slate-800">Recent decisions</h2>
+        <h2 className="text-lg font-semibold text-foreground">Recent decisions</h2>
         {recent.length === 0 ? (
-          <p className="text-sm text-slate-500">No decisions yet.</p>
+          <p className="text-sm text-muted">No decisions yet.</p>
         ) : (
-          <ul className="divide-y divide-slate-100 rounded-xl border border-slate-200 bg-white">
+          <ul className="divide-y divide-border rounded-xl border border-border bg-surface">
             {recent.map((p) => (
               <li
                 key={p.id}
                 className="flex flex-wrap items-center justify-between gap-2 px-4 py-3"
               >
                 <div>
-                  <span className="font-medium text-slate-900">
+                  <span className="font-medium text-foreground">
                     {p.screen.name} ← {p.creative.name}
                   </span>
-                  <span className="ml-2 text-sm text-slate-500">{p.advertiser.email}</span>
+                  <span className="ml-2 text-sm text-muted">{p.advertiser.email}</span>
                   {p.status === "REJECTED" && p.rejectReason && (
-                    <p className="text-xs text-rose-700">{p.rejectReason}</p>
+                    <p className="text-xs text-[var(--status-danger-fg)]">{p.rejectReason}</p>
                   )}
                 </div>
                 <PlacementBadge status={p.status} />

@@ -55,14 +55,14 @@ export default async function AdminScreensPage({
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">Screens</h1>
-          <p className="text-sm text-slate-600">
+          <h1 className="text-2xl font-bold text-foreground">Screens</h1>
+          <p className="text-sm text-muted">
             Filter by city, ZIP, inventory status, or host vertical.
           </p>
         </div>
         <Link
           href="/admin/screens/new"
-          className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700"
+          className="rounded-md bg-accent px-4 py-2 text-sm font-medium text-brand-bg hover:brightness-110"
         >
           New screen
         </Link>
@@ -73,15 +73,15 @@ export default async function AdminScreensPage({
       </Suspense>
 
       {screens.length === 0 ? (
-        <p className="rounded-xl border border-dashed border-slate-300 bg-white p-8 text-center text-slate-500">
+        <p className="rounded-xl border border-dashed border-border bg-surface p-8 text-center text-muted">
           No screens match.{" "}
-          <Link href="/admin/screens/new" className="text-indigo-600 hover:underline">
+          <Link href="/admin/screens/new" className="text-accent hover:underline">
             Create one
           </Link>
           .
         </p>
       ) : (
-        <ul className="divide-y divide-slate-100 rounded-xl border border-slate-200 bg-white shadow-sm">
+        <ul className="divide-y divide-border rounded-xl border border-border bg-surface shadow-sm">
           {screens.map((s) => (
             <li
               key={s.id}
@@ -90,21 +90,21 @@ export default async function AdminScreensPage({
               <div className="min-w-0">
                 <Link
                   href={`/admin/screens/${s.id}`}
-                  className="font-medium text-indigo-700 hover:underline"
+                  className="font-medium text-accent hover:underline"
                 >
                   {s.name}
                 </Link>
-                <p className="text-sm text-slate-500">
+                <p className="text-sm text-muted">
                   {s.city}, {s.zip} ·{" "}
                   <Link
                     href={`/admin/hosts/${s.host.id}`}
-                    className="hover:text-indigo-600"
+                    className="hover:text-accent"
                   >
                     {s.host.name}
                   </Link>{" "}
                   · {formatVertical(s.host.vertical, s.host.otherLabel)}
                 </p>
-                {s.notes && <p className="text-xs text-slate-400">{s.notes}</p>}
+                {s.notes && <p className="text-xs text-muted-strong">{s.notes}</p>}
               </div>
               <InventoryBadge status={s.inventoryStatus} />
             </li>

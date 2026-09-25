@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { Button, Textarea } from "@/components/ui";
 
 export function ReviewActions({ creativeId }: { creativeId: string }) {
   const router = useRouter();
@@ -45,30 +46,31 @@ export function ReviewActions({ creativeId }: { creativeId: string }) {
 
   return (
     <div className="w-full max-w-xs space-y-2 sm:w-64">
-      <button
-        type="button"
+      <Button
+        variant="success"
+        size="sm"
+        className="w-full"
         onClick={approve}
         disabled={!!loading}
-        className="w-full rounded-md bg-emerald-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-emerald-700 disabled:opacity-60"
       >
         {loading === "approve" ? "Approving…" : "Approve"}
-      </button>
-      <textarea
+      </Button>
+      <Textarea
         value={reason}
         onChange={(e) => setReason(e.target.value)}
         placeholder="Rejection reason (required to reject)"
         rows={2}
-        className="w-full rounded-md border border-slate-300 px-2 py-1.5 text-sm focus:border-indigo-500 focus:outline-none"
       />
-      <button
-        type="button"
+      <Button
+        variant="danger"
+        size="sm"
+        className="w-full"
         onClick={reject}
         disabled={!!loading}
-        className="w-full rounded-md bg-rose-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-rose-700 disabled:opacity-60"
       >
         {loading === "reject" ? "Rejecting…" : "Reject"}
-      </button>
-      {error && <p className="text-xs text-rose-600">{error}</p>}
+      </Button>
+      {error && <p className="text-xs text-[var(--status-danger-fg)]">{error}</p>}
     </div>
   );
 }

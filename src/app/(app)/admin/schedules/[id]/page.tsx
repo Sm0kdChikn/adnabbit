@@ -49,28 +49,28 @@ export default async function AdminScheduleDetailPage({
   return (
     <div className="mx-auto max-w-xl space-y-6">
       <div>
-        <Link href="/admin/schedules" className="text-sm text-indigo-600 hover:underline">
+        <Link href="/admin/schedules" className="text-sm text-accent hover:underline">
           ← Schedules
         </Link>
         <div className="mt-2 flex flex-wrap items-center gap-2">
-          <h1 className="text-2xl font-bold text-slate-900">
+          <h1 className="text-2xl font-bold text-foreground">
             {schedule.screen.host.name} · {schedule.screen.name}
           </h1>
           <ScheduleBadge status={schedule.status} />
-          <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-semibold text-slate-700">
+          <span className="rounded-full bg-surface-hover px-2.5 py-0.5 text-xs font-semibold text-muted">
             {schedule.kind}
           </span>
         </div>
-        <p className="text-sm text-slate-600">
+        <p className="text-sm text-muted">
           {schedule.placement.creative.name} ·{" "}
           {schedule.placement.advertiser.name || schedule.placement.advertiser.email} ·{" "}
           {formatVertical(schedule.screen.host.vertical, schedule.screen.host.otherLabel)} ·{" "}
           {schedule.screen.host.timezone}
         </p>
-        <p className="text-sm text-slate-500">
+        <p className="text-sm text-muted">
           {formatScheduleSummary(schedule, schedule.screen.host.timezone)}
         </p>
-        <p className="text-xs text-slate-400">
+        <p className="text-xs text-muted-strong">
           Created by {schedule.createdBy.name || schedule.createdBy.email}
           {schedule.cancelledAt &&
             ` · Cancelled ${new Date(schedule.cancelledAt).toLocaleString()}`}

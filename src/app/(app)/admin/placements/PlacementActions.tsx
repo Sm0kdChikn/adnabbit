@@ -60,7 +60,7 @@ export function PlacementActions({ placementId }: { placementId: string }) {
         onChange={(e) => setReason(e.target.value)}
         placeholder="Rejection reason (required to reject)"
         rows={2}
-        className="w-full rounded-md border border-slate-300 px-2 py-1.5 text-sm focus:border-indigo-500 focus:outline-none"
+        className="w-full rounded-md border border-border px-2 py-1.5 text-sm focus:border-accent focus:outline-none"
       />
       <button
         type="button"
@@ -70,7 +70,7 @@ export function PlacementActions({ placementId }: { placementId: string }) {
       >
         {loading === "reject" ? "Rejecting…" : "Reject"}
       </button>
-      {error && <p className="text-xs text-rose-600">{error}</p>}
+      {error && <p className="text-xs text-[var(--status-danger-fg)]">{error}</p>}
     </div>
   );
 }

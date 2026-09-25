@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { Button } from "@/components/ui";
 
 export function SubmitButton({ creativeId }: { creativeId: string }) {
   const router = useRouter();
@@ -23,15 +24,10 @@ export function SubmitButton({ creativeId }: { creativeId: string }) {
 
   return (
     <div className="text-right">
-      <button
-        type="button"
-        onClick={submit}
-        disabled={loading}
-        className="rounded-md bg-amber-500 px-3 py-1.5 text-sm font-medium text-white hover:bg-amber-600 disabled:opacity-60"
-      >
+      <Button variant="warning" size="sm" onClick={submit} disabled={loading}>
         {loading ? "Submitting…" : "Submit for review"}
-      </button>
-      {error && <p className="mt-1 text-xs text-rose-600">{error}</p>}
+      </Button>
+      {error && <p className="mt-1 text-xs text-[var(--status-danger-fg)]">{error}</p>}
     </div>
   );
 }

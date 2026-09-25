@@ -4,6 +4,7 @@ import { FormEvent, useState } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { Button, Card, CardBody, Field, Input } from "@/components/ui";
 
 export default function SignupPage() {
   const router = useRouter();
@@ -43,53 +44,56 @@ export default function SignupPage() {
   }
 
   return (
-    <div className="mx-auto max-w-md">
-      <h1 className="mb-6 text-2xl font-bold text-slate-900">Advertiser sign up</h1>
-      <form onSubmit={onSubmit} className="space-y-4 rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-        {error && (
-          <p className="rounded-md bg-rose-50 px-3 py-2 text-sm text-rose-700">{error}</p>
-        )}
-        <div>
-          <label className="mb-1 block text-sm font-medium text-slate-700">Name (optional)</label>
-          <input
-            type="text"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            className="w-full rounded-md border border-slate-300 px-3 py-2 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-          />
-        </div>
-        <div>
-          <label className="mb-1 block text-sm font-medium text-slate-700">Email</label>
-          <input
-            type="email"
-            required
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className="w-full rounded-md border border-slate-300 px-3 py-2 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-          />
-        </div>
-        <div>
-          <label className="mb-1 block text-sm font-medium text-slate-700">Password (min 8)</label>
-          <input
-            type="password"
-            required
-            minLength={8}
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="w-full rounded-md border border-slate-300 px-3 py-2 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-          />
-        </div>
-        <button
-          type="submit"
-          disabled={loading}
-          className="w-full rounded-md bg-indigo-600 py-2.5 font-medium text-white hover:bg-indigo-700 disabled:opacity-60"
-        >
-          {loading ? "Creating…" : "Create account"}
-        </button>
-      </form>
-      <p className="mt-4 text-center text-sm text-slate-600">
+    <div>
+      <h1 className="mb-6 text-center text-2xl font-bold text-foreground">
+        Advertiser sign up
+      </h1>
+      <Card>
+        <CardBody>
+          <form onSubmit={onSubmit} className="space-y-4">
+            {error && (
+              <p className="rounded-md bg-[var(--status-danger-bg)] px-3 py-2 text-sm text-[var(--status-danger-fg)]">
+                {error}
+              </p>
+            )}
+            <Field label="Name (optional)" htmlFor="name">
+              <Input
+                id="name"
+                type="text"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+              />
+            </Field>
+            <Field label="Email" htmlFor="email">
+              <Input
+                id="email"
+                type="email"
+                required
+                autoComplete="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+              />
+            </Field>
+            <Field label="Password (min 8)" htmlFor="password">
+              <Input
+                id="password"
+                type="password"
+                required
+                minLength={8}
+                autoComplete="new-password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+              />
+            </Field>
+            <Button type="submit" disabled={loading} className="w-full" size="lg">
+              {loading ? "Creating…" : "Create account"}
+            </Button>
+          </form>
+        </CardBody>
+      </Card>
+      <p className="mt-4 text-center text-sm text-muted">
         Already have an account?{" "}
-        <Link href="/login" className="font-medium text-indigo-600 hover:underline">
+        <Link href="/login" className="font-medium text-accent hover:underline">
           Log in
         </Link>
       </p>

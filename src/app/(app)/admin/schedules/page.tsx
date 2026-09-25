@@ -74,8 +74,8 @@ export default async function AdminSchedulesPage({
     <div className="space-y-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">Schedules</h1>
-          <p className="text-sm text-slate-600">
+          <h1 className="text-2xl font-bold text-foreground">Schedules</h1>
+          <p className="text-sm text-muted">
             Create windows for APPROVED placements. ACTIVE schedules past endAt become ENDED on
             load.
           </p>
@@ -83,13 +83,13 @@ export default async function AdminSchedulesPage({
         <div className="flex flex-wrap gap-2">
           <Link
             href="/admin/schedules/calendar"
-            className="rounded-md bg-slate-100 px-3 py-2 text-sm text-slate-800 hover:bg-slate-200"
+            className="rounded-md bg-surface-hover px-3 py-2 text-sm text-foreground hover:bg-surface-hover"
           >
             Calendar
           </Link>
           <Link
             href="/admin/schedules/new"
-            className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700"
+            className="rounded-md bg-accent px-4 py-2 text-sm font-medium text-brand-bg hover:brightness-110"
           >
             New schedule
           </Link>
@@ -101,9 +101,9 @@ export default async function AdminSchedulesPage({
       </Suspense>
 
       {schedules.length === 0 ? (
-        <p className="rounded-xl border border-dashed border-slate-300 bg-white p-8 text-center text-slate-500">
+        <p className="rounded-xl border border-dashed border-border bg-surface p-8 text-center text-muted">
           No schedules match.{" "}
-          <Link href="/admin/schedules/new" className="text-indigo-600 hover:underline">
+          <Link href="/admin/schedules/new" className="text-accent hover:underline">
             Create one
           </Link>
           .
@@ -113,31 +113,31 @@ export default async function AdminSchedulesPage({
           {schedules.map((s) => (
             <li
               key={s.id}
-              className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm"
+              className="rounded-xl border border-border bg-surface p-4 shadow-sm"
             >
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div className="min-w-0 flex-1 space-y-1">
                   <div className="flex flex-wrap items-center gap-2">
-                    <h2 className="font-semibold text-slate-900">
+                    <h2 className="font-semibold text-foreground">
                       {s.screen.host.name} · {s.screen.name}
                     </h2>
                     <ScheduleBadge status={s.status} />
                   </div>
-                  <p className="text-sm text-slate-600">
+                  <p className="text-sm text-muted">
                     {s.placement.creative.name} ·{" "}
                     {s.placement.advertiser.name || s.placement.advertiser.email}
                   </p>
-                  <p className="text-sm text-slate-500">
-                    <span className="mr-2 rounded bg-slate-100 px-1.5 py-0.5 text-xs font-medium text-slate-600">
+                  <p className="text-sm text-muted">
+                    <span className="mr-2 rounded bg-surface-hover px-1.5 py-0.5 text-xs font-medium text-muted">
                       {s.kind}
                     </span>
                     {formatScheduleSummary(s, s.screen.host.timezone)}
                   </p>
-                  {s.note && <p className="text-sm text-slate-500">Note: {s.note}</p>}
+                  {s.note && <p className="text-sm text-muted">Note: {s.note}</p>}
                 </div>
                 <Link
                   href={`/admin/schedules/${s.id}`}
-                  className="rounded-md bg-indigo-50 px-3 py-1.5 text-sm text-indigo-700 hover:bg-indigo-100"
+                  className="rounded-md bg-accent-dim px-3 py-1.5 text-sm text-accent hover:bg-accent/15"
                 >
                   Edit
                 </Link>

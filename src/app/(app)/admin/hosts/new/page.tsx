@@ -13,10 +13,10 @@ export default async function NewHostPage() {
   return (
     <div className="space-y-6">
       <div>
-        <Link href="/admin/hosts" className="text-sm text-indigo-600 hover:underline">
+        <Link href="/admin/hosts" className="text-sm text-accent hover:underline">
           ← Hosts
         </Link>
-        <h1 className="mt-2 text-2xl font-bold text-slate-900">New host</h1>
+        <h1 className="mt-2 text-2xl font-bold text-foreground">New host</h1>
       </div>
       <HostForm mode="create" />
     </div>

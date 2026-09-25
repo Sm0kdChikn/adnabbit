@@ -146,20 +146,20 @@ export function ScheduleEditForm({
 
   if (locked) {
     return (
-      <p className="rounded-md bg-slate-50 px-3 py-2 text-sm text-slate-600">
+      <p className="rounded-md bg-background-elevated px-3 py-2 text-sm text-muted">
         This schedule is {initial.status} and cannot be edited.
       </p>
     );
   }
 
   return (
-    <div className="space-y-4 rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+    <div className="space-y-4 rounded-xl border border-border bg-surface p-6 shadow-sm">
       <div>
-        <label className="mb-1 block text-sm font-medium text-slate-700">Kind</label>
+        <label className="mb-1 block text-sm font-medium text-muted">Kind</label>
         <select
           value={kind}
           onChange={(e) => setKind(e.target.value as "ONE_OFF" | "RECURRING")}
-          className="rounded-md border border-slate-300 px-3 py-2 text-sm"
+          className="rounded-md border border-border px-3 py-2 text-sm"
         >
           <option value="ONE_OFF">ONE_OFF</option>
           <option value="RECURRING">RECURRING</option>
@@ -169,36 +169,36 @@ export function ScheduleEditForm({
       {kind === "ONE_OFF" ? (
         <div className="grid gap-4 sm:grid-cols-2">
           <div>
-            <label className="mb-1 block text-sm font-medium text-slate-700">Start</label>
+            <label className="mb-1 block text-sm font-medium text-muted">Start</label>
             <input
               type="datetime-local"
               value={startAt}
               onChange={(e) => setStartAt(e.target.value)}
-              className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
+              className="w-full rounded-md border border-border px-3 py-2 text-sm"
             />
           </div>
           <div>
-            <label className="mb-1 block text-sm font-medium text-slate-700">End</label>
+            <label className="mb-1 block text-sm font-medium text-muted">End</label>
             <input
               type="datetime-local"
               value={endAt}
               onChange={(e) => setEndAt(e.target.value)}
-              className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
+              className="w-full rounded-md border border-border px-3 py-2 text-sm"
             />
           </div>
         </div>
       ) : (
         <div className="space-y-4">
           <div>
-            <label className="mb-1 block text-sm font-medium text-slate-700">Weekdays</label>
+            <label className="mb-1 block text-sm font-medium text-muted">Weekdays</label>
             <div className="flex flex-wrap gap-2">
               {WEEKDAY_OPTS.map((d) => (
                 <label
                   key={d}
                   className={`cursor-pointer rounded-md border px-2.5 py-1 text-sm ${
                     weekdays.includes(d)
-                      ? "border-indigo-500 bg-indigo-50 text-indigo-800"
-                      : "border-slate-300 text-slate-600"
+                      ? "border-accent bg-accent-dim text-accent"
+                      : "border-border text-muted"
                   }`}
                 >
                   <input
@@ -214,51 +214,51 @@ export function ScheduleEditForm({
           </div>
           <div className="grid gap-4 sm:grid-cols-2">
             <div>
-              <label className="mb-1 block text-sm font-medium text-slate-700">Start time</label>
+              <label className="mb-1 block text-sm font-medium text-muted">Start time</label>
               <input
                 type="time"
                 value={startTime}
                 onChange={(e) => setStartTime(e.target.value)}
-                className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
+                className="w-full rounded-md border border-border px-3 py-2 text-sm"
               />
             </div>
             <div>
-              <label className="mb-1 block text-sm font-medium text-slate-700">
+              <label className="mb-1 block text-sm font-medium text-muted">
                 End time (HH:mm, host TZ)
               </label>
               <input
                 type="time"
                 value={endTime}
                 onChange={(e) => setEndTime(e.target.value)}
-                className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
+                className="w-full rounded-md border border-border px-3 py-2 text-sm"
               />
             </div>
           </div>
-          <p className="text-xs text-slate-500">
+          <p className="text-xs text-muted">
             Same-day requires end &gt; start. Overnight wrap when end &lt; start
             (e.g. 22:00→02:00). Equal times are rejected.
           </p>
           <div className="grid gap-4 sm:grid-cols-2">
             <div>
-              <label className="mb-1 block text-sm font-medium text-slate-700">
+              <label className="mb-1 block text-sm font-medium text-muted">
                 Campaign start
               </label>
               <input
                 type="date"
                 value={campaignStartDate}
                 onChange={(e) => setCampaignStartDate(e.target.value)}
-                className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
+                className="w-full rounded-md border border-border px-3 py-2 text-sm"
               />
             </div>
             <div>
-              <label className="mb-1 block text-sm font-medium text-slate-700">
+              <label className="mb-1 block text-sm font-medium text-muted">
                 Campaign end
               </label>
               <input
                 type="date"
                 value={campaignEndDate}
                 onChange={(e) => setCampaignEndDate(e.target.value)}
-                className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
+                className="w-full rounded-md border border-border px-3 py-2 text-sm"
               />
             </div>
           </div>
@@ -266,28 +266,28 @@ export function ScheduleEditForm({
       )}
 
       <div>
-        <label className="mb-1 block text-sm font-medium text-slate-700">Status</label>
+        <label className="mb-1 block text-sm font-medium text-muted">Status</label>
         <select
           value={status}
           onChange={(e) => setStatus(e.target.value as "DRAFT" | "ACTIVE")}
-          className="rounded-md border border-slate-300 px-3 py-2 text-sm"
+          className="rounded-md border border-border px-3 py-2 text-sm"
         >
           <option value="DRAFT">DRAFT</option>
           <option value="ACTIVE">ACTIVE</option>
         </select>
       </div>
       <div>
-        <label className="mb-1 block text-sm font-medium text-slate-700">Note</label>
+        <label className="mb-1 block text-sm font-medium text-muted">Note</label>
         <textarea
           value={note}
           onChange={(e) => setNote(e.target.value)}
           rows={2}
-          className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
+          className="w-full rounded-md border border-border px-3 py-2 text-sm"
         />
       </div>
 
       {overlapWarning && (
-        <div className="space-y-2 rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
+        <div className="space-y-2 rounded-md border border-amber-500/30 bg-[var(--status-warning-bg)] p-3 text-sm text-[var(--status-warning-fg)]">
           <p className="font-medium">{overlapWarning.message}</p>
           <ul className="list-inside list-disc text-xs">
             {overlapWarning.overlaps.map((o) => (
@@ -305,21 +305,21 @@ export function ScheduleEditForm({
             type="button"
             disabled={!!loading}
             onClick={() => save(true)}
-            className="rounded-md bg-amber-600 px-3 py-1.5 text-white hover:bg-amber-700 disabled:opacity-60"
+            className="rounded-md bg-amber-600 px-3 py-1.5 text-brand-bg hover:bg-amber-700 disabled:opacity-60"
           >
             Save anyway
           </button>
         </div>
       )}
 
-      {error && <p className="text-sm text-rose-600">{error}</p>}
+      {error && <p className="text-sm text-[var(--status-danger-fg)]">{error}</p>}
 
       <div className="flex flex-wrap gap-2">
         <button
           type="button"
           disabled={!!loading || (kind === "RECURRING" && weekdays.length === 0)}
           onClick={() => save(false)}
-          className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-60"
+          className="rounded-md bg-accent px-4 py-2 text-sm font-medium text-brand-bg hover:brightness-110 disabled:opacity-60"
         >
           {loading === "save" ? "Saving…" : "Save"}
         </button>

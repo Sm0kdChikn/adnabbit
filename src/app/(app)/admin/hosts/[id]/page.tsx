@@ -26,11 +26,11 @@ export default async function EditHostPage({ params }: { params: { id: string } 
   return (
     <div className="space-y-8">
       <div>
-        <Link href="/admin/hosts" className="text-sm text-indigo-600 hover:underline">
+        <Link href="/admin/hosts" className="text-sm text-accent hover:underline">
           ← Hosts
         </Link>
-        <h1 className="mt-2 text-2xl font-bold text-slate-900">Edit host</h1>
-        <p className="text-sm text-slate-600">
+        <h1 className="mt-2 text-2xl font-bold text-foreground">Edit host</h1>
+        <p className="text-sm text-muted">
           Vertical: {formatVertical(host.vertical, host.otherLabel)}
         </p>
       </div>
@@ -51,20 +51,20 @@ export default async function EditHostPage({ params }: { params: { id: string } 
 
       <section className="space-y-3">
         <div className="flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-slate-800">
+          <h2 className="text-lg font-semibold text-foreground">
             Screens ({host.screens.length})
           </h2>
           <Link
             href={`/admin/screens/new?hostId=${host.id}`}
-            className="text-sm text-indigo-600 hover:underline"
+            className="text-sm text-accent hover:underline"
           >
             Add screen
           </Link>
         </div>
         {host.screens.length === 0 ? (
-          <p className="text-sm text-slate-500">No screens on this host yet.</p>
+          <p className="text-sm text-muted">No screens on this host yet.</p>
         ) : (
-          <ul className="divide-y divide-slate-100 rounded-xl border border-slate-200 bg-white">
+          <ul className="divide-y divide-border rounded-xl border border-border bg-surface">
             {host.screens.map((s) => (
               <li
                 key={s.id}
@@ -73,11 +73,11 @@ export default async function EditHostPage({ params }: { params: { id: string } 
                 <div>
                   <Link
                     href={`/admin/screens/${s.id}`}
-                    className="font-medium text-indigo-700 hover:underline"
+                    className="font-medium text-accent hover:underline"
                   >
                     {s.name}
                   </Link>
-                  <p className="text-sm text-slate-500">
+                  <p className="text-sm text-muted">
                     {s.city}, {s.zip}
                   </p>
                 </div>

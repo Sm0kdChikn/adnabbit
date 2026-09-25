@@ -18,11 +18,11 @@ export default async function HostNewScreenPage() {
   return (
     <div className="space-y-6">
       <div>
-        <Link href="/host" className="text-sm text-indigo-600 hover:underline">
+        <Link href="/host" className="text-sm text-accent hover:underline">
           ← Host portal
         </Link>
-        <h1 className="mt-2 text-2xl font-bold text-slate-900">Add screen</h1>
-        <p className="text-sm text-slate-600">
+        <h1 className="mt-2 text-2xl font-bold text-foreground">Add screen</h1>
+        <p className="text-sm text-muted">
           New screen for {host.name}. Advertisers will see it when inventory is OPEN or
           LIMITED.
         </p>

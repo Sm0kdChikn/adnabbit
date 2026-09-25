@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 import { InventoryBadge } from "@/components/StatusBadge";
 import { formatVertical } from "@/lib/types";
+import { Card, EmptyState } from "@/components/ui";
 
 export default async function HostPortalPage() {
   const session = await getServerSession(authOptions);
@@ -20,8 +21,8 @@ export default async function HostPortalPage() {
   if (!host) {
     return (
       <div className="space-y-4">
-        <h1 className="text-2xl font-bold text-slate-900">Host portal</h1>
-        <p className="rounded-xl border border-amber-200 bg-amber-50 p-6 text-sm text-amber-900">
+        <h1 className="text-2xl font-bold text-foreground">Host portal</h1>
+        <p className="rounded-xl border border-amber-500/30 bg-[var(--status-warning-bg)] p-6 text-sm text-[var(--status-warning-fg)]">
           No venue is linked to this account yet. Ask an AdNabbit admin to attach your
           login to a host.
         </p>
@@ -33,22 +34,22 @@ export default async function HostPortalPage() {
     <div className="space-y-8">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">{host.name}</h1>
-          <p className="text-sm text-slate-600">
+          <h1 className="text-2xl font-bold text-foreground">{host.name}</h1>
+          <p className="text-sm text-muted">
             {formatVertical(host.vertical, host.otherLabel)} · {host.timezone}
           </p>
-          {host.notes && <p className="mt-1 text-sm text-slate-500">{host.notes}</p>}
+          {host.notes && <p className="mt-1 text-sm text-muted-strong">{host.notes}</p>}
         </div>
         <div className="flex flex-wrap gap-2">
           <Link
             href="/host/edit"
-            className="rounded-md bg-indigo-50 px-3 py-1.5 text-sm text-indigo-700 hover:bg-indigo-100"
+            className="rounded-md border border-border bg-accent-dim px-3 py-1.5 text-sm text-accent hover:border-accent/40"
           >
             Edit venue
           </Link>
           <Link
             href="/host/screens/new"
-            className="rounded-md bg-indigo-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-indigo-700"
+            className="rounded-md bg-accent px-3 py-1.5 text-sm font-semibold text-brand-bg shadow-glow-sm hover:brightness-110"
           >
             Add screen
           </Link>
@@ -56,51 +57,53 @@ export default async function HostPortalPage() {
       </div>
 
       <section className="space-y-3">
-        <h2 className="text-lg font-semibold text-slate-800">
+        <h2 className="text-lg font-semibold text-foreground">
           Your screens ({host.screens.length})
         </h2>
         {host.screens.length === 0 ? (
-          <p className="rounded-xl border border-dashed border-slate-300 bg-white p-8 text-center text-slate-500">
+          <EmptyState>
             No screens yet.{" "}
-            <Link href="/host/screens/new" className="text-indigo-600 hover:underline">
+            <Link href="/host/screens/new" className="text-accent hover:underline">
               Add one
             </Link>
             .
-          </p>
+          </EmptyState>
         ) : (
-          <ul className="divide-y divide-slate-100 rounded-xl border border-slate-200 bg-white shadow-sm">
-            {host.screens.map((s) => (
-              <li
-                key={s.id}
-                className="flex flex-wrap items-center justify-between gap-2 px-4 py-3"
-              >
-                <div>
-                  <Link
-                    href={`/host/screens/${s.id}`}
-                    className="font-medium text-indigo-700 hover:underline"
-                  >
-                    {s.name}
-                  </Link>
-                  <p className="text-sm text-slate-500">
-                    {s.city}, {s.zip}
-                  </p>
-                </div>
-                <div className="flex items-center gap-3">
-                  <InventoryBadge status={s.inventoryStatus} />
-                  <Link
-                    href={`/host/screens/${s.id}`}
-                    className="text-sm text-slate-600 hover:text-indigo-600"
-                  >
-                    Manage
-                  </Link>
-                </div>
-              </li>
-            ))}
-          </ul>
+          <Card className="overflow-hidden">
+            <ul className="divide-y divide-border">
+              {host.screens.map((s) => (
+                <li
+                  key={s.id}
+                  className="flex flex-wrap items-center justify-between gap-2 px-4 py-3"
+                >
+                  <div>
+                    <Link
+                      href={`/host/screens/${s.id}`}
+                      className="font-medium text-accent hover:underline"
+                    >
+                      {s.name}
+                    </Link>
+                    <p className="text-sm text-muted">
+                      {s.city}, {s.zip}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <InventoryBadge status={s.inventoryStatus} />
+                    <Link
+                      href={`/host/screens/${s.id}`}
+                      className="text-sm text-muted hover:text-accent"
+                    >
+                      Manage
+                    </Link>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </Card>
         )}
       </section>
 
-      <p className="text-xs text-slate-400">
+      <p className="text-xs text-muted-strong">
         Placement approve/reject and scheduling stay with AdNabbit admins. You can view
         placements and schedules on each screen (read-only).
       </p>

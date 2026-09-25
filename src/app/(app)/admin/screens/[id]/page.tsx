@@ -28,11 +28,11 @@ export default async function EditScreenPage({ params }: { params: { id: string 
   return (
     <div className="space-y-6">
       <div>
-        <Link href="/admin/screens" className="text-sm text-indigo-600 hover:underline">
+        <Link href="/admin/screens" className="text-sm text-accent hover:underline">
           ← Screens
         </Link>
-        <h1 className="mt-2 text-2xl font-bold text-slate-900">Edit screen</h1>
-        <p className="text-sm text-slate-600">
+        <h1 className="mt-2 text-2xl font-bold text-foreground">Edit screen</h1>
+        <p className="text-sm text-muted">
           Host vertical (inherited):{" "}
           {formatVertical(screen.host.vertical, screen.host.otherLabel)}
         </p>

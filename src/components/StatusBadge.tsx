@@ -6,67 +6,60 @@ import type {
 } from "@/lib/types";
 
 const creativeStyles: Record<CreativeStatus, string> = {
-  DRAFT: "bg-slate-100 text-slate-700",
-  PENDING: "bg-amber-100 text-amber-800",
-  APPROVED: "bg-emerald-100 text-emerald-800",
-  REJECTED: "bg-rose-100 text-rose-800",
+  DRAFT: "bg-[var(--status-neutral-bg)] text-[var(--status-neutral-fg)]",
+  PENDING: "bg-[var(--status-warning-bg)] text-[var(--status-warning-fg)]",
+  APPROVED: "bg-[var(--status-success-bg)] text-[var(--status-success-fg)]",
+  REJECTED: "bg-[var(--status-danger-bg)] text-[var(--status-danger-fg)]",
 };
 
 const inventoryStyles: Record<InventoryStatus, string> = {
-  OPEN: "bg-emerald-100 text-emerald-800",
-  LIMITED: "bg-amber-100 text-amber-800",
-  FULL: "bg-rose-100 text-rose-800",
+  OPEN: "bg-[var(--status-success-bg)] text-[var(--status-success-fg)]",
+  LIMITED: "bg-[var(--status-warning-bg)] text-[var(--status-warning-fg)]",
+  FULL: "bg-[var(--status-danger-bg)] text-[var(--status-danger-fg)]",
 };
 
 const placementStyles: Record<PlacementStatus, string> = {
-  REQUESTED: "bg-amber-100 text-amber-800",
-  APPROVED: "bg-emerald-100 text-emerald-800",
-  REJECTED: "bg-rose-100 text-rose-800",
+  REQUESTED: "bg-[var(--status-warning-bg)] text-[var(--status-warning-fg)]",
+  APPROVED: "bg-[var(--status-success-bg)] text-[var(--status-success-fg)]",
+  REJECTED: "bg-[var(--status-danger-bg)] text-[var(--status-danger-fg)]",
 };
 
 const scheduleStyles: Record<ScheduleStatus, string> = {
-  DRAFT: "bg-slate-100 text-slate-700",
-  ACTIVE: "bg-emerald-100 text-emerald-800",
-  ENDED: "bg-slate-200 text-slate-600",
-  CANCELLED: "bg-rose-100 text-rose-800",
+  DRAFT: "bg-[var(--status-neutral-bg)] text-[var(--status-neutral-fg)]",
+  ACTIVE: "bg-[var(--status-success-bg)] text-[var(--status-success-fg)]",
+  ENDED: "bg-[var(--status-neutral-bg)] text-[var(--status-neutral-fg)]",
+  CANCELLED: "bg-[var(--status-danger-bg)] text-[var(--status-danger-fg)]",
 };
+
+const badgeBase =
+  "inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold ring-1 ring-inset ring-white/5";
 
 export function StatusBadge({ status }: { status: string }) {
   const s =
     creativeStyles[status as CreativeStatus] ||
     placementStyles[status as PlacementStatus] ||
     scheduleStyles[status as ScheduleStatus] ||
-    "bg-slate-100 text-slate-700";
-  return (
-    <span className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold ${s}`}>
-      {status}
-    </span>
-  );
+    "bg-[var(--status-neutral-bg)] text-[var(--status-neutral-fg)]";
+  return <span className={`${badgeBase} ${s}`}>{status}</span>;
 }
 
 export function InventoryBadge({ status }: { status: string }) {
-  const s = inventoryStyles[status as InventoryStatus] || "bg-slate-100 text-slate-700";
-  return (
-    <span className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold ${s}`}>
-      {status}
-    </span>
-  );
+  const s =
+    inventoryStyles[status as InventoryStatus] ||
+    "bg-[var(--status-neutral-bg)] text-[var(--status-neutral-fg)]";
+  return <span className={`${badgeBase} ${s}`}>{status}</span>;
 }
 
 export function PlacementBadge({ status }: { status: string }) {
-  const s = placementStyles[status as PlacementStatus] || "bg-slate-100 text-slate-700";
-  return (
-    <span className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold ${s}`}>
-      {status}
-    </span>
-  );
+  const s =
+    placementStyles[status as PlacementStatus] ||
+    "bg-[var(--status-neutral-bg)] text-[var(--status-neutral-fg)]";
+  return <span className={`${badgeBase} ${s}`}>{status}</span>;
 }
 
 export function ScheduleBadge({ status }: { status: string }) {
-  const s = scheduleStyles[status as ScheduleStatus] || "bg-slate-100 text-slate-700";
-  return (
-    <span className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold ${s}`}>
-      {status}
-    </span>
-  );
+  const s =
+    scheduleStyles[status as ScheduleStatus] ||
+    "bg-[var(--status-neutral-bg)] text-[var(--status-neutral-fg)]";
+  return <span className={`${badgeBase} ${s}`}>{status}</span>;
 }

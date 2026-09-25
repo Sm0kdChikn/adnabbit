@@ -18,11 +18,11 @@ export default async function HostEditPage() {
   return (
     <div className="space-y-6">
       <div>
-        <Link href="/host" className="text-sm text-indigo-600 hover:underline">
+        <Link href="/host" className="text-sm text-accent hover:underline">
           ← Host portal
         </Link>
-        <h1 className="mt-2 text-2xl font-bold text-slate-900">Edit venue</h1>
-        <p className="text-sm text-slate-600">
+        <h1 className="mt-2 text-2xl font-bold text-foreground">Edit venue</h1>
+        <p className="text-sm text-muted">
           Update name, vertical, timezone, and notes for your venue.
         </p>
       </div>

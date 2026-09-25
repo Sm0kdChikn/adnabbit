@@ -65,14 +65,14 @@ export default async function ScreensBrowsePage({
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">Browse screens</h1>
-          <p className="text-sm text-slate-600">
+          <h1 className="text-2xl font-bold text-foreground">Browse screens</h1>
+          <p className="text-sm text-muted">
             Request placement on OPEN or LIMITED inventory. Attach an APPROVED creative.
           </p>
         </div>
         <Link
           href="/placements"
-          className="rounded-md bg-indigo-50 px-4 py-2 text-sm font-medium text-indigo-700 hover:bg-indigo-100"
+          className="rounded-md bg-accent-dim px-4 py-2 text-sm font-medium text-accent hover:bg-accent/15"
         >
           My placement requests
         </Link>
@@ -83,7 +83,7 @@ export default async function ScreensBrowsePage({
       </Suspense>
 
       {screens.length === 0 ? (
-        <p className="rounded-xl border border-dashed border-slate-300 bg-white p-8 text-center text-slate-500">
+        <p className="rounded-xl border border-dashed border-border bg-surface p-8 text-center text-muted">
           No screens match your filters.
         </p>
       ) : (
@@ -94,20 +94,20 @@ export default async function ScreensBrowsePage({
             return (
               <li
                 key={s.id}
-                className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm"
+                className="rounded-xl border border-border bg-surface p-4 shadow-sm"
               >
                 <div className="flex flex-wrap items-start justify-between gap-4">
                   <div className="min-w-0 flex-1 space-y-1">
                     <div className="flex flex-wrap items-center gap-2">
-                      <h2 className="font-semibold text-slate-900">{s.name}</h2>
+                      <h2 className="font-semibold text-foreground">{s.name}</h2>
                       <InventoryBadge status={s.inventoryStatus} />
                     </div>
-                    <p className="text-sm text-slate-600">
+                    <p className="text-sm text-muted">
                       {s.host.name} ·{" "}
                       {formatVertical(s.host.vertical, s.host.otherLabel)} · {s.city}{" "}
                       {s.zip}
                     </p>
-                    {s.notes && <p className="text-sm text-slate-500">{s.notes}</p>}
+                    {s.notes && <p className="text-sm text-muted">{s.notes}</p>}
                   </div>
                   <RequestPlacementButton screenId={s.id} disabled={!requestable} />
                 </div>

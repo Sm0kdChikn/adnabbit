@@ -38,32 +38,32 @@ export function ScreenFilters() {
   return (
     <form
       onSubmit={apply}
-      className="flex flex-wrap items-end gap-3 rounded-xl border border-slate-200 bg-white p-4 shadow-sm"
+      className="flex flex-wrap items-end gap-3 rounded-xl border border-border bg-surface p-4 shadow-sm"
     >
       <div>
-        <label className="mb-1 block text-xs font-medium text-slate-600">City</label>
+        <label className="mb-1 block text-xs font-medium text-muted">City</label>
         <input
           value={city}
           onChange={(e) => setCity(e.target.value)}
-          className="w-36 rounded-md border border-slate-300 px-2 py-1.5 text-sm"
+          className="w-36 rounded-md border border-border px-2 py-1.5 text-sm"
           placeholder="Denver"
         />
       </div>
       <div>
-        <label className="mb-1 block text-xs font-medium text-slate-600">ZIP</label>
+        <label className="mb-1 block text-xs font-medium text-muted">ZIP</label>
         <input
           value={zip}
           onChange={(e) => setZip(e.target.value)}
-          className="w-28 rounded-md border border-slate-300 px-2 py-1.5 text-sm"
+          className="w-28 rounded-md border border-border px-2 py-1.5 text-sm"
           placeholder="80202"
         />
       </div>
       <div>
-        <label className="mb-1 block text-xs font-medium text-slate-600">Inventory</label>
+        <label className="mb-1 block text-xs font-medium text-muted">Inventory</label>
         <select
           value={inventoryStatus}
           onChange={(e) => setInventoryStatus(e.target.value)}
-          className="rounded-md border border-slate-300 px-2 py-1.5 text-sm"
+          className="rounded-md border border-border px-2 py-1.5 text-sm"
         >
           <option value="">Any</option>
           {INVENTORY_STATUSES.map((s) => (
@@ -74,13 +74,13 @@ export function ScreenFilters() {
         </select>
       </div>
       <div>
-        <label className="mb-1 block text-xs font-medium text-slate-600">
+        <label className="mb-1 block text-xs font-medium text-muted">
           Host vertical
         </label>
         <select
           value={vertical}
           onChange={(e) => setVertical(e.target.value)}
-          className="rounded-md border border-slate-300 px-2 py-1.5 text-sm"
+          className="rounded-md border border-border px-2 py-1.5 text-sm"
         >
           <option value="">Any</option>
           {HOST_VERTICALS.map((v) => (
@@ -92,14 +92,14 @@ export function ScreenFilters() {
       </div>
       <button
         type="submit"
-        className="rounded-md bg-indigo-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-indigo-700"
+        className="rounded-md bg-accent px-3 py-1.5 text-sm font-medium text-brand-bg hover:brightness-110"
       >
         Filter
       </button>
       <button
         type="button"
         onClick={clear}
-        className="rounded-md bg-slate-100 px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-200"
+        className="rounded-md bg-surface-hover px-3 py-1.5 text-sm text-muted hover:bg-surface-hover"
       >
         Clear
       </button>

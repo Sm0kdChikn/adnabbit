@@ -47,11 +47,11 @@ export default async function HostScreenDetailPage({
   return (
     <div className="space-y-8">
       <div>
-        <Link href="/host" className="text-sm text-indigo-600 hover:underline">
+        <Link href="/host" className="text-sm text-accent hover:underline">
           ← Host portal
         </Link>
-        <h1 className="mt-2 text-2xl font-bold text-slate-900">Edit screen</h1>
-        <p className="text-sm text-slate-600">{screen.name}</p>
+        <h1 className="mt-2 text-2xl font-bold text-foreground">Edit screen</h1>
+        <p className="text-sm text-muted">{screen.name}</p>
       </div>
 
       <HostScreenForm
@@ -67,21 +67,21 @@ export default async function HostScreenDetailPage({
       />
 
       <section className="space-y-3">
-        <h2 className="text-lg font-semibold text-slate-800">
+        <h2 className="text-lg font-semibold text-foreground">
           Placements (read-only)
         </h2>
         {screen.placementRequests.length === 0 ? (
-          <p className="text-sm text-slate-500">No placement requests on this screen.</p>
+          <p className="text-sm text-muted">No placement requests on this screen.</p>
         ) : (
-          <ul className="divide-y divide-slate-100 rounded-xl border border-slate-200 bg-white">
+          <ul className="divide-y divide-border rounded-xl border border-border bg-surface">
             {screen.placementRequests.map((p) => (
               <li
                 key={p.id}
                 className="flex flex-wrap items-center justify-between gap-2 px-4 py-3"
               >
                 <div>
-                  <p className="font-medium text-slate-900">{p.creative.name}</p>
-                  <p className="text-sm text-slate-500">
+                  <p className="font-medium text-foreground">{p.creative.name}</p>
+                  <p className="text-sm text-muted">
                     {p.advertiser.name || p.advertiser.email}
                   </p>
                 </div>
@@ -93,23 +93,23 @@ export default async function HostScreenDetailPage({
       </section>
 
       <section className="space-y-3">
-        <h2 className="text-lg font-semibold text-slate-800">
+        <h2 className="text-lg font-semibold text-foreground">
           Schedules (read-only)
         </h2>
         {screen.schedules.length === 0 ? (
-          <p className="text-sm text-slate-500">No schedules on this screen.</p>
+          <p className="text-sm text-muted">No schedules on this screen.</p>
         ) : (
-          <ul className="divide-y divide-slate-100 rounded-xl border border-slate-200 bg-white">
+          <ul className="divide-y divide-border rounded-xl border border-border bg-surface">
             {screen.schedules.map((s) => (
               <li
                 key={s.id}
                 className="flex flex-wrap items-center justify-between gap-2 px-4 py-3"
               >
                 <div>
-                  <p className="font-medium text-slate-900">
+                  <p className="font-medium text-foreground">
                     {s.placement.creative.name}
                   </p>
-                  <p className="text-sm text-slate-500">
+                  <p className="text-sm text-muted">
                     {s.kind}
                     {s.kind === "RECURRING"
                       ? ` · ${s.weekdays} · ${s.startTime}–${s.endTime}`

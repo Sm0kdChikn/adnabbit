@@ -28,15 +28,15 @@ export default async function NewScreenPage({
   return (
     <div className="space-y-6">
       <div>
-        <Link href="/admin/screens" className="text-sm text-indigo-600 hover:underline">
+        <Link href="/admin/screens" className="text-sm text-accent hover:underline">
           ← Screens
         </Link>
-        <h1 className="mt-2 text-2xl font-bold text-slate-900">New screen</h1>
+        <h1 className="mt-2 text-2xl font-bold text-foreground">New screen</h1>
       </div>
       {hosts.length === 0 ? (
-        <p className="rounded-xl border border-dashed border-slate-300 bg-white p-8 text-center text-slate-500">
+        <p className="rounded-xl border border-dashed border-border bg-surface p-8 text-center text-muted">
           Create a{" "}
-          <Link href="/admin/hosts/new" className="text-indigo-600 hover:underline">
+          <Link href="/admin/hosts/new" className="text-accent hover:underline">
             host
           </Link>{" "}
           first.

@@ -81,10 +81,10 @@ export function ProfileForm({ initial }: { initial: ProfileInitial }) {
   return (
     <form
       onSubmit={onSubmit}
-      className="max-w-lg space-y-4 rounded-xl border border-slate-200 bg-white p-6 shadow-sm"
+      className="max-w-lg space-y-4 rounded-xl border border-border bg-surface p-6 shadow-sm"
     >
       {error && (
-        <p className="rounded-md bg-rose-50 px-3 py-2 text-sm text-rose-800">{error}</p>
+        <p className="rounded-md bg-[var(--status-danger-bg)] px-3 py-2 text-sm text-[var(--status-danger-fg)]">{error}</p>
       )}
 
       {savedSlug && published && (
@@ -97,22 +97,22 @@ export function ProfileForm({ initial }: { initial: ProfileInitial }) {
       )}
 
       <div>
-        <label className="mb-1 block text-sm font-medium text-slate-700">
+        <label className="mb-1 block text-sm font-medium text-muted">
           Business name
         </label>
         <input
           required
           value={displayName}
           onChange={(e) => setDisplayName(e.target.value)}
-          className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+          className="w-full rounded-md border border-border px-3 py-2 text-sm focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent/50"
         />
-        <p className="mt-1 text-xs text-slate-500">
+        <p className="mt-1 text-xs text-muted">
           Slug is derived from this name (collision-safe).
         </p>
       </div>
 
       <div>
-        <label className="mb-1 block text-sm font-medium text-slate-700">
+        <label className="mb-1 block text-sm font-medium text-muted">
           Short pitch
         </label>
         <textarea
@@ -120,12 +120,12 @@ export function ProfileForm({ initial }: { initial: ProfileInitial }) {
           onChange={(e) => setPitch(e.target.value)}
           rows={3}
           placeholder="One or two sentences about your business"
-          className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+          className="w-full rounded-md border border-border px-3 py-2 text-sm focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent/50"
         />
       </div>
 
       <div>
-        <label className="mb-1 block text-sm font-medium text-slate-700">
+        <label className="mb-1 block text-sm font-medium text-muted">
           Website URL
         </label>
         <input
@@ -133,12 +133,12 @@ export function ProfileForm({ initial }: { initial: ProfileInitial }) {
           value={website}
           onChange={(e) => setWebsite(e.target.value)}
           placeholder="https://example.com"
-          className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+          className="w-full rounded-md border border-border px-3 py-2 text-sm focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent/50"
         />
       </div>
 
       <div>
-        <label className="mb-1 block text-sm font-medium text-slate-700">
+        <label className="mb-1 block text-sm font-medium text-muted">
           Contact (phone or email)
         </label>
         <input
@@ -146,18 +146,18 @@ export function ProfileForm({ initial }: { initial: ProfileInitial }) {
           value={contact}
           onChange={(e) => setContact(e.target.value)}
           placeholder="hello@example.com or (303) 555-0100"
-          className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+          className="w-full rounded-md border border-border px-3 py-2 text-sm focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent/50"
         />
       </div>
 
       <div>
-        <label className="mb-1 block text-sm font-medium text-slate-700">
+        <label className="mb-1 block text-sm font-medium text-muted">
           Category
         </label>
         <select
           value={category}
           onChange={(e) => setCategory(e.target.value as AdvertiserCategory | "")}
-          className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+          className="w-full rounded-md border border-border px-3 py-2 text-sm focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent/50"
         >
           <option value="">Select category…</option>
           {ADVERTISER_CATEGORIES.map((c) => (
@@ -169,7 +169,7 @@ export function ProfileForm({ initial }: { initial: ProfileInitial }) {
       </div>
 
       <div>
-        <label className="mb-1 block text-sm font-medium text-slate-700">
+        <label className="mb-1 block text-sm font-medium text-muted">
           Service area / ZIPs
         </label>
         <input
@@ -177,22 +177,22 @@ export function ProfileForm({ initial }: { initial: ProfileInitial }) {
           value={serviceAreaZips}
           onChange={(e) => setServiceAreaZips(e.target.value)}
           placeholder="80202, 80205, 80012"
-          className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+          className="w-full rounded-md border border-border px-3 py-2 text-sm focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent/50"
         />
-        <p className="mt-1 text-xs text-slate-500">Comma-separated ZIP codes or free-form area.</p>
+        <p className="mt-1 text-xs text-muted">Comma-separated ZIP codes or free-form area.</p>
       </div>
 
-      <div className="space-y-2 rounded-md border border-slate-100 bg-slate-50 p-3">
-        <p className="text-sm font-medium text-slate-700">Logo (optional)</p>
+      <div className="space-y-2 rounded-md border border-border bg-background-elevated p-3">
+        <p className="text-sm font-medium text-muted">Logo (optional)</p>
         {hasUploadedLogo && (
           <div className="flex items-center gap-3">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={`/api/uploads/${initial!.logoStoredName}`}
               alt="Current logo"
-              className="h-12 w-12 rounded object-contain bg-white border"
+              className="h-12 w-12 rounded object-contain bg-surface border"
             />
-            <label className="flex items-center gap-2 text-sm text-slate-600">
+            <label className="flex items-center gap-2 text-sm text-muted">
               <input
                 type="checkbox"
                 checked={clearLogo}
@@ -203,7 +203,7 @@ export function ProfileForm({ initial }: { initial: ProfileInitial }) {
           </div>
         )}
         <div>
-          <label className="mb-1 block text-xs text-slate-500">Upload image</label>
+          <label className="mb-1 block text-xs text-muted">Upload image</label>
           <input
             type="file"
             accept="image/jpeg,image/png,image/webp"
@@ -215,23 +215,23 @@ export function ProfileForm({ initial }: { initial: ProfileInitial }) {
           />
         </div>
         <div>
-          <label className="mb-1 block text-xs text-slate-500">Or logo URL</label>
+          <label className="mb-1 block text-xs text-muted">Or logo URL</label>
           <input
             type="text"
             value={logoUrl}
             onChange={(e) => setLogoUrl(e.target.value)}
             placeholder="https://cdn.example.com/logo.png"
-            className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+            className="w-full rounded-md border border-border px-3 py-2 text-sm focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent/50"
           />
         </div>
       </div>
 
-      <label className="flex items-center gap-2 text-sm text-slate-800">
+      <label className="flex items-center gap-2 text-sm text-foreground">
         <input
           type="checkbox"
           checked={published}
           onChange={(e) => setPublished(e.target.checked)}
-          className="h-4 w-4 rounded border-slate-300 text-indigo-600"
+          className="h-4 w-4 rounded border-border text-accent"
         />
         Publish public profile
       </label>
@@ -239,7 +239,7 @@ export function ProfileForm({ initial }: { initial: ProfileInitial }) {
       <button
         type="submit"
         disabled={saving}
-        className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-50"
+        className="rounded-md bg-accent px-4 py-2 text-sm font-medium text-brand-bg hover:brightness-110 disabled:opacity-50"
       >
         {saving ? "Saving…" : initial ? "Save profile" : "Create profile"}
       </button>

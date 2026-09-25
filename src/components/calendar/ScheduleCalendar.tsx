@@ -33,13 +33,13 @@ function statusClass(status: string): string {
     case "ACTIVE":
       return "border-emerald-600 bg-emerald-100 text-emerald-900";
     case "DRAFT":
-      return "border-slate-400 bg-slate-100 text-slate-800";
+      return "border-border-strong bg-surface-hover text-foreground";
     case "ENDED":
-      return "border-slate-300 bg-slate-50 text-slate-500";
+      return "border-border bg-background-elevated text-muted";
     case "CANCELLED":
-      return "border-rose-300 bg-rose-50 text-rose-700";
+      return "border-rose-300 bg-[var(--status-danger-bg)] text-[var(--status-danger-fg)]";
     default:
-      return "border-indigo-300 bg-indigo-50 text-indigo-900";
+      return "border-accent/40 bg-accent-dim text-accent";
   }
 }
 
@@ -138,19 +138,19 @@ export function ScheduleCalendar({
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-center gap-2 rounded-xl border border-slate-200 bg-white p-3 shadow-sm">
-        <div className="flex rounded-md border border-slate-200 p-0.5">
+      <div className="flex flex-wrap items-center gap-2 rounded-xl border border-border bg-surface p-3 shadow-sm">
+        <div className="flex rounded-md border border-border p-0.5">
           <button
             type="button"
             onClick={() => pushParams({ view: "week" })}
-            className={`rounded px-3 py-1.5 text-sm font-medium ${view === "week" ? "bg-indigo-600 text-white" : "text-slate-700 hover:bg-slate-50"}`}
+            className={`rounded px-3 py-1.5 text-sm font-medium ${view === "week" ? "bg-accent text-brand-bg" : "text-muted hover:bg-background-elevated"}`}
           >
             Week
           </button>
           <button
             type="button"
             onClick={() => pushParams({ view: "month" })}
-            className={`rounded px-3 py-1.5 text-sm font-medium ${view === "month" ? "bg-indigo-600 text-white" : "text-slate-700 hover:bg-slate-50"}`}
+            className={`rounded px-3 py-1.5 text-sm font-medium ${view === "month" ? "bg-accent text-brand-bg" : "text-muted hover:bg-background-elevated"}`}
           >
             Month
           </button>
@@ -159,7 +159,7 @@ export function ScheduleCalendar({
         <div className="flex items-center gap-1">
           <button
             type="button"
-            className="rounded-md border border-slate-200 px-2 py-1.5 text-sm hover:bg-slate-50"
+            className="rounded-md border border-border px-2 py-1.5 text-sm hover:bg-background-elevated"
             onClick={() =>
               pushParams({
                 date:
@@ -173,14 +173,14 @@ export function ScheduleCalendar({
           </button>
           <button
             type="button"
-            className="rounded-md border border-slate-200 px-3 py-1.5 text-sm hover:bg-slate-50"
+            className="rounded-md border border-border px-3 py-1.5 text-sm hover:bg-background-elevated"
             onClick={() => pushParams({ date: todayYmd(defaultTimeZone) })}
           >
             Today
           </button>
           <button
             type="button"
-            className="rounded-md border border-slate-200 px-2 py-1.5 text-sm hover:bg-slate-50"
+            className="rounded-md border border-border px-2 py-1.5 text-sm hover:bg-background-elevated"
             onClick={() => {
               if (view === "week") pushParams({ date: addYmd(range.start, 7) });
               else {
@@ -197,9 +197,9 @@ export function ScheduleCalendar({
           </button>
         </div>
 
-        <span className="text-sm font-medium text-slate-800">{label}</span>
+        <span className="text-sm font-medium text-foreground">{label}</span>
 
-        <label className="ml-auto flex items-center gap-2 text-sm text-slate-600">
+        <label className="ml-auto flex items-center gap-2 text-sm text-muted">
           <input
             type="checkbox"
             checked={includeEnded}
@@ -221,7 +221,7 @@ export function ScheduleCalendar({
               includeEnded: e.target.value ? "1" : includeEnded ? "1" : null,
             })
           }
-          className="rounded-md border border-slate-300 px-2 py-1.5 text-sm"
+          className="rounded-md border border-border px-2 py-1.5 text-sm"
         >
           <option value="">ACTIVE + DRAFT</option>
           <option value="ACTIVE">ACTIVE only</option>
@@ -230,14 +230,14 @@ export function ScheduleCalendar({
           <option value="CANCELLED">CANCELLED only</option>
         </select>
 
-        <label className="flex items-center gap-2 text-sm text-slate-600">
+        <label className="flex items-center gap-2 text-sm text-muted">
           <span className="whitespace-nowrap">Screen</span>
           <select
             value={screenIdFilter}
             onChange={(e) =>
               pushParams({ screenId: e.target.value || null })
             }
-            className="max-w-[220px] rounded-md border border-slate-300 px-2 py-1.5 text-sm"
+            className="max-w-[220px] rounded-md border border-border px-2 py-1.5 text-sm"
           >
             <option value="">All screens</option>
             {screenOptions.map((s) => (
@@ -249,30 +249,30 @@ export function ScheduleCalendar({
         </label>
       </div>
 
-      <p className="text-xs text-slate-500">
+      <p className="text-xs text-muted">
         Blocks expanded in each screen&apos;s host timezone (date-fns-tz). {blocks.length}{" "}
         block{blocks.length === 1 ? "" : "s"} in view · {filtered.length} schedule
         {filtered.length === 1 ? "" : "s"} shown.
       </p>
 
       {view === "week" ? (
-        <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm">
+        <div className="overflow-x-auto rounded-xl border border-border bg-surface shadow-sm">
           <div
             className="grid min-w-[720px]"
             style={{ gridTemplateColumns: "48px repeat(7, minmax(0, 1fr))" }}
           >
-            <div className="border-b border-slate-200 bg-slate-50 p-2" />
+            <div className="border-b border-border bg-background-elevated p-2" />
             {range.days.map((day) => {
               const iso = isoWeekdayFromYmd(day);
               return (
                 <div
                   key={day}
-                  className="border-b border-l border-slate-200 bg-slate-50 p-2 text-center"
+                  className="border-b border-l border-border bg-background-elevated p-2 text-center"
                 >
-                  <div className="text-xs font-medium text-slate-500">
+                  <div className="text-xs font-medium text-muted">
                     {WEEKDAY_LABELS[iso]}
                   </div>
-                  <div className="text-sm font-semibold text-slate-900">{day.slice(8)}</div>
+                  <div className="text-sm font-semibold text-foreground">{day.slice(8)}</div>
                 </div>
               );
             })}
@@ -283,7 +283,7 @@ export function ScheduleCalendar({
                 return (
                   <div
                     key={hour}
-                    className="absolute left-0 right-0 border-t border-slate-100 pr-1 text-right text-[10px] text-slate-400"
+                    className="absolute left-0 right-0 border-t border-border pr-1 text-right text-[10px] text-muted-strong"
                     style={{ top: i * PX_PER_HOUR }}
                   >
                     {String(hour).padStart(2, "0")}:00
@@ -297,13 +297,13 @@ export function ScheduleCalendar({
               return (
                 <div
                   key={day}
-                  className="relative border-l border-slate-100 bg-white"
+                  className="relative border-l border-border bg-surface"
                   style={{ height: gridHeight }}
                 >
                   {Array.from({ length: HOUR_END - HOUR_START }, (_, i) => (
                     <div
                       key={i}
-                      className="absolute left-0 right-0 border-t border-slate-50"
+                      className="absolute left-0 right-0 border-t border-border/40"
                       style={{ top: i * PX_PER_HOUR, height: PX_PER_HOUR }}
                     />
                   ))}
@@ -364,8 +364,8 @@ export function ScheduleCalendar({
           </div>
         </div>
       ) : (
-        <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
-          <div className="grid grid-cols-7 border-b border-slate-200 bg-slate-50 text-center text-xs font-medium text-slate-500">
+        <div className="overflow-hidden rounded-xl border border-border bg-surface shadow-sm">
+          <div className="grid grid-cols-7 border-b border-border bg-background-elevated text-center text-xs font-medium text-muted">
             {[1, 2, 3, 4, 5, 6, 7].map((d) => (
               <div key={d} className="p-2">
                 {WEEKDAY_LABELS[d]}
@@ -379,10 +379,10 @@ export function ScheduleCalendar({
               return (
                 <div
                   key={day}
-                  className={`min-h-[96px] border-b border-r border-slate-100 p-1 ${inMonth ? "bg-white" : "bg-slate-50/60"}`}
+                  className={`min-h-[96px] border-b border-r border-border p-1 ${inMonth ? "bg-surface" : "bg-background-elevated/60"}`}
                 >
                   <div
-                    className={`mb-1 text-right text-xs font-medium ${inMonth ? "text-slate-700" : "text-slate-400"}`}
+                    className={`mb-1 text-right text-xs font-medium ${inMonth ? "text-muted" : "text-muted-strong"}`}
                   >
                     {day.slice(8)}
                   </div>
@@ -391,7 +391,7 @@ export function ScheduleCalendar({
                       <BlockChip key={b.key} block={b} href={hrefFor(b.scheduleId)} />
                     ))}
                     {dayBlocks.length > 4 && (
-                      <div className="text-[10px] text-slate-500">
+                      <div className="text-[10px] text-muted">
                         +{dayBlocks.length - 4} more
                       </div>
                     )}

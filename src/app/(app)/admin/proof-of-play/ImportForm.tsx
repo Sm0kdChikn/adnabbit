@@ -46,11 +46,11 @@ export function ImportForm() {
   return (
     <form
       onSubmit={onSubmit}
-      className="space-y-3 rounded-xl border border-slate-200 bg-white p-4 shadow-sm"
+      className="space-y-3 rounded-xl border border-border bg-surface p-4 shadow-sm"
     >
       <div>
-        <h2 className="text-lg font-semibold text-slate-800">Import OptiSigns PoP CSV</h2>
-        <p className="text-xs text-slate-500">
+        <h2 className="text-lg font-semibold text-foreground">Import OptiSigns PoP CSV</h2>
+        <p className="text-xs text-muted">
           Required headers: Report Date UTC, Account ID, Screen UUID, Screen Name, Screen Tags,
           Asset ID, Asset Name, Asset Tags, Start Time UTC, Device Local Time, Duration (seconds).
           Dupes skipped by rawHash. Host filler rows are flagged automatically.
@@ -58,33 +58,33 @@ export function ImportForm() {
       </div>
       <div className="flex flex-wrap items-end gap-3">
         <div>
-          <label className="mb-1 block text-xs font-medium text-slate-600">CSV file</label>
+          <label className="mb-1 block text-xs font-medium text-muted">CSV file</label>
           <input
             type="file"
             name="file"
             accept=".csv,text/csv"
             required
-            className="block w-full max-w-xs text-sm text-slate-700"
+            className="block w-full max-w-xs text-sm text-muted"
           />
         </div>
         <div className="min-w-[12rem] flex-1">
-          <label className="mb-1 block text-xs font-medium text-slate-600">Notes (optional)</label>
+          <label className="mb-1 block text-xs font-medium text-muted">Notes (optional)</label>
           <input
             name="notes"
-            className="w-full rounded-md border border-slate-300 px-2 py-1.5 text-sm"
+            className="w-full rounded-md border border-border px-2 py-1.5 text-sm"
             placeholder="e.g. March Denver export"
           />
         </div>
         <button
           type="submit"
           disabled={busy}
-          className="rounded-md bg-indigo-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-60"
+          className="rounded-md bg-accent px-4 py-1.5 text-sm font-medium text-brand-bg hover:brightness-110 disabled:opacity-60"
         >
           {busy ? "Importing…" : "Import"}
         </button>
       </div>
       {error && (
-        <p className="rounded-md bg-rose-50 px-3 py-2 text-sm text-rose-800">{error}</p>
+        <p className="rounded-md bg-[var(--status-danger-bg)] px-3 py-2 text-sm text-[var(--status-danger-fg)]">{error}</p>
       )}
       {result && (
         <p className="rounded-md bg-emerald-50 px-3 py-2 text-sm text-emerald-800">

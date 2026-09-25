@@ -3,12 +3,88 @@
 @tailwind utilities;
 
 :root {
-  --foreground: #0f172a;
-  --background: #f8fafc;
+  /* Brand surfaces */
+  --background: #0b0f14;
+  --background-elevated: #12181f;
+  --surface: #161d27;
+  --surface-hover: #1c2532;
+  --border: #243041;
+  --border-strong: #334155;
+
+  /* Text */
+  --foreground: #e8eef6;
+  --muted: #94a3b8;
+  --muted-strong: #64748b;
+
+  /* Accent */
+  --accent: #00e5ff;
+  --accent-dim: rgba(0, 229, 255, 0.12);
+  --accent-glow: 0 0 20px rgba(0, 229, 255, 0.35);
+
+  /* Status (dark-tuned) */
+  --status-success-bg: rgba(16, 185, 129, 0.15);
+  --status-success-fg: #34d399;
+  --status-warning-bg: rgba(245, 158, 11, 0.15);
+  --status-warning-fg: #fbbf24;
+  --status-danger-bg: rgba(244, 63, 94, 0.15);
+  --status-danger-fg: #fb7185;
+  --status-neutral-bg: rgba(148, 163, 184, 0.12);
+  --status-neutral-fg: #94a3b8;
 }
 
 body {
   color: var(--foreground);
-  background: var(--background);
+  background-color: var(--background);
+  background-image:
+    radial-gradient(ellipse 80% 50% at 50% -20%, rgba(0, 229, 255, 0.07), transparent),
+    radial-gradient(ellipse 60% 40% at 100% 0%, rgba(0, 229, 255, 0.03), transparent);
   min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Subtle noise / texture overlay — keep readable */
+body::before {
+  content: "";
+  pointer-events: none;
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  opacity: 0.035;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+body > * {
+  position: relative;
+  z-index: 1;
+}
+
+/* Form controls default to dark-readable */
+@layer base {
+  input[type="text"],
+  input[type="email"],
+  input[type="password"],
+  input[type="number"],
+  input[type="search"],
+  input[type="url"],
+  input[type="tel"],
+  input[type="date"],
+  input[type="time"],
+  input[type="datetime-local"],
+  input[type="file"],
+  select,
+  textarea {
+    background-color: var(--background-elevated);
+    border-color: var(--border);
+    color: var(--foreground);
+  }
+
+  input::placeholder,
+  textarea::placeholder {
+    color: var(--muted-strong);
+  }
+
+  option {
+    background-color: var(--surface);
+    color: var(--foreground);
+  }
 }

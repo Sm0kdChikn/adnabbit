@@ -2,6 +2,7 @@ import Link from "next/link";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { redirect } from "next/navigation";
+import { BrandLogo } from "@/components/BrandLogo";
 
 export default async function HomePage() {
   const session = await getServerSession(authOptions);
@@ -10,26 +11,50 @@ export default async function HomePage() {
   if (session?.user?.role === "ADVERTISER") redirect("/dashboard");
 
   return (
-    <div className="space-y-8 py-12 text-center">
-      <h1 className="text-4xl font-bold tracking-tight text-slate-900">AdNabbit Creative Portal</h1>
-      <p className="mx-auto max-w-xl text-lg text-slate-600">
-        Upload ad creatives, submit them for review, and track approval status. Admins approve or
-        reject pending submissions.
-      </p>
-      <div className="flex justify-center gap-4">
-        <Link
-          href="/signup"
-          className="rounded-lg bg-indigo-600 px-5 py-2.5 font-medium text-white hover:bg-indigo-700"
-        >
-          Advertiser sign up
-        </Link>
-        <Link
-          href="/login"
-          className="rounded-lg border border-slate-300 bg-white px-5 py-2.5 font-medium text-slate-800 hover:bg-slate-50"
-        >
-          Log in
-        </Link>
-      </div>
+    <div className="flex min-h-screen flex-col">
+      <header className="border-b border-border bg-background-elevated/90 backdrop-blur-md">
+        <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
+          <BrandLogo size="sm" />
+          <div className="flex items-center gap-3">
+            <Link
+              href="/login"
+              className="rounded-md px-2.5 py-1.5 text-sm text-muted hover:text-foreground"
+            >
+              Log in
+            </Link>
+            <Link
+              href="/signup"
+              className="rounded-md bg-accent px-3 py-1.5 text-sm font-semibold text-brand-bg shadow-glow-sm hover:brightness-110"
+            >
+              Sign up
+            </Link>
+          </div>
+        </div>
+      </header>
+      <main className="mx-auto flex max-w-6xl flex-1 flex-col items-center justify-center space-y-8 px-4 py-16 text-center">
+        <BrandLogo href="" size="lg" showWordmark={false} />
+        <h1 className="text-4xl font-bold tracking-tight text-foreground">
+          AdNabbit Creative Portal
+        </h1>
+        <p className="mx-auto max-w-xl text-lg text-muted">
+          Upload ad creatives, submit them for review, and track approval status. Admins
+          approve or reject pending submissions.
+        </p>
+        <div className="flex justify-center gap-4">
+          <Link
+            href="/signup"
+            className="rounded-lg bg-accent px-5 py-2.5 font-semibold text-brand-bg shadow-glow hover:brightness-110"
+          >
+            Advertiser sign up
+          </Link>
+          <Link
+            href="/login"
+            className="rounded-lg border border-border bg-surface px-5 py-2.5 font-medium text-foreground hover:border-accent/40 hover:bg-surface-hover"
+          >
+            Log in
+          </Link>
+        </div>
+      </main>
     </div>
   );
 }
