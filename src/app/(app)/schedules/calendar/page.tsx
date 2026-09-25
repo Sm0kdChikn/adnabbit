@@ -12,6 +12,8 @@ export default async function AdvertiserSchedulesCalendarPage() {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) redirect("/login");
   if (session.user.role === "ADMIN") redirect("/admin/schedules/calendar");
+  if (session.user.role === "HOST") redirect("/host");
+
 
   await materializeEndedSchedules();
 

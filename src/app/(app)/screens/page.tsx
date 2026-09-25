@@ -27,6 +27,8 @@ export default async function ScreensBrowsePage({
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) redirect("/login");
   if (session.user.role === "ADMIN") redirect("/admin/screens");
+  if (session.user.role === "HOST") redirect("/host");
+
 
   const city = searchParams.city?.trim() || "";
   const zip = searchParams.zip?.trim() || "";

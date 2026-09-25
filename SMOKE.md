@@ -800,3 +800,55 @@ http://localhost:3000/admin/schedules/calendar?view=week&date=2026-09-22
 
 None for local Ticket E2.
 
+---
+
+## Ticket G — Host self-serve portal (2026-09-25)
+
+**Prereq:** migration `20260925202000_ticket_g_host_portal`, `npm run db:seed`.
+
+### Seed logins
+
+| Role | Email | Password |
+|------|-------|----------|
+| ADMIN | admin@adnabbit.com | admin123! |
+| ADVERTISER | demo.advertiser@adnabbit.com | demo123! |
+| HOST | demo.host@adnabbit.com | host123! |
+
+HOST is linked to **Denver Peak Fitness**.
+
+### G-1. HOST login → own venue only
+
+```bash
+# NextAuth credentials → cookie jar /tmp/host-cookies.txt
+# Session role HOST; GET /host → 200 with Denver Peak Fitness screens
+# GET /admin/hosts → redirect away (not ADMIN)
+# GET /api/admin/hosts → 403
+```
+
+### G-2. Host screen CRUD
+
+```bash
+# POST /api/host/screens { name, city, zip, inventoryStatus }
+# PATCH /api/host/screens/:id
+# DELETE /api/host/screens/:id
+# Cannot touch another host's screen (404)
+```
+
+### G-3. Admin attach / detach
+
+```bash
+# POST /api/admin/hosts/:id/attach { email, password, name }
+# POST /api/admin/hosts/:id/detach
+# Host list shows owner email or "unclaimed"
+```
+
+### G-4. Advertiser browse still filtered
+
+Inventory filters (city/zip/status) on `/screens` unchanged; new host screens with OPEN/LIMITED appear in browse.
+
+### Demo path
+
+1. `demo.host@adnabbit.com` / `host123!` → **My venue** → edit / add screen
+2. Admin → **Hosts** → Denver Peak Fitness → Attach/Detach owner
+3. Advertiser → **Screens** → still sees inventory
+

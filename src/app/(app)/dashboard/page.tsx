@@ -10,6 +10,7 @@ export default async function DashboardPage() {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) redirect("/login");
   if (session.user.role === "ADMIN") redirect("/admin");
+  if (session.user.role === "HOST") redirect("/host");
 
   const creatives = await prisma.creative.findMany({
     where: { advertiserId: session.user.id },

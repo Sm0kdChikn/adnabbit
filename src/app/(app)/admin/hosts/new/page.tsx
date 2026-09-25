@@ -7,6 +7,7 @@ import { HostForm } from "../HostForm";
 export default async function NewHostPage() {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) redirect("/login");
+  if (session.user.role === "HOST") redirect("/host");
   if (session.user.role !== "ADMIN") redirect("/dashboard");
 
   return (

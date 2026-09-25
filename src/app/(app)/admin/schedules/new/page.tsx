@@ -9,6 +9,7 @@ import { formatVertical } from "@/lib/types";
 export default async function NewSchedulePage() {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) redirect("/login");
+  if (session.user.role === "HOST") redirect("/host");
   if (session.user.role !== "ADMIN") redirect("/dashboard");
 
   const approved = await prisma.placementRequest.findMany({

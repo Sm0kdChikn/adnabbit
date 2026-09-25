@@ -1,6 +1,6 @@
 # AdNabbit Web MVP
 
-Advertiser signup/login, creative upload (image/video), submit for review, admin approve/reject, **Ticket A — Host/screen inventory**, and **Ticket B — Advertiser public profiles**, and **Ticket C — Placement requests**, and **Ticket D — Scheduling**, and **Ticket E — Recurring dayparts**, and **Ticket E2 — Schedule calendar view**.
+Advertiser signup/login, creative upload (image/video), submit for review, admin approve/reject, **Ticket A — Host/screen inventory**, and **Ticket B — Advertiser public profiles**, and **Ticket C — Placement requests**, and **Ticket D — Scheduling**, and **Ticket E — Recurring dayparts**, and **Ticket E2 — Schedule calendar view**, and **Ticket G — Host self-serve portal**.
 
 **Repo target:** https://github.com/Sm0kdChikn/adnabbit
 
@@ -14,7 +14,7 @@ Advertiser signup/login, creative upload (image/video), submit for review, admin
 ## Auth model
 
 - Email + password (bcrypt hashed)
-- Roles: `ADVERTISER` (signup) and `ADMIN` (seeded from env)
+- Roles: `ADVERTISER` (signup), `ADMIN` (seeded from env), `HOST` (admin-created / seeded, linked to a Host)
 - Session strategy: JWT via NextAuth
 - Admin-only routes reuse the same `role === "ADMIN"` gate as creative approve/reject
 
@@ -45,6 +45,12 @@ Seed also creates sample **hosts** / **screens** (Ticket A), a **published demo 
 - Email: `demo.advertiser@adnabbit.com`
 - Password: `demo123!`
 - Public profile: http://localhost:3000/a/front-range-hvac
+
+### Default seed demo host (Ticket G)
+
+- Email: `demo.host@adnabbit.com`
+- Password: `host123!`
+- Linked venue: **Denver Peak Fitness** → `/host`
 
 ## Scripts
 
@@ -275,6 +281,46 @@ Client-side expand of schedules into **week / month** calendar blocks in each sc
 4. `demo.advertiser@adnabbit.com` → **Calendar** → same expand, read-only
 
 
+
+## Ticket G — Host self-serve portal
+
+Hosts manage their own venue + screens without admin doing all inventory CRUD.
+
+### Data model
+
+- **User.role**: `ADVERTISER` | `ADMIN` | `HOST`
+- **Host.userId**: optional unique FK → User (one login owns one Host for MVP; null = unclaimed; detach = set null)
+
+### Host portal
+
+| Path | Purpose |
+|------|---------|
+| `/host` | Own venue + screens list |
+| `/host/edit` | Edit own Host (name, vertical, otherLabel, timezone, notes) |
+| `/host/screens/new` | Create screen on own Host |
+| `/host/screens/[id]` | Edit/delete own screen; read-only placements + schedules |
+| GET/PATCH | `/api/host` |
+| GET/POST | `/api/host/screens` |
+| GET/PATCH/DELETE | `/api/host/screens/[id]` |
+
+AuthZ: `host.userId === session.user.id`; screen CRUD only where `screen.hostId` matches. No approve/schedule mutate.
+
+### Admin
+
+| Path | Purpose |
+|------|---------|
+| `/admin/hosts/[id]` | Full CRUD + **Attach / Detach** owning HOST user (admin sets password; no invite email) |
+| POST | `/api/admin/hosts/[id]/attach` body `{ email, password?, name? }` |
+| POST | `/api/admin/hosts/[id]/detach` |
+
+Admin still has unrestricted CRUD on all hosts/screens. ADVERTISER flows unchanged.
+
+### Demo
+
+1. Seed links `demo.host@adnabbit.com` / `host123!` → Denver Peak Fitness
+2. Log in → `/host` → edit venue, add/edit screens
+3. Admin → Hosts → Edit → Attach/Detach owner
+
 ## Ticket H — Calendar polish
 
 Screen filter on schedule calendars + overnight (cross-midnight) RECURRING dayparts.
@@ -294,7 +340,7 @@ Screen filter on schedule calendars + overnight (cross-midnight) RECURRING daypa
 
 ## Out of scope (later tickets)
 
-- Host self-serve portal, player, OptiSigns sync (beyond PoP import), marketplace, billing, drag-drop calendar edit, multi-screen assign, monthly RRULE
+- Player, OptiSigns sync (beyond PoP import), marketplace, billing, drag-drop calendar edit, multi-screen assign, monthly RRULE, host invites/payouts
 
 ## Push to GitHub
 

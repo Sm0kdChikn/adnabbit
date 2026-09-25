@@ -12,6 +12,7 @@ export default async function NewScreenPage({
 }) {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) redirect("/login");
+  if (session.user.role === "HOST") redirect("/host");
   if (session.user.role !== "ADMIN") redirect("/dashboard");
 
   const hosts = await prisma.host.findMany({

@@ -147,6 +147,43 @@ async function main() {
     }
   }
 
+
+  // Ticket G — demo HOST user linked to Denver Peak Fitness
+  const hostEmail = "demo.host@adnabbit.com";
+  const hostPassword = "host123!";
+  const hostHash = await bcrypt.hash(hostPassword, 12);
+  const hostUser = await prisma.user.upsert({
+    where: { email: hostEmail },
+    update: {
+      passwordHash: hostHash,
+      role: "HOST",
+      name: "Demo Host",
+    },
+    create: {
+      email: hostEmail,
+      passwordHash: hostHash,
+      role: "HOST",
+      name: "Demo Host",
+    },
+  });
+  console.log(`Seeded demo HOST: ${hostUser.email} (password: host123!)`);
+
+  const peak = await prisma.host.findFirst({ where: { name: "Denver Peak Fitness" } });
+  if (peak) {
+    // Detach if another host currently owns this userId
+    await prisma.host.updateMany({
+      where: { userId: hostUser.id, NOT: { id: peak.id } },
+      data: { userId: null },
+    });
+    await prisma.host.update({
+      where: { id: peak.id },
+      data: { userId: hostUser.id },
+    });
+    console.log(`Linked HOST ${hostUser.email} → ${peak.name}`);
+  } else {
+    console.log("Denver Peak Fitness not found — skip HOST link");
+  }
+
   // Ticket B — demo advertiser + published public profile
   const demoEmail = "demo.advertiser@adnabbit.com";
   const demoPassword = "demo123!";

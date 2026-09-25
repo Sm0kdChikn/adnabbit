@@ -32,6 +32,8 @@ export default function LoginForm() {
     const me = await fetch("/api/auth/session").then((r) => r.json());
     if (me?.user?.role === "ADMIN") {
       router.push("/admin");
+    } else if (me?.user?.role === "HOST") {
+      router.push("/host");
     } else if (me?.user?.role === "ADVERTISER") {
       router.push("/dashboard");
     } else {

@@ -6,15 +6,20 @@ import Link from "next/link";
 import { HostForm } from "../HostForm";
 import { InventoryBadge } from "@/components/StatusBadge";
 import { formatVertical } from "@/lib/types";
+import { AttachOwnerForm } from "../AttachOwnerForm";
 
 export default async function EditHostPage({ params }: { params: { id: string } }) {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) redirect("/login");
+  if (session.user.role === "HOST") redirect("/host");
   if (session.user.role !== "ADMIN") redirect("/dashboard");
 
   const host = await prisma.host.findUnique({
     where: { id: params.id },
-    include: { screens: { orderBy: { name: "asc" } } },
+    include: {
+      screens: { orderBy: { name: "asc" } },
+      user: { select: { id: true, email: true, name: true } },
+    },
   });
   if (!host) notFound();
 
@@ -41,6 +46,8 @@ export default async function EditHostPage({ params }: { params: { id: string } 
           timezone: host.timezone,
         }}
       />
+
+      <AttachOwnerForm hostId={host.id} current={host.user} />
 
       <section className="space-y-3">
         <div className="flex items-center justify-between">

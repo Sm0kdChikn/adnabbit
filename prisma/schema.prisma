@@ -3,7 +3,7 @@
 // e.g. postgresql://user:pass@localhost:5432/adnabbit
 //
 // Note: SQLite has no native enums — Role, status, vertical, inventoryStatus are strings.
-// Valid Role: ADVERTISER | ADMIN
+// Valid Role: ADVERTISER | ADMIN | HOST
 // Valid Creative status: DRAFT | PENDING | APPROVED | REJECTED
 // Valid PlacementRequest status: REQUESTED | APPROVED | REJECTED
 // Valid HostVertical: see src/lib/types.ts
@@ -25,9 +25,12 @@ model User {
   email                 String             @unique
   passwordHash          String
   name                  String?
+  /// ADVERTISER | ADMIN | HOST
   role                  String             @default("ADVERTISER")
   creatives             Creative[]
   profile               AdvertiserProfile?
+  /// Ticket G — optional 1:1 owning login for a Host (HOST role)
+  host                  Host?
   placementRequests     PlacementRequest[] @relation("PlacementAdvertiser")
   reviewedPlacements    PlacementRequest[] @relation("PlacementReviewer")
   schedulesCreated      Schedule[]         @relation("ScheduleCreator")
@@ -66,6 +69,9 @@ model Host {
   /// IANA timezone; screens inherit for daypart scheduling (Ticket E)
   timezone   String   @default("America/Denver")
   notes      String?
+  /// Ticket G — owning HOST user (null = unclaimed). One login owns one Host for MVP.
+  userId     String?  @unique
+  user       User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
   screens    Screen[]
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt

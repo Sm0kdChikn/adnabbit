@@ -8,11 +8,15 @@ import { formatVertical } from "@/lib/types";
 export default async function AdminHostsPage() {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) redirect("/login");
+  if (session.user.role === "HOST") redirect("/host");
   if (session.user.role !== "ADMIN") redirect("/dashboard");
 
   const hosts = await prisma.host.findMany({
     orderBy: { name: "asc" },
-    include: { _count: { select: { screens: true } } },
+    include: {
+      _count: { select: { screens: true } },
+      user: { select: { email: true, name: true } },
+    },
   });
 
   return (
@@ -57,6 +61,8 @@ export default async function AdminHostsPage() {
                 <p className="text-sm text-slate-500">
                   {formatVertical(h.vertical, h.otherLabel)} · {h._count.screens} screen
                   {h._count.screens === 1 ? "" : "s"}
+                  {" · "}
+                  {h.user ? `owner ${h.user.email}` : "unclaimed"}
                 </p>
                 {h.notes && <p className="text-xs text-slate-400">{h.notes}</p>}
               </div>

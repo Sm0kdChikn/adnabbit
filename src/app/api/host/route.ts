@@ -1,25 +1,25 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireAdminApi } from "@/lib/admin";
+import { requireHostApi } from "@/lib/host";
 import { isHostVertical } from "@/lib/types";
 import { isValidTimeZone } from "@/lib/schedules";
 
 export async function GET() {
-  const auth = await requireAdminApi();
+  const auth = await requireHostApi();
   if (auth.error) return auth.error;
 
-  const hosts = await prisma.host.findMany({
-    orderBy: { name: "asc" },
+  const host = await prisma.host.findUnique({
+    where: { id: auth.host.id },
     include: {
+      screens: { orderBy: { name: "asc" } },
       _count: { select: { screens: true } },
-      user: { select: { id: true, email: true, name: true } },
     },
   });
-  return NextResponse.json({ hosts });
+  return NextResponse.json({ host });
 }
 
-export async function POST(req: Request) {
-  const auth = await requireAdminApi();
+export async function PATCH(req: Request) {
+  const auth = await requireHostApi();
   if (auth.error) return auth.error;
 
   let body: {
@@ -35,11 +35,20 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }
 
-  const name = (body.name || "").trim();
-  const vertical = (body.vertical || "").trim();
-  const otherLabel = body.otherLabel?.trim() || null;
-  const notes = body.notes?.trim() || null;
-  const timezone = (body.timezone || "America/Denver").trim() || "America/Denver";
+  const existing = auth.host;
+  const name = body.name !== undefined ? body.name.trim() : existing.name;
+  const vertical =
+    body.vertical !== undefined ? body.vertical.trim() : existing.vertical;
+  let otherLabel =
+    body.otherLabel !== undefined
+      ? body.otherLabel?.trim() || null
+      : existing.otherLabel;
+  const notes =
+    body.notes !== undefined ? body.notes?.trim() || null : existing.notes;
+  const timezone =
+    body.timezone !== undefined
+      ? body.timezone.trim() || "America/Denver"
+      : existing.timezone;
 
   if (!name) {
     return NextResponse.json({ error: "name is required" }, { status: 400 });
@@ -53,26 +62,17 @@ export async function POST(req: Request) {
       { status: 400 }
     );
   }
-  if (vertical !== "OTHER" && otherLabel) {
-    return NextResponse.json(
-      { error: "otherLabel is only allowed when vertical is OTHER" },
-      { status: 400 }
-    );
+  if (vertical !== "OTHER") {
+    otherLabel = null;
   }
-
   if (!isValidTimeZone(timezone)) {
     return NextResponse.json({ error: "Invalid IANA timezone" }, { status: 400 });
   }
 
-  const host = await prisma.host.create({
-    data: {
-      name,
-      vertical,
-      otherLabel: vertical === "OTHER" ? otherLabel : null,
-      notes,
-      timezone,
-    },
+  const host = await prisma.host.update({
+    where: { id: existing.id },
+    data: { name, vertical, otherLabel, notes, timezone },
   });
 
-  return NextResponse.json({ host }, { status: 201 });
+  return NextResponse.json({ host });
 }

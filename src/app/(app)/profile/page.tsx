@@ -9,6 +9,8 @@ export default async function ProfilePage() {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) redirect("/login");
   if (session.user.role === "ADMIN") redirect("/admin");
+  if (session.user.role === "HOST") redirect("/host");
+
   if (session.user.role !== "ADVERTISER") redirect("/dashboard");
 
   const profile = await prisma.advertiserProfile.findUnique({

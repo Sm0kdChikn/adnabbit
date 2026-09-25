@@ -10,6 +10,8 @@ export default async function PlacementsPage() {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) redirect("/login");
   if (session.user.role === "ADMIN") redirect("/admin/placements");
+  if (session.user.role === "HOST") redirect("/host");
+
 
   const placements = await prisma.placementRequest.findMany({
     where: { advertiserId: session.user.id },

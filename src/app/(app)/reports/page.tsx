@@ -21,6 +21,8 @@ export default async function AdvertiserReportsPage({
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) redirect("/login");
   if (session.user.role === "ADMIN") redirect("/admin/proof-of-play");
+  if (session.user.role === "HOST") redirect("/host");
+
   if (session.user.role !== "ADVERTISER") redirect("/dashboard");
 
   const ownCreatives = await prisma.creative.findMany({

@@ -12,7 +12,10 @@ export async function GET(_req: Request, { params }: Ctx) {
 
   const host = await prisma.host.findUnique({
     where: { id: params.id },
-    include: { screens: { orderBy: { name: "asc" } } },
+    include: {
+      screens: { orderBy: { name: "asc" } },
+      user: { select: { id: true, email: true, name: true, role: true } },
+    },
   });
   if (!host) return NextResponse.json({ error: "Not found" }, { status: 404 });
   return NextResponse.json({ host });

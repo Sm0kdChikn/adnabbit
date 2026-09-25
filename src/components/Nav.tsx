@@ -44,6 +44,16 @@ export function Nav() {
                   </Link>
                 </>
               )}
+              {role === "HOST" && (
+                <>
+                  <Link href="/host" className="text-slate-700 hover:text-indigo-600">
+                    My venue
+                  </Link>
+                  <Link href="/host/screens/new" className="text-slate-700 hover:text-indigo-600">
+                    Add screen
+                  </Link>
+                </>
+              )}
               {role === "ADMIN" && (
                 <>
                   <Link href="/admin" className="text-slate-700 hover:text-indigo-600">
