@@ -96,3 +96,11 @@ export function isScheduleKind(v: string): v is ScheduleKind {
 }
 
 export const DEFAULT_HOST_TIMEZONE = "America/Denver";
+
+/** Ticket K — admin folder scope / target type */
+export const ADMIN_FOLDER_SCOPES = ["HOST", "ADVERTISER"] as const;
+export type AdminFolderScope = (typeof ADMIN_FOLDER_SCOPES)[number];
+
+export function isAdminFolderScope(v: string): v is AdminFolderScope {
+  return (ADMIN_FOLDER_SCOPES as readonly string[]).includes(v);
+}

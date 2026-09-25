@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { requireAdminApi } from "@/lib/admin";
 import { isHostVertical } from "@/lib/types";
 import { isValidTimeZone } from "@/lib/schedules";
+import { cleanupHostFolderItem } from "@/lib/folders";
 
 type Ctx = { params: { id: string } };
 
@@ -90,6 +91,7 @@ export async function DELETE(_req: Request, { params }: Ctx) {
   const existing = await prisma.host.findUnique({ where: { id: params.id } });
   if (!existing) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
+  await cleanupHostFolderItem(params.id);
   await prisma.host.delete({ where: { id: params.id } });
   return NextResponse.json({ ok: true });
 }

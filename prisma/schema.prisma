@@ -11,6 +11,7 @@
 // Valid Schedule status: DRAFT | ACTIVE | ENDED | CANCELLED
 // Valid Schedule kind: ONE_OFF | RECURRING
 // Ticket J: Device (1:1 Screen) + ScreenClaim one-time codes
+// Ticket K: AdminFolder / AdminFolderItem (HOST|ADVERTISER scope)
 
 generator client {
   provider = "prisma-client-js"
@@ -274,4 +275,33 @@ model ScreenClaim {
 
   @@index([screenId])
   @@index([expiresAt])
+}
+
+/// Ticket K — admin-only organizational folders (HOST or ADVERTISER scope)
+model AdminFolder {
+  id        String            @id @default(cuid())
+  /// HOST | ADVERTISER
+  scope     String
+  name      String
+  sortOrder Int               @default(0)
+  items     AdminFolderItem[]
+  createdAt DateTime          @default(now())
+  updatedAt DateTime          @updatedAt
+
+  @@index([scope, sortOrder])
+}
+
+/// Membership of a Host or Advertiser user in one AdminFolder (at most one folder)
+model AdminFolderItem {
+  id         String      @id @default(cuid())
+  folderId   String
+  folder     AdminFolder @relation(fields: [folderId], references: [id], onDelete: Cascade)
+  /// HOST | ADVERTISER — must match folder.scope
+  targetType String
+  /// Host.id or User.id (role ADVERTISER)
+  targetId   String
+  sortOrder  Int         @default(0)
+
+  @@unique([targetType, targetId])
+  @@index([folderId, sortOrder])
 }

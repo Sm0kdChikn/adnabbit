@@ -878,3 +878,33 @@ curl -s -X POST http://localhost:3000/api/device/play-logs \
 ```
 
 Player: see `adnabbit-player` README (`npm run claim -- --code …` then `npm start`).
+
+
+---
+
+## Ticket K — Admin folders (2026-09-25)
+
+**Prereq:** migration `20260925223000_ticket_k_admin_folders`, optional `npm run db:seed` (sample Gyms / Bars / Local services folders).
+
+### K-1. Admin APIs
+
+```bash
+# Admin session cookie jar /tmp/admin-cookies.txt
+curl -s -b /tmp/admin-cookies.txt 'http://localhost:3000/api/admin/folders?scope=HOST'
+# POST create, PATCH rename, PATCH /api/admin/folders/reorder
+# PATCH /api/admin/folders/items { targetType, targetId, folderId|null }
+# DELETE folder → items unfiled; Host/User rows remain
+```
+
+### K-2. UI
+
+1. Admin → **Hosts** — create folder, drag host card into folder or **Unfiled**, drag folders to reorder
+2. Admin → **Advertisers** — same folder UI for ADVERTISER users
+3. HOST / ADVERTISER portals — no folder UI
+
+Screenshot: `demo-shots/ticket-k-folders.png`
+
+### Soft misses
+
+Deep nesting, multi-select, mobile DnD polish, folder deep-links / search-within-folder.
+

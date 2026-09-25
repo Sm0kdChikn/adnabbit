@@ -531,6 +531,50 @@ async function main() {
   }
 
 
+
+  // Ticket K — optional sample admin folders (idempotent by scope+name)
+  async function ensureFolder(scope: "HOST" | "ADVERTISER", name: string, sortOrder: number) {
+    const existing = await prisma.adminFolder.findFirst({ where: { scope, name } });
+    if (existing) return existing;
+    return prisma.adminFolder.create({ data: { scope, name, sortOrder } });
+  }
+  const gymsFolder = await ensureFolder("HOST", "Gyms & fitness", 0);
+  const barsFolder = await ensureFolder("HOST", "Bars & nightlife", 1);
+  const localAdvFolder = await ensureFolder("ADVERTISER", "Local services", 0);
+  console.log(`Ticket K folders: ${gymsFolder.name}, ${barsFolder.name}, ${localAdvFolder.name}`);
+
+  const denverGym = await prisma.host.findFirst({ where: { name: "Denver Peak Fitness" } });
+  if (denverGym) {
+    await prisma.adminFolderItem.upsert({
+      where: { targetType_targetId: { targetType: "HOST", targetId: denverGym.id } },
+      create: { folderId: gymsFolder.id, targetType: "HOST", targetId: denverGym.id, sortOrder: 0 },
+      update: { folderId: gymsFolder.id },
+    });
+  }
+  const sportsBar = await prisma.host.findFirst({ where: { name: "Mile High Sports Bar" } });
+  if (sportsBar) {
+    await prisma.adminFolderItem.upsert({
+      where: { targetType_targetId: { targetType: "HOST", targetId: sportsBar.id } },
+      create: { folderId: barsFolder.id, targetType: "HOST", targetId: sportsBar.id, sortOrder: 0 },
+      update: { folderId: barsFolder.id },
+    });
+  }
+  const demoAdv = await prisma.user.findFirst({
+    where: { email: "demo.advertiser@adnabbit.com", role: "ADVERTISER" },
+  });
+  if (demoAdv) {
+    await prisma.adminFolderItem.upsert({
+      where: { targetType_targetId: { targetType: "ADVERTISER", targetId: demoAdv.id } },
+      create: {
+        folderId: localAdvFolder.id,
+        targetType: "ADVERTISER",
+        targetId: demoAdv.id,
+        sortOrder: 0,
+      },
+      update: { folderId: localAdvFolder.id },
+    });
+  }
+
   // Ensure at least a couple OPEN screens exist (hosts/screens seeded above)
   const openCount = await prisma.screen.count({ where: { inventoryStatus: "OPEN" } });
   console.log(`OPEN screens available for placement browse: ${openCount}`);

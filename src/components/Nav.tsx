@@ -36,6 +36,7 @@ function linksForRole(role?: string | null): NavLink[] {
       { href: "/admin/schedules", label: "Schedules" },
       { href: "/admin/schedules/calendar", label: "Calendar" },
       { href: "/admin/hosts", label: "Hosts" },
+      { href: "/admin/advertisers", label: "Advertisers" },
       { href: "/admin/screens", label: "Screens" },
       { href: "/admin/profiles", label: "Profiles" },
       { href: "/admin/proof-of-play", label: "PoP" },

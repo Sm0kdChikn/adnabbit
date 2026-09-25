@@ -1,6 +1,6 @@
 # AdNabbit Web MVP
 
-Advertiser signup/login, creative upload (image/video), submit for review, admin approve/reject, **Ticket A — Host/screen inventory**, and **Ticket B — Advertiser public profiles**, and **Ticket C — Placement requests**, and **Ticket D — Scheduling**, and **Ticket E — Recurring dayparts**, and **Ticket E2 — Schedule calendar view**, and **Ticket G — Host self-serve portal**, and **Ticket J — device claim / playlist APIs**.
+Advertiser signup/login, creative upload (image/video), submit for review, admin approve/reject, **Ticket A — Host/screen inventory**, and **Ticket B — Advertiser public profiles**, and **Ticket C — Placement requests**, and **Ticket D — Scheduling**, and **Ticket E — Recurring dayparts**, and **Ticket E2 — Schedule calendar view**, and **Ticket G — Host self-serve portal**, and **Ticket J — device claim / playlist APIs**, and **Ticket K — admin folders**.
 
 **Repo target:** https://github.com/Sm0kdChikn/adnabbit
 
@@ -368,6 +368,40 @@ Mint APIs: `POST /api/admin/screens/[id]/claim`, `POST /api/host/screens/[id]/cl
 
 Includes APPROVED mp4 **Demo Player Spot** + ACTIVE ONE_OFF on **Lobby TV** covering ~next 48h.
 
+
+
+
+## Ticket K — Admin folders (hosts & advertisers)
+
+Admin-only organizational folders scoped separately to **HOST** and **ADVERTISER**. Host and advertiser portals are unchanged (no folder UI).
+
+### Schema
+
+- **AdminFolder**: `scope` (`HOST`|`ADVERTISER`), `name`, `sortOrder`
+- **AdminFolderItem**: `folderId`, `targetType`, `targetId`, `sortOrder`; unique `(targetType, targetId)` — each entity in at most one folder
+- **Unfiled** = no `AdminFolderItem` row (no Unfiled folder row)
+- Delete folder: transaction deletes items then folder (unfiles only — never deletes Host/User rows)
+- Host delete cleans orphan `AdminFolderItem` rows
+
+### APIs (admin session)
+
+| Method | Path | Notes |
+|--------|------|-------|
+| GET | `/api/admin/folders?scope=` | List folders + items |
+| POST | `/api/admin/folders` | `{ scope, name }` |
+| PATCH | `/api/admin/folders/[id]` | Rename `{ name }` |
+| DELETE | `/api/admin/folders/[id]` | Unfile items + delete folder |
+| PATCH | `/api/admin/folders/reorder` | `{ scope, orderedIds }` |
+| PATCH | `/api/admin/folders/items` | Move `{ targetType, targetId, folderId }` (`null` = unfile) or reorder `{ targetType, folderId, orderedTargetIds }` |
+
+### UI
+
+- `/admin/hosts` — folder sections + Unfiled; HTML5 drag-and-drop; list/grid ViewToggle
+- `/admin/advertisers` — new page listing ADVERTISER users (email, name, creative counts) with same folder UI; linked in admin Nav
+
+### Soft misses (later)
+
+Deep nesting (>1 level), multi-select, mobile DnD polish, folder deep-links / search-within-folder.
 
 ## Out of scope (later tickets)
 
