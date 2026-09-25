@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 import { PlacementBadge } from "@/components/StatusBadge";
 import { formatVertical } from "@/lib/types";
+import { EmptyState, PageHeader } from "@/components/ui";
 
 export default async function PlacementsPage() {
   const session = await getServerSession(authOptions);
@@ -28,29 +29,27 @@ export default async function PlacementsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">Placement requests</h1>
-          <p className="text-sm text-muted">
-            Track status. Rejected requests show the admin reason.
-          </p>
-        </div>
-        <Link
-          href="/screens"
-          className="rounded-md bg-accent px-4 py-2 text-sm font-medium text-on-accent hover:brightness-110"
-        >
-          Browse screens
-        </Link>
-      </div>
+      <PageHeader
+        title="Placement requests"
+        description="Track status. Rejected requests show the admin reason."
+        actions={
+          <Link
+            href="/screens"
+            className="rounded-md bg-accent px-4 py-2 text-sm font-medium text-on-accent shadow-glow-sm hover:brightness-110"
+          >
+            Browse screens
+          </Link>
+        }
+      />
 
       {placements.length === 0 ? (
-        <p className="rounded-xl border border-dashed border-border bg-surface p-8 text-center text-muted">
+        <EmptyState>
           No placement requests yet.{" "}
           <Link href="/screens" className="text-accent hover:underline">
             Browse screens
           </Link>
           .
-        </p>
+        </EmptyState>
       ) : (
         <ul className="space-y-3">
           {placements.map((p) => (

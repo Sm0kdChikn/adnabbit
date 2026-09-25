@@ -5,7 +5,14 @@ import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 import { InventoryBadge } from "@/components/StatusBadge";
 import { formatVertical } from "@/lib/types";
-import { Card, EmptyState } from "@/components/ui";
+import {
+  Card,
+  EmptyState,
+  PageHeader,
+  SectionTitle,
+  StatPill,
+  StatRow,
+} from "@/components/ui";
 
 export default async function HostPortalPage() {
   const session = await getServerSession(authOptions);
@@ -21,7 +28,10 @@ export default async function HostPortalPage() {
   if (!host) {
     return (
       <div className="space-y-4">
-        <h1 className="text-2xl font-bold text-foreground">Host portal</h1>
+        <PageHeader
+          title="Host portal"
+          description="Your venue workspace."
+        />
         <p className="rounded-xl border border-amber-500/30 bg-[var(--status-warning-bg)] p-6 text-sm text-[var(--status-warning-fg)]">
           No venue is linked to this account yet. Ask an AdNabbit admin to attach your
           login to a host.
@@ -30,36 +40,49 @@ export default async function HostPortalPage() {
     );
   }
 
+  const openScreens = host.screens.filter((s) => s.inventoryStatus === "OPEN").length;
+  const limitedScreens = host.screens.filter(
+    (s) => s.inventoryStatus === "LIMITED"
+  ).length;
+
   return (
     <div className="space-y-8">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">{host.name}</h1>
-          <p className="text-sm text-muted">
+      <PageHeader
+        title={host.name}
+        description={
+          <>
             {formatVertical(host.vertical, host.otherLabel)} · {host.timezone}
-          </p>
-          {host.notes && <p className="mt-1 text-sm text-muted-strong">{host.notes}</p>}
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <Link
-            href="/host/edit"
-            className="rounded-md border border-border bg-accent-dim px-3 py-1.5 text-sm text-accent hover:border-accent/40"
-          >
-            Edit venue
-          </Link>
-          <Link
-            href="/host/screens/new"
-            className="rounded-md bg-accent px-3 py-1.5 text-sm font-semibold text-on-accent shadow-glow-sm hover:brightness-110"
-          >
-            Add screen
-          </Link>
-        </div>
-      </div>
+            {host.notes ? (
+              <span className="mt-1 block text-muted-strong">{host.notes}</span>
+            ) : null}
+          </>
+        }
+        actions={
+          <>
+            <Link
+              href="/host/edit"
+              className="rounded-md border border-border bg-accent-dim px-3 py-1.5 text-sm text-accent hover:border-accent/40"
+            >
+              Edit venue
+            </Link>
+            <Link
+              href="/host/screens/new"
+              className="rounded-md bg-accent px-3 py-1.5 text-sm font-semibold text-on-accent shadow-glow-sm hover:brightness-110"
+            >
+              Add screen
+            </Link>
+          </>
+        }
+      />
+
+      <StatRow>
+        <StatPill label="Screens" value={host.screens.length} />
+        <StatPill label="Open inventory" value={openScreens} />
+        <StatPill label="Limited" value={limitedScreens} />
+      </StatRow>
 
       <section className="space-y-3">
-        <h2 className="text-lg font-semibold text-foreground">
-          Your screens ({host.screens.length})
-        </h2>
+        <SectionTitle>Your screens ({host.screens.length})</SectionTitle>
         {host.screens.length === 0 ? (
           <EmptyState>
             No screens yet.{" "}

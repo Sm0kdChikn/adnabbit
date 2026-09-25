@@ -4,7 +4,13 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 import { StatusBadge } from "@/components/StatusBadge";
-import { Card, EmptyState } from "@/components/ui";
+import {
+  Card,
+  EmptyState,
+  PageHeader,
+  StatPill,
+  StatRow,
+} from "@/components/ui";
 import { SubmitButton } from "./SubmitButton";
 
 export default async function DashboardPage() {
@@ -18,20 +24,41 @@ export default async function DashboardPage() {
     orderBy: { createdAt: "desc" },
   });
 
+  const pending = creatives.filter((c) => c.status === "PENDING").length;
+  const approved = creatives.filter((c) => c.status === "APPROVED").length;
+  const drafts = creatives.filter(
+    (c) => c.status === "DRAFT" || c.status === "REJECTED"
+  ).length;
+
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">Your creatives</h1>
-          <p className="text-sm text-muted">Upload, submit for review, and track status.</p>
-        </div>
-        <Link
-          href="/creatives/new"
-          className="rounded-md bg-accent px-4 py-2 text-sm font-semibold text-on-accent shadow-glow-sm hover:brightness-110"
-        >
-          Upload creative
-        </Link>
-      </div>
+      <PageHeader
+        title="Your creatives"
+        description="Upload, submit for review, and track status."
+        actions={
+          <Link
+            href="/creatives/new"
+            className="rounded-md bg-accent px-4 py-2 text-sm font-semibold text-on-accent shadow-glow-sm hover:brightness-110"
+          >
+            Upload creative
+          </Link>
+        }
+      />
+
+      {creatives.length > 0 ? (
+        <StatRow>
+          <StatPill label="Total creatives" value={creatives.length} />
+          <StatPill label="Pending review" value={pending} />
+          <StatPill label="Approved" value={approved} />
+          {drafts > 0 ? (
+            <StatPill
+              label="Draft / rejected"
+              value={drafts}
+              className="sm:col-span-2 lg:col-span-1"
+            />
+          ) : null}
+        </StatRow>
+      ) : null}
 
       {creatives.length === 0 ? (
         <EmptyState>
@@ -45,7 +72,7 @@ export default async function DashboardPage() {
         <ul className="space-y-3">
           {creatives.map((c) => (
             <li key={c.id}>
-              <Card className="p-4">
+              <Card glow className="p-4">
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div className="min-w-0 flex-1 space-y-1">
                     <div className="flex flex-wrap items-center gap-2">

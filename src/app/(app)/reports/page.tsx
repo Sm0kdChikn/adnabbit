@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { Suspense } from "react";
 import { PopFilters } from "../admin/proof-of-play/PopFilters";
 import { buildPlayEventWhere, formatDurationTotal } from "@/lib/pop";
+import { PageHeader } from "@/components/ui";
 
 export default async function AdvertiserReportsPage({
   searchParams,
@@ -65,13 +66,10 @@ export default async function AdvertiserReportsPage({
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-foreground">Proof of play</h1>
-        <p className="text-sm text-muted">
-          Plays matched to your creatives (by asset name). Unmatched OptiSigns assets are hidden.
-          Host filler is excluded by default.
-        </p>
-      </div>
+      <PageHeader
+        title="Proof of play"
+        description="Plays matched to your creatives (by asset name). Unmatched OptiSigns assets are hidden. Host filler is excluded by default."
+      />
 
       <Suspense fallback={null}>
         <PopFilters basePath="/reports" />

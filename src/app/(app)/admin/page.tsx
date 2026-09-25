@@ -3,7 +3,14 @@ import { authOptions } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { StatusBadge } from "@/components/StatusBadge";
-import { Card, EmptyState } from "@/components/ui";
+import {
+  Card,
+  EmptyState,
+  PageHeader,
+  SectionTitle,
+  StatPill,
+  StatRow,
+} from "@/components/ui";
 import { ReviewActions } from "./ReviewActions";
 
 export default async function AdminPage() {
@@ -12,37 +19,44 @@ export default async function AdminPage() {
   if (session.user.role === "HOST") redirect("/host");
   if (session.user.role !== "ADMIN") redirect("/dashboard");
 
-  const pending = await prisma.creative.findMany({
-    where: { status: "PENDING" },
-    orderBy: { updatedAt: "asc" },
-    include: { advertiser: { select: { email: true, name: true } } },
-  });
-
-  const recent = await prisma.creative.findMany({
-    where: { status: { in: ["APPROVED", "REJECTED"] } },
-    orderBy: { reviewedAt: "desc" },
-    take: 20,
-    include: { advertiser: { select: { email: true, name: true } } },
-  });
+  const [pending, recent, pendingPlacements, screenCount] = await Promise.all([
+    prisma.creative.findMany({
+      where: { status: "PENDING" },
+      orderBy: { updatedAt: "asc" },
+      include: { advertiser: { select: { email: true, name: true } } },
+    }),
+    prisma.creative.findMany({
+      where: { status: { in: ["APPROVED", "REJECTED"] } },
+      orderBy: { reviewedAt: "desc" },
+      take: 20,
+      include: { advertiser: { select: { email: true, name: true } } },
+    }),
+    prisma.placementRequest.count({ where: { status: "REQUESTED" } }),
+    prisma.screen.count(),
+  ]);
 
   return (
     <div className="space-y-8">
-      <div>
-        <h1 className="text-2xl font-bold text-foreground">Admin review queue</h1>
-        <p className="text-sm text-muted">Approve or reject PENDING creatives.</p>
-      </div>
+      <PageHeader
+        title="Admin review queue"
+        description="Approve or reject PENDING creatives."
+      />
+
+      <StatRow>
+        <StatPill label="Pending creatives" value={pending.length} />
+        <StatPill label="Pending placements" value={pendingPlacements} />
+        <StatPill label="Screens" value={screenCount} />
+      </StatRow>
 
       <section className="space-y-3">
-        <h2 className="text-lg font-semibold text-foreground">
-          Pending ({pending.length})
-        </h2>
+        <SectionTitle>Pending ({pending.length})</SectionTitle>
         {pending.length === 0 ? (
           <EmptyState>No pending creatives.</EmptyState>
         ) : (
           <ul className="space-y-3">
             {pending.map((c) => (
               <li key={c.id}>
-                <Card className="p-4">
+                <Card glow className="p-4">
                   <div className="flex flex-wrap items-start justify-between gap-4">
                     <div className="min-w-0 flex-1 space-y-1">
                       <div className="flex flex-wrap items-center gap-2">
@@ -73,7 +87,7 @@ export default async function AdminPage() {
       </section>
 
       <section className="space-y-3">
-        <h2 className="text-lg font-semibold text-foreground">Recent decisions</h2>
+        <SectionTitle>Recent decisions</SectionTitle>
         {recent.length === 0 ? (
           <p className="text-sm text-muted">No decisions yet.</p>
         ) : (

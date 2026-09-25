@@ -6,6 +6,7 @@ import Link from "next/link";
 import { PlacementBadge } from "@/components/StatusBadge";
 import { PlacementActions } from "./PlacementActions";
 import { formatVertical } from "@/lib/types";
+import { EmptyState, PageHeader, SectionTitle } from "@/components/ui";
 
 export default async function AdminPlacementsPage() {
   const session = await getServerSession(authOptions);
@@ -46,37 +47,31 @@ export default async function AdminPlacementsPage() {
 
   return (
     <div className="space-y-8">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">Placement queue</h1>
-          <p className="text-sm text-muted">
-            Approve or reject REQUESTED placements (reject requires a reason).
-          </p>
-        </div>
-        <div className="flex gap-2 text-sm">
-          <Link
-            href="/admin"
-            className="rounded-md bg-accent-dim px-3 py-1.5 text-accent hover:bg-accent/15"
-          >
-            Creatives
-          </Link>
-          <Link
-            href="/admin/screens"
-            className="rounded-md bg-accent-dim px-3 py-1.5 text-accent hover:bg-accent/15"
-          >
-            Screens
-          </Link>
-        </div>
-      </div>
+      <PageHeader
+        title="Placement queue"
+        description="Approve or reject REQUESTED placements (reject requires a reason)."
+        actions={
+          <>
+            <Link
+              href="/admin"
+              className="rounded-md bg-accent-dim px-3 py-1.5 text-sm text-accent hover:bg-accent/15"
+            >
+              Creatives
+            </Link>
+            <Link
+              href="/admin/screens"
+              className="rounded-md bg-accent-dim px-3 py-1.5 text-sm text-accent hover:bg-accent/15"
+            >
+              Screens
+            </Link>
+          </>
+        }
+      />
 
       <section className="space-y-3">
-        <h2 className="text-lg font-semibold text-foreground">
-          Requested ({pending.length})
-        </h2>
+        <SectionTitle>Requested ({pending.length})</SectionTitle>
         {pending.length === 0 ? (
-          <p className="rounded-xl border border-dashed border-border bg-surface p-8 text-center text-muted">
-            No pending placement requests.
-          </p>
+          <EmptyState>No pending placement requests.</EmptyState>
         ) : (
           <ul className="space-y-3">
             {pending.map((p) => (
@@ -120,7 +115,7 @@ export default async function AdminPlacementsPage() {
       </section>
 
       <section className="space-y-3">
-        <h2 className="text-lg font-semibold text-foreground">Recent decisions</h2>
+        <SectionTitle>Recent decisions</SectionTitle>
         {recent.length === 0 ? (
           <p className="text-sm text-muted">No decisions yet.</p>
         ) : (

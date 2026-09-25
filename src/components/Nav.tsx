@@ -83,14 +83,26 @@ export function Nav() {
   const role = session?.user?.role;
   const links = linksForRole(role);
   const [open, setOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
 
   useEffect(() => {
     setOpen(false);
   }, [pathname]);
 
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 4);
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
   return (
-    <header className="sticky top-0 z-40 border-b border-border bg-background-elevated/90 backdrop-blur-md">
-      <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-3">
+    <header
+      className={`portal-nav sticky top-0 z-40 border-b border-border/80 bg-background-elevated/85 backdrop-blur-xl transition-shadow ${
+        scrolled ? "shadow-[0_8px_24px_rgba(0,0,0,0.12)] dark:shadow-[0_8px_28px_rgba(0,0,0,0.45)]" : ""
+      }`}
+    >
+      <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-3 sm:px-6">
         <BrandLogo size="sm" />
 
         {/* Desktop nav */}

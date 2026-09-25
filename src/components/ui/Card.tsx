@@ -1,13 +1,23 @@
-import { HTMLAttributes } from "react";
+import { HTMLAttributes, ReactNode } from "react";
+
+type CardProps = HTMLAttributes<HTMLDivElement> & {
+  /** Soft cyan border + glow on hover; keep light theme readable */
+  glow?: boolean;
+};
 
 export function Card({
   className = "",
   children,
+  glow = false,
   ...props
-}: HTMLAttributes<HTMLDivElement>) {
+}: CardProps) {
   return (
     <div
-      className={`rounded-xl border border-border bg-surface shadow-card ${className}`}
+      className={`portal-card-glow rounded-xl border border-border bg-surface shadow-card transition ${
+        glow
+          ? "hover:border-accent/45 hover:shadow-glow-sm dark:hover:border-accent/50"
+          : ""
+      } ${className}`}
       {...props}
     >
       {children}
@@ -39,17 +49,29 @@ export function CardBody({
   );
 }
 
+type EmptyStateProps = HTMLAttributes<HTMLDivElement> & {
+  icon?: ReactNode;
+};
+
 export function EmptyState({
   className = "",
   children,
+  icon,
   ...props
-}: HTMLAttributes<HTMLDivElement>) {
+}: EmptyStateProps) {
   return (
     <div
-      className={`rounded-xl border border-dashed border-border bg-surface/50 p-8 text-center text-muted ${className}`}
+      className={`rounded-xl border border-dashed border-accent/35 bg-accent-dim/40 p-8 text-center text-muted dark:border-accent/40 dark:bg-accent-dim/25 ${className}`}
       {...props}
     >
-      {children}
+      {icon ? (
+        <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center text-accent opacity-80">
+          {icon}
+        </div>
+      ) : null}
+      <div className="mx-auto max-w-md space-y-1 text-sm leading-relaxed">
+        {children}
+      </div>
     </div>
   );
 }

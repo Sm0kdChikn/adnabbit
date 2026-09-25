@@ -8,6 +8,7 @@ import { ScheduleBadge } from "@/components/StatusBadge";
 import { formatScheduleSummary, materializeEndedSchedules } from "@/lib/schedules";
 import { isScheduleStatus } from "@/lib/types";
 import { ScheduleFilters } from "./ScheduleFilters";
+import { PageHeader } from "@/components/ui";
 
 export default async function AdminSchedulesPage({
   searchParams,
@@ -72,29 +73,26 @@ export default async function AdminSchedulesPage({
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">Schedules</h1>
-          <p className="text-sm text-muted">
-            Create windows for APPROVED placements. ACTIVE schedules past endAt become ENDED on
-            load.
-          </p>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <Link
-            href="/admin/schedules/calendar"
-            className="rounded-md bg-surface-hover px-3 py-2 text-sm text-foreground hover:bg-surface-hover"
-          >
-            Calendar
-          </Link>
-          <Link
-            href="/admin/schedules/new"
-            className="rounded-md bg-accent px-4 py-2 text-sm font-medium text-on-accent hover:brightness-110"
-          >
-            New schedule
-          </Link>
-        </div>
-      </div>
+      <PageHeader
+        title="Schedules"
+        description="Create windows for APPROVED placements. ACTIVE schedules past endAt become ENDED on load."
+        actions={
+          <>
+            <Link
+              href="/admin/schedules/calendar"
+              className="rounded-md bg-surface-hover px-3 py-2 text-sm text-foreground hover:bg-surface-hover"
+            >
+              Calendar
+            </Link>
+            <Link
+              href="/admin/schedules/new"
+              className="rounded-md bg-accent px-4 py-2 text-sm font-medium text-on-accent shadow-glow-sm hover:brightness-110"
+            >
+              New schedule
+            </Link>
+          </>
+        }
+      />
 
       <Suspense fallback={null}>
         <ScheduleFilters screens={screenOpts} />

@@ -6,6 +6,7 @@ import { Suspense } from "react";
 import { ImportForm } from "./ImportForm";
 import { PopFilters } from "./PopFilters";
 import { buildPlayEventWhere, formatDurationTotal } from "@/lib/pop";
+import { PageHeader } from "@/components/ui";
 
 export default async function AdminProofOfPlayPage({
   searchParams,
@@ -59,12 +60,10 @@ export default async function AdminProofOfPlayPage({
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-foreground">Proof of play</h1>
-        <p className="text-sm text-muted">
-          Import OptiSigns PoP CSVs and filter play events. Host filler is excluded by default.
-        </p>
-      </div>
+      <PageHeader
+        title="Proof of play"
+        description="Import OptiSigns PoP CSVs and filter play events. Host filler is excluded by default."
+      />
 
       <ImportForm />
 

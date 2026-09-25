@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 import { ADVERTISER_CATEGORY_LABELS, type AdvertiserCategory } from "@/lib/types";
 import { UnpublishButton } from "./UnpublishButton";
+import { PageHeader } from "@/components/ui";
 
 export default async function AdminProfilesPage() {
   const session = await getServerSession(authOptions);
@@ -19,12 +20,10 @@ export default async function AdminProfilesPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-foreground">Advertiser profiles</h1>
-        <p className="text-sm text-muted">
-          View profiles and unpublish if needed. Admins cannot edit advertiser content.
-        </p>
-      </div>
+      <PageHeader
+        title="Advertiser profiles"
+        description="View profiles and unpublish if needed. Admins cannot edit advertiser content."
+      />
 
       {profiles.length === 0 ? (
         <p className="rounded-xl border border-dashed border-border bg-surface p-8 text-center text-muted">

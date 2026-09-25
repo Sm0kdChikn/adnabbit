@@ -12,6 +12,7 @@ import {
   isHostVertical,
 } from "@/lib/types";
 import type { Prisma } from "@prisma/client";
+import { EmptyState, PageHeader } from "@/components/ui";
 
 export default async function ScreensBrowsePage({
   searchParams,
@@ -63,29 +64,25 @@ export default async function ScreensBrowsePage({
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">Browse screens</h1>
-          <p className="text-sm text-muted">
-            Request placement on OPEN or LIMITED inventory. Attach an APPROVED creative.
-          </p>
-        </div>
-        <Link
-          href="/placements"
-          className="rounded-md bg-accent-dim px-4 py-2 text-sm font-medium text-accent hover:bg-accent/15"
-        >
-          My placement requests
-        </Link>
-      </div>
+      <PageHeader
+        title="Browse screens"
+        description="Request placement on OPEN or LIMITED inventory. Attach an APPROVED creative."
+        actions={
+          <Link
+            href="/placements"
+            className="rounded-md bg-accent-dim px-4 py-2 text-sm font-medium text-accent hover:bg-accent/15"
+          >
+            My placement requests
+          </Link>
+        }
+      />
 
       <Suspense fallback={null}>
         <BrowseFilters />
       </Suspense>
 
       {screens.length === 0 ? (
-        <p className="rounded-xl border border-dashed border-border bg-surface p-8 text-center text-muted">
-          No screens match your filters.
-        </p>
+        <EmptyState>No screens match your filters.</EmptyState>
       ) : (
         <ul className="space-y-3">
           {screens.map((s) => {

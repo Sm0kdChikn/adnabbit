@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 import { formatVertical } from "@/lib/types";
+import { EmptyState, PageHeader } from "@/components/ui";
 
 export default async function AdminHostsPage() {
   const session = await getServerSession(authOptions);
@@ -21,29 +22,27 @@ export default async function AdminHostsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">Hosts</h1>
-          <p className="text-sm text-muted">
-            Venues with a primary vertical. Screens inherit vertical from their host.
-          </p>
-        </div>
-        <Link
-          href="/admin/hosts/new"
-          className="rounded-md bg-accent px-4 py-2 text-sm font-medium text-on-accent hover:brightness-110"
-        >
-          New host
-        </Link>
-      </div>
+      <PageHeader
+        title="Hosts"
+        description="Venues with a primary vertical. Screens inherit vertical from their host."
+        actions={
+          <Link
+            href="/admin/hosts/new"
+            className="rounded-md bg-accent px-4 py-2 text-sm font-medium text-on-accent shadow-glow-sm hover:brightness-110"
+          >
+            New host
+          </Link>
+        }
+      />
 
       {hosts.length === 0 ? (
-        <p className="rounded-xl border border-dashed border-border bg-surface p-8 text-center text-muted">
+        <EmptyState>
           No hosts yet.{" "}
           <Link href="/admin/hosts/new" className="text-accent hover:underline">
             Create one
           </Link>
           .
-        </p>
+        </EmptyState>
       ) : (
         <ul className="divide-y divide-border rounded-xl border border-border bg-surface shadow-sm">
           {hosts.map((h) => (

@@ -12,6 +12,7 @@ import {
   isInventoryStatus,
 } from "@/lib/types";
 import type { Prisma } from "@prisma/client";
+import { EmptyState, PageHeader } from "@/components/ui";
 
 export default async function AdminScreensPage({
   searchParams,
@@ -53,33 +54,31 @@ export default async function AdminScreensPage({
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">Screens</h1>
-          <p className="text-sm text-muted">
-            Filter by city, ZIP, inventory status, or host vertical.
-          </p>
-        </div>
-        <Link
-          href="/admin/screens/new"
-          className="rounded-md bg-accent px-4 py-2 text-sm font-medium text-on-accent hover:brightness-110"
-        >
-          New screen
-        </Link>
-      </div>
+      <PageHeader
+        title="Screens"
+        description="Filter by city, ZIP, inventory status, or host vertical."
+        actions={
+          <Link
+            href="/admin/screens/new"
+            className="rounded-md bg-accent px-4 py-2 text-sm font-medium text-on-accent shadow-glow-sm hover:brightness-110"
+          >
+            New screen
+          </Link>
+        }
+      />
 
       <Suspense fallback={null}>
         <ScreenFilters />
       </Suspense>
 
       {screens.length === 0 ? (
-        <p className="rounded-xl border border-dashed border-border bg-surface p-8 text-center text-muted">
+        <EmptyState>
           No screens match.{" "}
           <Link href="/admin/screens/new" className="text-accent hover:underline">
             Create one
           </Link>
           .
-        </p>
+        </EmptyState>
       ) : (
         <ul className="divide-y divide-border rounded-xl border border-border bg-surface shadow-sm">
           {screens.map((s) => (

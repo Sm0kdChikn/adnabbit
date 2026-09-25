@@ -6,6 +6,7 @@ import Link from "next/link";
 import { ScheduleBadge } from "@/components/StatusBadge";
 import { formatScheduleSummary, materializeEndedSchedules } from "@/lib/schedules";
 import { formatVertical } from "@/lib/types";
+import { EmptyState, PageHeader } from "@/components/ui";
 
 export default async function AdvertiserSchedulesPage() {
   const session = await getServerSession(authOptions);
@@ -33,29 +34,27 @@ export default async function AdvertiserSchedulesPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">My schedules</h1>
-          <p className="text-sm text-muted">
-            Read-only view of play windows for your approved placements.
-          </p>
-        </div>
-        <Link
-          href="/schedules/calendar"
-          className="rounded-md bg-surface-hover px-3 py-2 text-sm text-foreground hover:bg-surface-hover"
-        >
-          Calendar
-        </Link>
-      </div>
+      <PageHeader
+        title="My schedules"
+        description="Read-only view of play windows for your approved placements."
+        actions={
+          <Link
+            href="/schedules/calendar"
+            className="rounded-md bg-surface-hover px-3 py-2 text-sm text-foreground hover:bg-surface-hover"
+          >
+            Calendar
+          </Link>
+        }
+      />
 
       {schedules.length === 0 ? (
-        <p className="rounded-xl border border-dashed border-border bg-surface p-8 text-center text-muted">
+        <EmptyState>
           No schedules yet. After admin schedules an approved placement, it appears here.{" "}
           <Link href="/placements" className="text-accent hover:underline">
             View placements
           </Link>
           .
-        </p>
+        </EmptyState>
       ) : (
         <ul className="space-y-3">
           {schedules.map((s) => (
