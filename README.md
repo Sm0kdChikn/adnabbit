@@ -1,6 +1,6 @@
 # AdNabbit Web MVP
 
-Advertiser signup/login, creative upload (image/video), submit for review, admin approve/reject, **Ticket A — Host/screen inventory**, and **Ticket B — Advertiser public profiles**, and **Ticket C — Placement requests**, and **Ticket D — Scheduling**, and **Ticket E — Recurring dayparts**, and **Ticket E2 — Schedule calendar view**, and **Ticket G — Host self-serve portal**.
+Advertiser signup/login, creative upload (image/video), submit for review, admin approve/reject, **Ticket A — Host/screen inventory**, and **Ticket B — Advertiser public profiles**, and **Ticket C — Placement requests**, and **Ticket D — Scheduling**, and **Ticket E — Recurring dayparts**, and **Ticket E2 — Schedule calendar view**, and **Ticket G — Host self-serve portal**, and **Ticket J — device claim / playlist APIs**.
 
 **Repo target:** https://github.com/Sm0kdChikn/adnabbit
 
@@ -338,9 +338,40 @@ Screen filter on schedule calendars + overnight (cross-midnight) RECURRING daypa
 2. New RECURRING Fri 22:00→02:00 → calendar shows Fri evening + Sat morning blocks
 3. Create overlapping ACTIVE on that screen → 409 warn-first
 
+
+## Ticket J — Device claim, playlist, asset APIs
+
+Software-first Linux kiosk player spike (companion repo: `Sm0kdChikn/adnabbit-player`). OptiSigns remains production PoP; play-logs are stub-only.
+
+### Data model
+
+- **Device**: 1:1 with Screen (`screenId` unique); stores **sha256** of bearer token only; `lastSeenAt`
+- **ScreenClaim**: one-time 6–8 char codes from `A–Z0–9` excluding `0O1I`; TTL **15 minutes**
+
+### Device APIs (Bearer device token)
+
+| Method | Path | Notes |
+|--------|------|-------|
+| POST | `/api/device/claim` | `{ code }` → `{ deviceToken, screenId, screenName, hostName, timezone }` |
+| POST | `/api/device/heartbeat` | updates `lastSeenAt` |
+| GET | `/api/device/playlist` | ACTIVE schedules next **24h** (host TZ, overnight dayparts OK) |
+| GET | `/api/device/assets/[creativeId]` | stream upload for creatives on that screen |
+| POST | `/api/device/play-logs` | **202 stub** — console log only, no DB persist |
+
+### Admin / host UI
+
+Screen detail pages (`/admin/screens/[id]`, `/host/screens/[id]`): **Mint claim code** + paired device last-seen.
+
+Mint APIs: `POST /api/admin/screens/[id]/claim`, `POST /api/host/screens/[id]/claim`.
+
+### Seed
+
+Includes APPROVED mp4 **Demo Player Spot** + ACTIVE ONE_OFF on **Lobby TV** covering ~next 48h.
+
+
 ## Out of scope (later tickets)
 
-- Player, OptiSigns sync (beyond PoP import), marketplace, billing, drag-drop calendar edit, multi-screen assign, monthly RRULE, host invites/payouts
+- OptiSigns sync (beyond PoP import), F2 play-log persistence, fleet management, custom ISO, marketplace, billing, drag-drop calendar edit, multi-screen assign, monthly RRULE, host invites/payouts
 
 ## Push to GitHub
 

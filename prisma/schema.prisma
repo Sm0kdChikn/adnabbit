@@ -10,6 +10,7 @@
 // Valid InventoryStatus: OPEN | LIMITED | FULL
 // Valid Schedule status: DRAFT | ACTIVE | ENDED | CANCELLED
 // Valid Schedule kind: ONE_OFF | RECURRING
+// Ticket J: Device (1:1 Screen) + ScreenClaim one-time codes
 
 generator client {
   provider = "prisma-client-js"
@@ -89,6 +90,8 @@ model Screen {
   host              Host               @relation(fields: [hostId], references: [id], onDelete: Cascade)
   placementRequests PlacementRequest[]
   schedules         Schedule[]
+  device            Device?
+  claims            ScreenClaim[]
   createdAt         DateTime           @default(now())
   updatedAt         DateTime           @updatedAt
 
@@ -238,4 +241,37 @@ model PlayEvent {
   @@index([creativeId])
   @@index([isHostFiller])
   @@index([importId])
+}
+
+/// Ticket J — paired kiosk player device (1 per Screen for spike; reclaim replaces)
+model Device {
+  id         String    @id @default(cuid())
+  /// Unique: one Device bound per Screen
+  screenId   String    @unique
+  screen     Screen    @relation(fields: [screenId], references: [id], onDelete: Cascade)
+  /// sha256 hex of device bearer token (never store raw token)
+  tokenHash  String    @unique
+  name       String?
+  lastSeenAt DateTime?
+  claimedAt  DateTime  @default(now())
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  @@index([lastSeenAt])
+}
+
+/// Ticket J — one-time claim codes to pair a player to a Screen
+model ScreenClaim {
+  id          String    @id @default(cuid())
+  screenId    String
+  screen      Screen    @relation(fields: [screenId], references: [id], onDelete: Cascade)
+  /// 6–8 chars from A–Z0–9 excluding 0O1I
+  code        String    @unique
+  expiresAt   DateTime
+  usedAt      DateTime?
+  createdById String?
+  createdAt   DateTime  @default(now())
+
+  @@index([screenId])
+  @@index([expiresAt])
 }

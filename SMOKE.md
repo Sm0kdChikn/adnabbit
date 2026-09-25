@@ -852,3 +852,29 @@ Inventory filters (city/zip/status) on `/screens` unchanged; new host screens wi
 2. Admin → **Hosts** → Denver Peak Fitness → Attach/Detach owner
 3. Advertiser → **Screens** → still sees inventory
 
+
+
+---
+
+## Ticket J — Device claim / playlist (2026-09-25)
+
+```bash
+# As admin (session cookie) OR mint via prisma/script:
+# Mint claim for Lobby TV screenId, then:
+curl -s -X POST http://localhost:3000/api/device/claim \
+  -H 'Content-Type: application/json' \
+  -d '{"code":"XXXXXX"}'
+# → deviceToken, screenId, …
+
+curl -s http://localhost:3000/api/device/playlist \
+  -H "Authorization: Bearer $DEVICE_TOKEN"
+# → items[] with assetUrl, startAt/endAt ISO UTC
+
+curl -s -X POST http://localhost:3000/api/device/play-logs \
+  -H "Authorization: Bearer $DEVICE_TOKEN" \
+  -H 'Content-Type: application/json' \
+  -d '[{"creativeId":"…","playedAt":"…"}]'
+# → 202 { accepted, persisted: false }
+```
+
+Player: see `adnabbit-player` README (`npm run claim -- --code …` then `npm start`).

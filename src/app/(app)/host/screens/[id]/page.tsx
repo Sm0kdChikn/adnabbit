@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 import { HostScreenForm } from "../HostScreenForm";
 import { PlacementBadge, StatusBadge } from "@/components/StatusBadge";
+import { ClaimDevicePanel } from "@/components/ClaimDevicePanel";
 
 export default async function HostScreenDetailPage({
   params,
@@ -23,6 +24,7 @@ export default async function HostScreenDetailPage({
   const screen = await prisma.screen.findFirst({
     where: { id: params.id, hostId: host.id },
     include: {
+      device: true,
       placementRequests: {
         orderBy: { createdAt: "desc" },
         take: 20,
@@ -64,6 +66,21 @@ export default async function HostScreenDetailPage({
           inventoryStatus: screen.inventoryStatus,
           notes: screen.notes,
         }}
+      />
+
+      <ClaimDevicePanel
+        screenId={screen.id}
+        role="host"
+        device={
+          screen.device
+            ? {
+                id: screen.device.id,
+                name: screen.device.name,
+                lastSeenAt: screen.device.lastSeenAt?.toISOString() ?? null,
+                claimedAt: screen.device.claimedAt.toISOString(),
+              }
+            : null
+        }
       />
 
       <section className="space-y-3">

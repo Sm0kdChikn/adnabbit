@@ -421,6 +421,116 @@ async function main() {
     }
   }
 
+
+  // Ticket J — playable video creative + ACTIVE ONE_OFF covering next 24h for player smoke
+  {
+    const videoSrc = path.join(process.cwd(), "fixtures", "uploads", "demo-spot.mp4");
+    let videoCreative = await prisma.creative.findFirst({
+      where: {
+        advertiserId: demoUser.id,
+        name: "Demo Player Spot",
+        status: "APPROVED",
+      },
+    });
+    if (!videoCreative) {
+      const storedName = `${randomUUID()}.mp4`;
+      try {
+        await fs.copyFile(videoSrc, path.join(uploadsDir, storedName));
+      } catch {
+        // Fallback: copy any existing png as placeholder name (player prefers mp4)
+        console.log("demo-spot.mp4 missing — skip video creative file copy");
+      }
+      try {
+        const st = await fs.stat(path.join(uploadsDir, storedName));
+        videoCreative = await prisma.creative.create({
+          data: {
+            name: "Demo Player Spot",
+            notes: "Seeded mp4 for Ticket J kiosk player smoke",
+            fileName: "demo-spot.mp4",
+            storedName,
+            mimeType: "video/mp4",
+            fileSize: st.size,
+            status: "APPROVED",
+            advertiserId: demoUser.id,
+            reviewedAt: new Date(),
+          },
+        });
+        console.log(`Seeded player video creative: ${videoCreative.id}`);
+      } catch (e) {
+        console.log("Could not seed video creative", e);
+      }
+    } else {
+      console.log(`Player video creative already present: ${videoCreative.id}`);
+    }
+
+    const lobby = await prisma.screen.findFirst({
+      where: { name: "Lobby TV" },
+    });
+    if (videoCreative && lobby) {
+      let jPlacement = await prisma.placementRequest.findFirst({
+        where: {
+          advertiserId: demoUser.id,
+          creativeId: videoCreative.id,
+          screenId: lobby.id,
+          status: "APPROVED",
+        },
+      });
+      if (!jPlacement) {
+        jPlacement = await prisma.placementRequest.create({
+          data: {
+            advertiserId: demoUser.id,
+            screenId: lobby.id,
+            creativeId: videoCreative.id,
+            status: "APPROVED",
+            note: "Seeded for Ticket J player playlist",
+            reviewedAt: new Date(),
+            reviewedById: admin.id,
+          },
+        });
+        console.log(`Seeded Ticket J placement: ${jPlacement.id}`);
+      }
+
+      const now = new Date();
+      const existingLive = await prisma.schedule.findFirst({
+        where: {
+          placementId: jPlacement.id,
+          status: "ACTIVE",
+          kind: "ONE_OFF",
+          note: "Ticket J player smoke window (next 48h)",
+        },
+      });
+      if (!existingLive) {
+        const live = await prisma.schedule.create({
+          data: {
+            placementId: jPlacement.id,
+            screenId: lobby.id,
+            kind: "ONE_OFF",
+            startAt: new Date(now.getTime() - 60 * 60 * 1000),
+            endAt: new Date(now.getTime() + 48 * 60 * 60 * 1000),
+            status: "ACTIVE",
+            note: "Ticket J player smoke window (next 48h)",
+            createdById: admin.id,
+          },
+        });
+        console.log(`Seeded Ticket J ACTIVE schedule: ${live.id}`);
+      } else {
+        // Refresh window so re-seed keeps playlist non-empty
+        await prisma.schedule.update({
+          where: { id: existingLive.id },
+          data: {
+            startAt: new Date(now.getTime() - 60 * 60 * 1000),
+            endAt: new Date(now.getTime() + 48 * 60 * 60 * 1000),
+            status: "ACTIVE",
+          },
+        });
+        console.log(`Refreshed Ticket J ACTIVE schedule: ${existingLive.id}`);
+      }
+    } else {
+      console.log("Skip Ticket J schedule — missing creative or Lobby TV");
+    }
+  }
+
+
   // Ensure at least a couple OPEN screens exist (hosts/screens seeded above)
   const openCount = await prisma.screen.count({ where: { inventoryStatus: "OPEN" } });
   console.log(`OPEN screens available for placement browse: ${openCount}`);

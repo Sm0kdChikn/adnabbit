@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 import { ScreenForm } from "../ScreenForm";
 import { formatVertical } from "@/lib/types";
+import { ClaimDevicePanel } from "@/components/ClaimDevicePanel";
 
 export default async function EditScreenPage({ params }: { params: { id: string } }) {
   const session = await getServerSession(authOptions);
@@ -16,6 +17,7 @@ export default async function EditScreenPage({ params }: { params: { id: string 
     where: { id: params.id },
     include: {
       host: { select: { id: true, name: true, vertical: true, otherLabel: true } },
+      device: true,
     },
   });
   if (!screen) notFound();
@@ -37,6 +39,20 @@ export default async function EditScreenPage({ params }: { params: { id: string 
           {formatVertical(screen.host.vertical, screen.host.otherLabel)}
         </p>
       </div>
+      <ClaimDevicePanel
+        screenId={screen.id}
+        role="admin"
+        device={
+          screen.device
+            ? {
+                id: screen.device.id,
+                name: screen.device.name,
+                lastSeenAt: screen.device.lastSeenAt?.toISOString() ?? null,
+                claimedAt: screen.device.claimedAt.toISOString(),
+              }
+            : null
+        }
+      />
       <ScreenForm
         mode="edit"
         screenId={screen.id}
