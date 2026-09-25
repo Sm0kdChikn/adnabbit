@@ -152,7 +152,7 @@ export default async function AdminProofOfPlayPage({
                   </td>
                   <td className="px-3 py-2">
                     {e.isHostFiller ? (
-                      <span className="rounded bg-amber-100 px-1.5 py-0.5 text-xs text-amber-800">
+                      <span className="rounded bg-[var(--status-warning-bg)] px-1.5 py-0.5 text-xs text-[var(--status-warning-fg)]">
                         filler
                       </span>
                     ) : (

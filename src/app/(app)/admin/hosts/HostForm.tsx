@@ -158,7 +158,7 @@ export function HostForm({ mode, hostId, initial }: Props) {
         <button
           type="submit"
           disabled={saving}
-          className="rounded-md bg-accent px-4 py-2 text-sm font-medium text-brand-bg hover:brightness-110 disabled:opacity-50"
+          className="rounded-md bg-accent px-4 py-2 text-sm font-medium text-on-accent hover:brightness-110 disabled:opacity-50"
         >
           {saving ? "Saving…" : mode === "create" ? "Create host" : "Save changes"}
         </button>
@@ -167,7 +167,7 @@ export function HostForm({ mode, hostId, initial }: Props) {
             type="button"
             disabled={saving}
             onClick={onDelete}
-            className="rounded-md bg-[var(--status-danger-bg)] px-4 py-2 text-sm font-medium text-[var(--status-danger-fg)] hover:bg-rose-100 disabled:opacity-50"
+            className="rounded-md bg-[var(--status-danger-bg)] px-4 py-2 text-sm font-medium text-[var(--status-danger-fg)] hover:brightness-95 disabled:opacity-50"
           >
             Delete
           </button>

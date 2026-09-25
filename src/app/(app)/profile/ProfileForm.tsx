@@ -88,7 +88,7 @@ export function ProfileForm({ initial }: { initial: ProfileInitial }) {
       )}
 
       {savedSlug && published && (
-        <p className="rounded-md bg-emerald-50 px-3 py-2 text-sm text-emerald-800">
+        <p className="rounded-md bg-[var(--status-success-bg)] px-3 py-2 text-sm text-[var(--status-success-fg)]">
           Public URL:{" "}
           <Link href={`/a/${savedSlug}`} className="font-medium underline" target="_blank">
             /a/{savedSlug}
@@ -239,7 +239,7 @@ export function ProfileForm({ initial }: { initial: ProfileInitial }) {
       <button
         type="submit"
         disabled={saving}
-        className="rounded-md bg-accent px-4 py-2 text-sm font-medium text-brand-bg hover:brightness-110 disabled:opacity-50"
+        className="rounded-md bg-accent px-4 py-2 text-sm font-medium text-on-accent hover:brightness-110 disabled:opacity-50"
       >
         {saving ? "Saving…" : initial ? "Save profile" : "Create profile"}
       </button>

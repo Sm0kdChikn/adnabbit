@@ -43,7 +43,7 @@ export default async function AdminProfilesPage() {
                   <span
                     className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold ${
                       p.published
-                        ? "bg-emerald-100 text-emerald-800"
+                        ? "bg-[var(--status-success-bg)] text-[var(--status-success-fg)]"
                         : "bg-surface-hover text-muted"
                     }`}
                   >

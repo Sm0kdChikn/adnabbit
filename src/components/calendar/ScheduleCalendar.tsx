@@ -31,7 +31,7 @@ type Props = {
 function statusClass(status: string): string {
   switch (status) {
     case "ACTIVE":
-      return "border-emerald-600 bg-emerald-100 text-emerald-900";
+      return "border-[var(--status-success-fg)] bg-[var(--status-success-bg)] text-[var(--status-success-fg)]";
     case "DRAFT":
       return "border-border-strong bg-surface-hover text-foreground";
     case "ENDED":
@@ -143,14 +143,14 @@ export function ScheduleCalendar({
           <button
             type="button"
             onClick={() => pushParams({ view: "week" })}
-            className={`rounded px-3 py-1.5 text-sm font-medium ${view === "week" ? "bg-accent text-brand-bg" : "text-muted hover:bg-background-elevated"}`}
+            className={`rounded px-3 py-1.5 text-sm font-medium ${view === "week" ? "bg-accent text-on-accent" : "text-muted hover:bg-background-elevated"}`}
           >
             Week
           </button>
           <button
             type="button"
             onClick={() => pushParams({ view: "month" })}
-            className={`rounded px-3 py-1.5 text-sm font-medium ${view === "month" ? "bg-accent text-brand-bg" : "text-muted hover:bg-background-elevated"}`}
+            className={`rounded px-3 py-1.5 text-sm font-medium ${view === "month" ? "bg-accent text-on-accent" : "text-muted hover:bg-background-elevated"}`}
           >
             Month
           </button>

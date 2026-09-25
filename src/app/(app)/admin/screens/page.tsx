@@ -62,7 +62,7 @@ export default async function AdminScreensPage({
         </div>
         <Link
           href="/admin/screens/new"
-          className="rounded-md bg-accent px-4 py-2 text-sm font-medium text-brand-bg hover:brightness-110"
+          className="rounded-md bg-accent px-4 py-2 text-sm font-medium text-on-accent hover:brightness-110"
         >
           New screen
         </Link>

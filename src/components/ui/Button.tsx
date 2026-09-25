@@ -5,7 +5,7 @@ type Size = "sm" | "md" | "lg";
 
 const variants: Record<Variant, string> = {
   primary:
-    "bg-accent text-brand-bg font-semibold shadow-glow-sm hover:brightness-110 disabled:opacity-60",
+    "bg-accent text-on-accent font-semibold shadow-glow-sm hover:brightness-110 disabled:opacity-60",
   secondary:
     "bg-accent-dim text-accent border border-border hover:border-accent/40 hover:bg-accent/15",
   ghost:
@@ -15,7 +15,7 @@ const variants: Record<Variant, string> = {
   success:
     "bg-emerald-600 text-white hover:bg-emerald-500 disabled:opacity-60",
   warning:
-    "bg-amber-500 text-brand-bg font-semibold hover:bg-amber-400 disabled:opacity-60",
+    "bg-amber-500 text-on-accent font-semibold hover:bg-amber-400 disabled:opacity-60",
 };
 
 const sizes: Record<Size, string> = {

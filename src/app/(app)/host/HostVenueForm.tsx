@@ -133,7 +133,7 @@ export function HostVenueForm({ initial }: Props) {
       <button
         type="submit"
         disabled={saving}
-        className="rounded-md bg-accent px-4 py-2 text-sm font-medium text-brand-bg hover:brightness-110 disabled:opacity-50"
+        className="rounded-md bg-accent px-4 py-2 text-sm font-medium text-on-accent hover:brightness-110 disabled:opacity-50"
       >
         {saving ? "Saving…" : "Save venue"}
       </button>

@@ -49,7 +49,7 @@ export default async function HostPortalPage() {
           </Link>
           <Link
             href="/host/screens/new"
-            className="rounded-md bg-accent px-3 py-1.5 text-sm font-semibold text-brand-bg shadow-glow-sm hover:brightness-110"
+            className="rounded-md bg-accent px-3 py-1.5 text-sm font-semibold text-on-accent shadow-glow-sm hover:brightness-110"
           >
             Add screen
           </Link>

@@ -80,7 +80,7 @@ export function AttachOwnerForm({ hostId, current }: Props) {
           Create or link a HOST user. No invite email — set the password here.
         </p>
         {current ? (
-          <p className="mt-2 text-sm text-emerald-700">
+          <p className="mt-2 text-sm text-[var(--status-success-fg)]">
             Currently linked: <strong>{current.email}</strong>
             {current.name ? ` (${current.name})` : ""}
           </p>
@@ -92,7 +92,7 @@ export function AttachOwnerForm({ hostId, current }: Props) {
         <p className="rounded-md bg-[var(--status-danger-bg)] px-3 py-2 text-sm text-[var(--status-danger-fg)]">{error}</p>
       )}
       {message && (
-        <p className="rounded-md bg-emerald-50 px-3 py-2 text-sm text-emerald-800">
+        <p className="rounded-md bg-[var(--status-success-bg)] px-3 py-2 text-sm text-[var(--status-success-fg)]">
           {message}
         </p>
       )}
@@ -131,7 +131,7 @@ export function AttachOwnerForm({ hostId, current }: Props) {
           <button
             type="submit"
             disabled={saving}
-            className="rounded-md bg-accent px-4 py-2 text-sm font-medium text-brand-bg hover:brightness-110 disabled:opacity-50"
+            className="rounded-md bg-accent px-4 py-2 text-sm font-medium text-on-accent hover:brightness-110 disabled:opacity-50"
           >
             {saving ? "Saving…" : current ? "Update / re-link" : "Create & attach"}
           </button>

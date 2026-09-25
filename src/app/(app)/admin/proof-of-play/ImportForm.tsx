@@ -78,7 +78,7 @@ export function ImportForm() {
         <button
           type="submit"
           disabled={busy}
-          className="rounded-md bg-accent px-4 py-1.5 text-sm font-medium text-brand-bg hover:brightness-110 disabled:opacity-60"
+          className="rounded-md bg-accent px-4 py-1.5 text-sm font-medium text-on-accent hover:brightness-110 disabled:opacity-60"
         >
           {busy ? "Importing…" : "Import"}
         </button>
@@ -87,7 +87,7 @@ export function ImportForm() {
         <p className="rounded-md bg-[var(--status-danger-bg)] px-3 py-2 text-sm text-[var(--status-danger-fg)]">{error}</p>
       )}
       {result && (
-        <p className="rounded-md bg-emerald-50 px-3 py-2 text-sm text-emerald-800">
+        <p className="rounded-md bg-[var(--status-success-bg)] px-3 py-2 text-sm text-[var(--status-success-fg)]">
           Imported <strong>{result.filename}</strong>: {result.insertedCount} inserted,{" "}
           {result.skippedDupes} skipped (dupes) of {result.rowCount} rows.
         </p>

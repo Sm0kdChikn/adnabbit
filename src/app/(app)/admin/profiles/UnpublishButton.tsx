@@ -35,7 +35,7 @@ export function UnpublishButton({ profileId }: { profileId: string }) {
         type="button"
         disabled={busy}
         onClick={onClick}
-        className="rounded-md bg-[var(--status-danger-bg)] px-3 py-1.5 text-sm font-medium text-[var(--status-danger-fg)] hover:bg-rose-100 disabled:opacity-50"
+        className="rounded-md bg-[var(--status-danger-bg)] px-3 py-1.5 text-sm font-medium text-[var(--status-danger-fg)] hover:brightness-95 disabled:opacity-50"
       >
         {busy ? "…" : "Unpublish"}
       </button>

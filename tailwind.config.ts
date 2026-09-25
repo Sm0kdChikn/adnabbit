@@ -1,6 +1,7 @@
 import type { Config } from "tailwindcss";
 
 const config: Config = {
+  darkMode: "class",
   content: [
     "./src/pages/**/*.{js,ts,jsx,tsx,mdx}",
     "./src/components/**/*.{js,ts,jsx,tsx,mdx}",
@@ -28,6 +29,7 @@ const config: Config = {
           DEFAULT: "var(--accent)",
           dim: "var(--accent-dim)",
         },
+        "on-accent": "var(--on-accent)",
         brand: {
           bg: "#0B0F14",
           elevated: "#12181F",
@@ -43,9 +45,9 @@ const config: Config = {
         mono: ["var(--font-geist-mono)", "ui-monospace", "monospace"],
       },
       boxShadow: {
-        glow: "0 0 20px rgba(0, 229, 255, 0.35)",
-        "glow-sm": "0 0 12px rgba(0, 229, 255, 0.25)",
-        card: "0 1px 0 rgba(255,255,255,0.03), 0 8px 24px rgba(0,0,0,0.35)",
+        glow: "var(--accent-glow)",
+        "glow-sm": "0 0 12px color-mix(in srgb, var(--accent) 25%, transparent)",
+        card: "var(--shadow-card)",
       },
     },
   },

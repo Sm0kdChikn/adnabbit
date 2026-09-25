@@ -108,7 +108,7 @@ export function ScheduleCreateForm({ placements }: { placements: PlacementOpt[] 
           Approved placement
         </label>
         {placements.length === 0 ? (
-          <p className="text-sm text-amber-700">
+          <p className="text-sm text-[var(--status-warning-fg)]">
             No APPROVED placements yet. Approve a placement request first.
           </p>
         ) : (
@@ -288,7 +288,7 @@ export function ScheduleCreateForm({ placements }: { placements: PlacementOpt[] 
             type="button"
             disabled={loading || !placementId || (kind === "RECURRING" && weekdays.length === 0)}
             onClick={() => submit(true)}
-            className="rounded-md bg-amber-600 px-3 py-1.5 text-brand-bg hover:bg-amber-700 disabled:opacity-60"
+            className="rounded-md bg-amber-600 px-3 py-1.5 text-on-accent hover:bg-amber-700 disabled:opacity-60"
           >
             Create anyway
           </button>
@@ -300,7 +300,7 @@ export function ScheduleCreateForm({ placements }: { placements: PlacementOpt[] 
       <button
         type="submit"
         disabled={loading || !placementId || (kind === "RECURRING" && weekdays.length === 0)}
-        className="rounded-md bg-accent px-4 py-2 text-sm font-medium text-brand-bg hover:brightness-110 disabled:opacity-60"
+        className="rounded-md bg-accent px-4 py-2 text-sm font-medium text-on-accent hover:brightness-110 disabled:opacity-60"
       >
         {loading ? "Saving…" : "Create schedule"}
       </button>

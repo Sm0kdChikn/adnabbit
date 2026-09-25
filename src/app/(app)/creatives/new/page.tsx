@@ -83,7 +83,7 @@ export default function NewCreativePage() {
         <button
           type="submit"
           disabled={loading}
-          className="w-full rounded-md bg-accent py-2.5 font-medium text-brand-bg hover:brightness-110 disabled:opacity-60"
+          className="w-full rounded-md bg-accent py-2.5 font-medium text-on-accent hover:brightness-110 disabled:opacity-60"
         >
           {loading ? "Uploading…" : "Save as draft"}
         </button>

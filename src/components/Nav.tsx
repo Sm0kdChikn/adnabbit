@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { signOut, useSession } from "next-auth/react";
 import { useEffect, useState } from "react";
 import { BrandLogo } from "@/components/BrandLogo";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import { Button } from "@/components/ui";
 
 type NavLink = { href: string; label: string };
@@ -110,6 +111,7 @@ export function Nav() {
               <span className="rounded border border-border px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-muted">
                 {role}
               </span>
+              <ThemeToggle className="ml-1" />
               <Button
                 variant="ghost"
                 size="sm"
@@ -121,6 +123,7 @@ export function Nav() {
             </>
           ) : (
             <>
+              <ThemeToggle />
               <Link
                 href="/login"
                 className="rounded-md px-2.5 py-1.5 text-sm text-muted hover:text-foreground"
@@ -129,7 +132,7 @@ export function Nav() {
               </Link>
               <Link
                 href="/signup"
-                className="rounded-md bg-accent px-3 py-1.5 text-sm font-semibold text-brand-bg shadow-glow-sm hover:brightness-110"
+                className="rounded-md bg-accent px-3 py-1.5 text-sm font-semibold text-on-accent shadow-glow-sm hover:brightness-110"
               >
                 Sign up
               </Link>
@@ -137,24 +140,27 @@ export function Nav() {
           )}
         </nav>
 
-        {/* Mobile toggle */}
-        <button
-          type="button"
-          className="inline-flex items-center justify-center rounded-md border border-border p-2 text-muted hover:bg-surface-hover hover:text-foreground md:hidden"
-          aria-expanded={open}
-          aria-label={open ? "Close menu" : "Open menu"}
-          onClick={() => setOpen((v) => !v)}
-        >
-          {open ? (
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M6 6l12 12M18 6L6 18" />
-            </svg>
-          ) : (
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M4 7h16M4 12h16M4 17h16" />
-            </svg>
-          )}
-        </button>
+        {/* Mobile: theme + menu */}
+        <div className="flex items-center gap-2 md:hidden">
+          <ThemeToggle />
+          <button
+            type="button"
+            className="inline-flex items-center justify-center rounded-md border border-border p-2 text-muted hover:bg-surface-hover hover:text-foreground"
+            aria-expanded={open}
+            aria-label={open ? "Close menu" : "Open menu"}
+            onClick={() => setOpen((v) => !v)}
+          >
+            {open ? (
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M6 6l12 12M18 6L6 18" />
+              </svg>
+            ) : (
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M4 7h16M4 12h16M4 17h16" />
+              </svg>
+            )}
+          </button>
+        </div>
       </div>
 
       {/* Mobile panel */}
@@ -197,7 +203,7 @@ export function Nav() {
                 <Link
                   href="/signup"
                   onClick={() => setOpen(false)}
-                  className="rounded-md bg-accent px-2.5 py-2 text-center text-sm font-semibold text-brand-bg"
+                  className="rounded-md bg-accent px-2.5 py-2 text-center text-sm font-semibold text-on-accent"
                 >
                   Sign up
                 </Link>

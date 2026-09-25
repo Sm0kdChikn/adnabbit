@@ -78,7 +78,7 @@ export function RequestPlacementButton({
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="rounded-md bg-accent px-3 py-1.5 text-sm font-medium text-brand-bg hover:brightness-110"
+        className="rounded-md bg-accent px-3 py-1.5 text-sm font-medium text-on-accent hover:brightness-110"
       >
         Request placement
       </button>
@@ -107,7 +107,7 @@ export function RequestPlacementButton({
         </select>
       </label>
       {loaded && creatives.length === 0 && (
-        <p className="text-xs text-amber-800">
+        <p className="text-xs text-[var(--status-warning-fg)]">
           No APPROVED creatives. Upload and get one approved first.
         </p>
       )}
@@ -126,7 +126,7 @@ export function RequestPlacementButton({
         <button
           type="submit"
           disabled={loading || creatives.length === 0}
-          className="rounded-md bg-accent px-3 py-1.5 text-sm font-medium text-brand-bg hover:brightness-110 disabled:opacity-60"
+          className="rounded-md bg-accent px-3 py-1.5 text-sm font-medium text-on-accent hover:brightness-110 disabled:opacity-60"
         >
           {loading ? "Sending…" : "Submit request"}
         </button>

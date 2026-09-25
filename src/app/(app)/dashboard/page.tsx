@@ -27,7 +27,7 @@ export default async function DashboardPage() {
         </div>
         <Link
           href="/creatives/new"
-          className="rounded-md bg-accent px-4 py-2 text-sm font-semibold text-brand-bg shadow-glow-sm hover:brightness-110"
+          className="rounded-md bg-accent px-4 py-2 text-sm font-semibold text-on-accent shadow-glow-sm hover:brightness-110"
         >
           Upload creative
         </Link>

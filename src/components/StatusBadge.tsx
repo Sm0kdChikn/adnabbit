@@ -32,7 +32,7 @@ const scheduleStyles: Record<ScheduleStatus, string> = {
 };
 
 const badgeBase =
-  "inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold ring-1 ring-inset ring-white/5";
+  "inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold ring-1 ring-inset ring-border";
 
 export function StatusBadge({ status }: { status: string }) {
   const s =

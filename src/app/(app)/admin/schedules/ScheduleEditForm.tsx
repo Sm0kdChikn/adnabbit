@@ -305,7 +305,7 @@ export function ScheduleEditForm({
             type="button"
             disabled={!!loading}
             onClick={() => save(true)}
-            className="rounded-md bg-amber-600 px-3 py-1.5 text-brand-bg hover:bg-amber-700 disabled:opacity-60"
+            className="rounded-md bg-amber-600 px-3 py-1.5 text-on-accent hover:bg-amber-700 disabled:opacity-60"
           >
             Save anyway
           </button>
@@ -319,7 +319,7 @@ export function ScheduleEditForm({
           type="button"
           disabled={!!loading || (kind === "RECURRING" && weekdays.length === 0)}
           onClick={() => save(false)}
-          className="rounded-md bg-accent px-4 py-2 text-sm font-medium text-brand-bg hover:brightness-110 disabled:opacity-60"
+          className="rounded-md bg-accent px-4 py-2 text-sm font-medium text-on-accent hover:brightness-110 disabled:opacity-60"
         >
           {loading === "save" ? "Saving…" : "Save"}
         </button>

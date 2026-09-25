@@ -92,7 +92,7 @@ export function ScreenFilters() {
       </div>
       <button
         type="submit"
-        className="rounded-md bg-accent px-3 py-1.5 text-sm font-medium text-brand-bg hover:brightness-110"
+        className="rounded-md bg-accent px-3 py-1.5 text-sm font-medium text-on-accent hover:brightness-110"
       >
         Filter
       </button>

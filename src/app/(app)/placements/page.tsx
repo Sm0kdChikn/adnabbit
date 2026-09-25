@@ -37,7 +37,7 @@ export default async function PlacementsPage() {
         </div>
         <Link
           href="/screens"
-          className="rounded-md bg-accent px-4 py-2 text-sm font-medium text-brand-bg hover:brightness-110"
+          className="rounded-md bg-accent px-4 py-2 text-sm font-medium text-on-accent hover:brightness-110"
         >
           Browse screens
         </Link>

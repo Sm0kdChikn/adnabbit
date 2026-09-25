@@ -114,7 +114,7 @@ export function PopFilters({ basePath }: { basePath: string }) {
       </label>
       <button
         type="submit"
-        className="rounded-md bg-accent px-3 py-1.5 text-sm font-medium text-brand-bg hover:brightness-110"
+        className="rounded-md bg-accent px-3 py-1.5 text-sm font-medium text-on-accent hover:brightness-110"
       >
         Filter
       </button>
@@ -127,7 +127,7 @@ export function PopFilters({ basePath }: { basePath: string }) {
       </button>
       <a
         href={exportHref}
-        className="rounded-md bg-emerald-50 px-3 py-1.5 text-sm font-medium text-emerald-800 hover:bg-emerald-100"
+        className="rounded-md bg-[var(--status-success-bg)] px-3 py-1.5 text-sm font-medium text-[var(--status-success-fg)] hover:brightness-95"
       >
         Export CSV
       </a>
