@@ -1,0 +1,6 @@
+Report Date UTC,Account ID,Screen UUID,Screen Name,Screen Tags,Asset ID,Asset Name,Asset Tags,Start Time UTC,Device Local Time,Duration (seconds)
+2026-03-01T00:00:00Z,acct-demo,scr-uuid-lobby-001,Lobby TV,"geo-denver cat-gym screen-lobby cpm-8",asset-banner-001,Demo Approved Banner,advertiser,2026-03-01T15:05:00Z,America/Denver,15
+2026-03-01T00:00:00Z,acct-demo,scr-uuid-lobby-001,Lobby TV,"geo-denver cat-gym screen-lobby cpm-8",asset-banner-001,Demo Approved Banner,advertiser,2026-03-01T15:10:00Z,America/Denver,15
+2026-03-01T00:00:00Z,acct-demo,scr-uuid-cardio-002,Cardio wall,"geo-denver cat-gym screen-cardio cpm-6",asset-banner-001,Demo Approved Banner,advertiser,2026-03-01T16:00:00Z,America/Denver,12
+2026-03-01T00:00:00Z,acct-demo,scr-uuid-lobby-001,Lobby TV,"geo-denver cat-gym screen-lobby cpm-8",asset-filler-99,AdNabbit Filler Loop,"host-only filler internal",2026-03-01T15:20:00Z,America/Denver,30
+2026-03-01T00:00:00Z,acct-demo,scr-uuid-patio-003,Patio screen,"geo-denver cat-sportsbar screen-patio cpm-10",asset-unknown-42,Some Other Brand Spot,external,2026-03-01T18:00:00Z,America/Denver,20

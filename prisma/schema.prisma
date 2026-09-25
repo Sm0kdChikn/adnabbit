@@ -31,6 +31,7 @@ model User {
   placementRequests     PlacementRequest[] @relation("PlacementAdvertiser")
   reviewedPlacements    PlacementRequest[] @relation("PlacementReviewer")
   schedulesCreated      Schedule[]         @relation("ScheduleCreator")
+  playImports           PlayImport[]
   createdAt             DateTime           @default(now())
   updatedAt             DateTime           @updatedAt
 }
@@ -49,6 +50,7 @@ model Creative {
   advertiser        User               @relation(fields: [advertiserId], references: [id], onDelete: Cascade)
   reviewedAt        DateTime?
   placementRequests PlacementRequest[]
+  playEvents        PlayEvent[]
   createdAt         DateTime           @default(now())
   updatedAt         DateTime           @updatedAt
 }
@@ -181,4 +183,53 @@ model Schedule {
   @@index([campaignEndDate])
   @@index([placementId])
   @@index([screenId])
+}
+
+/// Ticket F — OptiSigns proof-of-play CSV import batch
+model PlayImport {
+  id            String      @id @default(cuid())
+  uploadedById  String
+  uploadedBy    User        @relation(fields: [uploadedById], references: [id], onDelete: Cascade)
+  filename      String
+  rowCount      Int
+  insertedCount Int
+  skippedDupes  Int
+  importedAt    DateTime    @default(now())
+  notes         String?
+  events        PlayEvent[]
+}
+
+/// Ticket F — one OptiSigns play / proof-of-play row
+model PlayEvent {
+  id              String      @id @default(cuid())
+  importId        String?
+  import          PlayImport? @relation(fields: [importId], references: [id], onDelete: SetNull)
+  reportDateUtc   DateTime
+  accountId       String?
+  screenUuid      String
+  screenName      String
+  screenTags      String
+  assetId         String
+  assetName       String
+  assetTags       String?
+  startTimeUtc    DateTime
+  /// OptiSigns "Device Local Time" — per Brandon this is IANA timezone string, not wall clock
+  deviceLocalTime String
+  /// Parsed IANA timezone if deviceLocalTime looks like one; otherwise null
+  deviceTimezone  String?
+  durationSec     Int
+  creativeId      String?
+  creative        Creative?   @relation(fields: [creativeId], references: [id], onDelete: SetNull)
+  /// Host/internal filler (not advertiser paid play). See isHostFillerFromCsv in lib/pop.ts
+  isHostFiller    Boolean     @default(false)
+  /// sha256 of screenUuid|assetId|startTimeUtcISO|durationSec — unique for dedupe
+  rawHash         String      @unique
+  createdAt       DateTime    @default(now())
+
+  @@index([startTimeUtc])
+  @@index([screenUuid])
+  @@index([assetId])
+  @@index([creativeId])
+  @@index([isHostFiller])
+  @@index([importId])
 }

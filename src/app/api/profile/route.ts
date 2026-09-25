@@ -75,7 +75,7 @@ function validateFields(raw: Partial<ProfileFields>): { error?: string; data?: P
     website = `https://${website}`;
   }
 
-  let logoUrl = raw.logoUrl?.trim() || null;
+  const logoUrl = raw.logoUrl?.trim() || null;
   if (logoUrl && !/^https?:\/\//i.test(logoUrl)) {
     return { error: "logoUrl must be an http(s) URL" };
   }
