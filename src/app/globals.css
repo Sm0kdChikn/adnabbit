@@ -125,3 +125,75 @@ body > * {
     color: var(--foreground);
   }
 }
+
+/* —— Marketing landing —— */
+.marketing-hero-grid {
+  background-image:
+    linear-gradient(to right, color-mix(in srgb, var(--border) 55%, transparent) 1px, transparent 1px),
+    linear-gradient(to bottom, color-mix(in srgb, var(--border) 55%, transparent) 1px, transparent 1px);
+  background-size: 48px 48px;
+  mask-image: radial-gradient(ellipse 70% 60% at 50% 40%, black 20%, transparent 75%);
+  -webkit-mask-image: radial-gradient(ellipse 70% 60% at 50% 40%, black 20%, transparent 75%);
+}
+
+.marketing-hero-dots {
+  background-image: radial-gradient(
+    color-mix(in srgb, var(--accent) 28%, transparent) 1px,
+    transparent 1px
+  );
+  background-size: 22px 22px;
+  mask-image: radial-gradient(ellipse 75% 65% at 50% 35%, black 15%, transparent 70%);
+  -webkit-mask-image: radial-gradient(ellipse 75% 65% at 50% 35%, black 15%, transparent 70%);
+}
+
+@keyframes marketing-orb-drift {
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1);
+    opacity: 0.85;
+  }
+  50% {
+    transform: translate(12px, -18px) scale(1.05);
+    opacity: 1;
+  }
+}
+
+@keyframes marketing-float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+.marketing-orb {
+  animation: marketing-orb-drift 14s ease-in-out infinite;
+}
+
+.marketing-orb-delayed {
+  animation-delay: -7s;
+}
+
+.marketing-float {
+  animation: marketing-float 9s ease-in-out infinite;
+}
+
+.marketing-float-delayed {
+  animation: marketing-float 11s ease-in-out infinite;
+  animation-delay: -4s;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .marketing-orb,
+  .marketing-orb-delayed,
+  .marketing-float,
+  .marketing-float-delayed {
+    animation: none;
+  }
+
+  .animate-pulse {
+    animation: none;
+  }
+}

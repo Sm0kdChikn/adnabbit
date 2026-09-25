@@ -16,8 +16,9 @@ const geistMono = localFont({
 });
 
 export const metadata: Metadata = {
-  title: "AdNabbit — Creative Review MVP",
-  description: "Advertiser creative upload and admin review for AdNabbit",
+  title: "AdNabbit — Dedicated venue screens",
+  description:
+    "Control plane for dedicated digital screens in gyms, waiting rooms, retail, and sports-bar second screens. Upload, approve, schedule, and prove play.",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

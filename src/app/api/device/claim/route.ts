@@ -86,7 +86,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: result.error }, { status: 400 });
     }
 
-    const { deviceId: _id, ...payload } = result as {
+    const claimed = result as {
       deviceToken: string;
       screenId: string;
       screenName: string;
@@ -94,7 +94,13 @@ export async function POST(req: Request) {
       timezone: string;
       deviceId: string;
     };
-    return NextResponse.json(payload);
+    return NextResponse.json({
+      deviceToken: claimed.deviceToken,
+      screenId: claimed.screenId,
+      screenName: claimed.screenName,
+      hostName: claimed.hostName,
+      timezone: claimed.timezone,
+    });
   } catch (e) {
     console.error("device claim failed", e);
     return NextResponse.json({ error: "Claim failed" }, { status: 500 });
