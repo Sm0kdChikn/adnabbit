@@ -204,7 +204,7 @@ export function ScheduleCreateForm({ placements }: { placements: PlacementOpt[] 
             </div>
             <div>
               <label className="mb-1 block text-sm font-medium text-slate-700">
-                End time (same-day; no overnight)
+                End time (HH:mm, host TZ)
               </label>
               <input
                 type="time"
@@ -215,6 +215,10 @@ export function ScheduleCreateForm({ placements }: { placements: PlacementOpt[] 
               />
             </div>
           </div>
+          <p className="text-xs text-slate-500">
+            Same-day requires end &gt; start. Overnight wrap when end &lt; start
+            (e.g. 22:00→02:00). Equal times are rejected.
+          </p>
           <div className="grid gap-4 sm:grid-cols-2">
             <div>
               <label className="mb-1 block text-sm font-medium text-slate-700">

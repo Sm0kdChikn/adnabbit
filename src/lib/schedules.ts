@@ -146,14 +146,56 @@ export type NormalizedInterval = {
   dateStart: string;
   dateEnd: string;
   weekdays: Set<number>;
+  /** Minutes from midnight; for overnight RECURRING, timeEnd < timeStart. */
   timeStart: number;
   timeEnd: number;
+  /** RECURRING wrap across midnight (endTime < startTime). */
+  overnight: boolean;
 };
+
+/** Add calendar days to a YYYY-MM-DD (UTC date arithmetic). */
+export function addDaysYmd(ymd: string, days: number): string {
+  const [y, m, d] = ymd.split("-").map(Number);
+  const dt = new Date(Date.UTC(y, m - 1, d + days));
+  return dt.toISOString().slice(0, 10);
+}
+
+export function nextIsoWeekday(d: number): number {
+  return d === 7 ? 1 : d + 1;
+}
+
+/**
+ * Validate RECURRING HH:mm times.
+ * Same-day: endTime > startTime. Overnight wrap: endTime < startTime.
+ * Equal times rejected (zero-length).
+ */
+export function parseRecurringTimes(
+  startTime: string,
+  endTime: string
+):
+  | { ok: true; t0: number; t1: number; overnight: boolean; startTime: string; endTime: string }
+  | { ok: false; error: string } {
+  const st = startTime.trim();
+  const et = endTime.trim();
+  const t0 = parseHHMM(st);
+  const t1 = parseHHMM(et);
+  if (t0 === null || t1 === null) {
+    return { ok: false, error: "startTime and endTime must be HH:mm" };
+  }
+  if (t0 === t1) {
+    return {
+      ok: false,
+      error: "endTime must not equal startTime (zero-length daypart)",
+    };
+  }
+  return { ok: true, t0, t1, overnight: t1 < t0, startTime: st, endTime: et };
+}
 
 /**
  * Normalize schedule → date/weekday/time in host TZ.
  * ONE_OFF multi-day → full-day (0–1440) for conservative daypart overlap.
- * No overnight RECURRING; no instance expansion.
+ * RECURRING overnight (endTime < startTime) → split into [start,1440)+[0,end) for compare.
+ * No instance expansion.
  */
 export function normalizeScheduleInterval(
   s: ScheduleOverlapShape,
@@ -170,15 +212,15 @@ export function normalizeScheduleInterval(
       return null;
     }
     const days = parseWeekdaysCsv(s.weekdays);
-    const t0 = parseHHMM(s.startTime);
-    const t1 = parseHHMM(s.endTime);
-    if (!days || t0 === null || t1 === null || t1 <= t0) return null;
+    const parsed = parseRecurringTimes(s.startTime, s.endTime);
+    if (!days || !parsed.ok) return null;
     return {
       dateStart: s.campaignStartDate,
       dateEnd: s.campaignEndDate,
       weekdays: new Set(days),
-      timeStart: t0,
-      timeEnd: t1,
+      timeStart: parsed.t0,
+      timeEnd: parsed.t1,
+      overnight: parsed.overnight,
     };
   }
 
@@ -202,22 +244,45 @@ export function normalizeScheduleInterval(
     weekdays: weekdaysInYmdRange(a.ymd, dateEnd),
     timeStart: sameDay ? a.minutes : 0,
     timeEnd: sameDay ? (timeEnd === 0 ? 24 * 60 : timeEnd) : 24 * 60,
+    overnight: false,
   };
 }
 
-export function intervalsOverlap(a: NormalizedInterval, b: NormalizedInterval): boolean {
-  if (ymdCompare(a.dateStart, b.dateEnd) > 0 || ymdCompare(b.dateStart, a.dateEnd) > 0) {
-    return false;
-  }
-  let weekdayHit = false;
-  for (const d of Array.from(a.weekdays)) {
-    if (b.weekdays.has(d)) {
-      weekdayHit = true;
-      break;
+/** Per-weekday minute segments; overnight splits [start,1440)+[0,end) on start / start+1. */
+function dayTimeSegments(
+  n: NormalizedInterval
+): Array<{ wd: number; t0: number; t1: number }> {
+  const out: Array<{ wd: number; t0: number; t1: number }> = [];
+  for (const wd of Array.from(n.weekdays)) {
+    if (n.overnight) {
+      out.push({ wd, t0: n.timeStart, t1: 24 * 60 });
+      if (n.timeEnd > 0) {
+        out.push({ wd: nextIsoWeekday(wd), t0: 0, t1: n.timeEnd });
+      }
+    } else {
+      out.push({ wd, t0: n.timeStart, t1: n.timeEnd });
     }
   }
-  if (!weekdayHit) return false;
-  return a.timeStart < b.timeEnd && b.timeStart < a.timeEnd;
+  return out;
+}
+
+export function intervalsOverlap(a: NormalizedInterval, b: NormalizedInterval): boolean {
+  // Overnight morning can spill one day past campaignEndDate.
+  const aEnd = a.overnight ? addDaysYmd(a.dateEnd, 1) : a.dateEnd;
+  const bEnd = b.overnight ? addDaysYmd(b.dateEnd, 1) : b.dateEnd;
+  if (ymdCompare(a.dateStart, bEnd) > 0 || ymdCompare(b.dateStart, aEnd) > 0) {
+    return false;
+  }
+  const segsA = dayTimeSegments(a);
+  const segsB = dayTimeSegments(b);
+  for (const sa of segsA) {
+    for (const sb of segsB) {
+      if (sa.wd === sb.wd && sa.t0 < sb.t1 && sb.t0 < sa.t1) {
+        return true;
+      }
+    }
+  }
+  return false;
 }
 
 /** ACTIVE → ENDED when ONE_OFF endAt passed or RECURRING campaignEndDate < today (host TZ). */

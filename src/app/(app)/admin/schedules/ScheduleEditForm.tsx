@@ -223,7 +223,9 @@ export function ScheduleEditForm({
               />
             </div>
             <div>
-              <label className="mb-1 block text-sm font-medium text-slate-700">End time</label>
+              <label className="mb-1 block text-sm font-medium text-slate-700">
+                End time (HH:mm, host TZ)
+              </label>
               <input
                 type="time"
                 value={endTime}
@@ -232,6 +234,10 @@ export function ScheduleEditForm({
               />
             </div>
           </div>
+          <p className="text-xs text-slate-500">
+            Same-day requires end &gt; start. Overnight wrap when end &lt; start
+            (e.g. 22:00→02:00). Equal times are rejected.
+          </p>
           <div className="grid gap-4 sm:grid-cols-2">
             <div>
               <label className="mb-1 block text-sm font-medium text-slate-700">

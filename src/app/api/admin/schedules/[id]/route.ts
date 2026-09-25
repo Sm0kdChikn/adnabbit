@@ -6,7 +6,7 @@ import {
   findOverlappingActiveSchedules,
   isValidYmd,
   materializeEndedSchedules,
-  parseHHMM,
+  parseRecurringTimes,
   parseWeekdaysCsv,
   scheduleInclude,
   weekdaysToCsv,
@@ -132,25 +132,16 @@ export async function PATCH(req: Request, { params }: Ctx) {
         { status: 400 }
       );
     }
-    const startTime =
+    const startTimeRaw =
       (parsed.data.startTime !== undefined ? parsed.data.startTime : existing.startTime)?.trim() ||
       "";
-    const endTime =
+    const endTimeRaw =
       (parsed.data.endTime !== undefined ? parsed.data.endTime : existing.endTime)?.trim() || "";
-    const t0 = parseHHMM(startTime);
-    const t1 = parseHHMM(endTime);
-    if (t0 === null || t1 === null) {
-      return NextResponse.json(
-        { error: "startTime and endTime must be HH:mm" },
-        { status: 400 }
-      );
+    const times = parseRecurringTimes(startTimeRaw, endTimeRaw);
+    if (!times.ok) {
+      return NextResponse.json({ error: times.error }, { status: 400 });
     }
-    if (!(t1 > t0)) {
-      return NextResponse.json(
-        { error: "endTime must be after startTime (same-day; no overnight)" },
-        { status: 400 }
-      );
-    }
+    const { startTime, endTime } = times;
     const campaignStartDate =
       (parsed.data.campaignStartDate !== undefined
         ? parsed.data.campaignStartDate

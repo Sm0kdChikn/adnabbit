@@ -73,15 +73,29 @@ export function ScheduleCalendar({
   const includeEnded =
     sp.get("includeEnded") === "1" || sp.get("includeEnded") === "true";
   const statusFilter = sp.get("status")?.trim() || "";
+  const screenIdFilter = sp.get("screenId")?.trim() || "";
   const anchor = sp.get("date")?.trim() || todayYmd(defaultTimeZone);
+
+  const screenOptions = useMemo(() => {
+    const map = new Map<string, { id: string; label: string }>();
+    for (const s of schedules) {
+      if (map.has(s.screenId)) continue;
+      map.set(s.screenId, {
+        id: s.screenId,
+        label: `${s.screen.host.name} · ${s.screen.name}`,
+      });
+    }
+    return Array.from(map.values()).sort((a, b) => a.label.localeCompare(b.label));
+  }, [schedules]);
 
   const filtered = useMemo(() => {
     return schedules.filter((s) => {
+      if (screenIdFilter && s.screenId !== screenIdFilter) return false;
       if (statusFilter) return s.status === statusFilter;
       if (includeEnded) return true;
       return s.status === "ACTIVE" || s.status === "DRAFT";
     });
-  }, [schedules, includeEnded, statusFilter]);
+  }, [schedules, includeEnded, statusFilter, screenIdFilter]);
 
   const range = useMemo(
     () => (view === "month" ? monthGridRange(anchor) : weekRange(anchor)),
@@ -215,6 +229,24 @@ export function ScheduleCalendar({
           <option value="ENDED">ENDED only</option>
           <option value="CANCELLED">CANCELLED only</option>
         </select>
+
+        <label className="flex items-center gap-2 text-sm text-slate-600">
+          <span className="whitespace-nowrap">Screen</span>
+          <select
+            value={screenIdFilter}
+            onChange={(e) =>
+              pushParams({ screenId: e.target.value || null })
+            }
+            className="max-w-[220px] rounded-md border border-slate-300 px-2 py-1.5 text-sm"
+          >
+            <option value="">All screens</option>
+            {screenOptions.map((s) => (
+              <option key={s.id} value={s.id}>
+                {s.label}
+              </option>
+            ))}
+          </select>
+        </label>
       </div>
 
       <p className="text-xs text-slate-500">

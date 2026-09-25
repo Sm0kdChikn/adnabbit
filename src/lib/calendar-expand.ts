@@ -15,6 +15,7 @@ export type CalendarScheduleInput = {
   id: string;
   kind: string;
   status: string;
+  screenId: string;
   startAt: Date | string | null;
   endAt: Date | string | null;
   weekdays: string | null;
@@ -201,7 +202,12 @@ function expandOneOff(
   return blocks;
 }
 
-/** Expand RECURRING dayparts for days in range ∩ campaign that match weekdays. */
+/**
+ * Expand RECURRING dayparts for days in range ∩ campaign that match weekdays.
+ * Overnight (endTime < startTime): weekday applies to start day D — emit
+ * start→24:00 on D and 00:00→end on D+1, clipped to the calendar range.
+ * Equal times (zero-length) are skipped.
+ */
 function expandRecurring(
   s: CalendarScheduleInput,
   rangeStart: string,
@@ -220,26 +226,40 @@ function expandRecurring(
   const daysList = parseWeekdaysCsv(s.weekdays);
   const t0 = parseHHMM(s.startTime);
   const t1 = parseHHMM(s.endTime);
-  if (!daysList || t0 === null || t1 === null || t1 <= t0) return [];
+  if (!daysList || t0 === null || t1 === null || t0 === t1) return [];
 
-  const from =
+  const overnight = t1 < t0;
+  const weekdaySet = new Set(daysList);
+  const blocks: CalendarBlock[] = [];
+
+  // Start days: campaign ∩ range (for same-day) or campaign (overnight may spill D+1 into range).
+  const startFrom =
     ymdCompare(s.campaignStartDate, rangeStart) > 0
       ? s.campaignStartDate
       : rangeStart;
-  const to =
-    ymdCompare(s.campaignEndDate, rangeEnd) < 0 ? s.campaignEndDate : rangeEnd;
-  if (ymdCompare(from, to) > 0) return [];
+  // For overnight, also consider start days one before rangeStart (D+1 may land in range).
+  const startScanFrom = overnight
+    ? (ymdCompare(s.campaignStartDate, addYmd(rangeStart, -1)) > 0
+        ? s.campaignStartDate
+        : addYmd(rangeStart, -1))
+    : startFrom;
+  const startScanTo = s.campaignEndDate;
+  if (ymdCompare(startScanFrom, startScanTo) > 0) return [];
 
-  const weekdaySet = new Set(daysList);
-  const blocks: CalendarBlock[] = [];
-  for (const day of eachYmdInclusive(from, to)) {
-    if (!weekdaySet.has(isoWeekdayFromYmd(day))) continue;
+  const pushBlock = (
+    day: string,
+    startMinutes: number,
+    endMinutes: number,
+    suffix: string
+  ) => {
+    if (ymdCompare(day, rangeStart) < 0 || ymdCompare(day, rangeEnd) > 0) return;
+    if (endMinutes <= startMinutes) return;
     blocks.push({
-      key: `${s.id}:${day}`,
+      key: `${s.id}:${day}:${suffix}`,
       scheduleId: s.id,
       dayYmd: day,
-      startMinutes: t0,
-      endMinutes: t1,
+      startMinutes,
+      endMinutes,
       status: s.status,
       kind: s.kind,
       title: blockTitle(s),
@@ -249,6 +269,19 @@ function expandRecurring(
       screenName: s.screen.name,
       creativeName: s.placement.creative.name,
     });
+  };
+
+  for (const day of eachYmdInclusive(startScanFrom, startScanTo)) {
+    if (!weekdaySet.has(isoWeekdayFromYmd(day))) continue;
+    // Start day must be within campaign (always true here) and for non-overnight also in range.
+    if (!overnight) {
+      if (ymdCompare(day, rangeStart) < 0 || ymdCompare(day, rangeEnd) > 0) continue;
+      pushBlock(day, t0, t1, "same");
+      continue;
+    }
+    // Overnight: D evening + D+1 morning, clip each to calendar range.
+    pushBlock(day, t0, 24 * 60, "eve");
+    pushBlock(addYmd(day, 1), 0, t1, "morn");
   }
   return blocks;
 }

@@ -631,13 +631,20 @@ curl -s -b /tmp/admin-cookies.txt -X POST http://localhost:3000/api/admin/schedu
 # expect 400 Only APPROVED…
 ```
 
-## E4. Overnight / invalid daypart rejected — PASS expected
+## E4. Zero-length daypart rejected; overnight allowed (Ticket H) — PASS expected
 
 ```bash
+# Equal times → 400 zero-length
 curl -s -b /tmp/admin-cookies.txt -X POST http://localhost:3000/api/admin/schedules \
   -H 'Content-Type: application/json' \
-  -d "{\"placementId\":\"$PLACEMENT_ID\",\"kind\":\"RECURRING\",\"weekdays\":\"1\",\"startTime\":\"22:00\",\"endTime\":\"06:00\",\"campaignStartDate\":\"$START\",\"campaignEndDate\":\"$END\"}"
-# expect 400 endTime must be after startTime (no overnight)
+  -d "{\"placementId\":\"$PLACEMENT_ID\",\"kind\":\"RECURRING\",\"weekdays\":\"1\",\"startTime\":\"22:00\",\"endTime\":\"22:00\",\"campaignStartDate\":\"$START\",\"campaignEndDate\":\"$END\"}"
+# expect 400 endTime must not equal startTime
+
+# Overnight wrap end < start → allowed (may 409 overlap warn)
+curl -s -b /tmp/admin-cookies.txt -X POST http://localhost:3000/api/admin/schedules \
+  -H 'Content-Type: application/json' \
+  -d "{\"placementId\":\"$PLACEMENT_ID\",\"kind\":\"RECURRING\",\"weekdays\":\"5\",\"startTime\":\"22:00\",\"endTime\":\"02:00\",\"campaignStartDate\":\"$START\",\"campaignEndDate\":\"$END\",\"status\":\"DRAFT\",\"acknowledgeOverlap\":true}"
+# expect 201 RECURRING overnight
 ```
 
 ## E5. Advertiser sees RECURRING — PASS expected

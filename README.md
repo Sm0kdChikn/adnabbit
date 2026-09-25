@@ -221,14 +221,14 @@ Admin creates play windows for **APPROVED** placements. Advertisers view their o
 
 ## Ticket E — Recurring dayparts
 
-Extends Ticket D with weekly dayparts in the **host timezone** (screens inherit). No instance expansion DB rows, no overnight spans, no OptiSigns. Calendar UI is Ticket E2.
+Extends Ticket D with weekly dayparts in the **host timezone** (screens inherit). No instance expansion DB rows, no OptiSigns. Calendar UI is Ticket E2. Overnight RECURRING dayparts are Ticket H.
 
 ### Data model (Pulse / Forge lock)
 
 - **Host.timezone**: IANA string, default `America/Denver` (screens inherit; schedules evaluate overlap in this zone)
 - **Schedule.kind**: `ONE_OFF` | `RECURRING`
   - **ONE_OFF**: `startAt` / `endAt` (absolute instants) — Ticket D behavior
-  - **RECURRING**: `weekdays` (ISO Mon=1..Sun=7 CSV), `startTime` / `endTime` (`HH:mm`, same-day, `endTime > startTime`, **no overnight**), `campaignStartDate` / `campaignEndDate` (`YYYY-MM-DD`, end ≥ start)
+  - **RECURRING**: `weekdays` (ISO Mon=1..Sun=7 CSV), `startTime` / `endTime` (`HH:mm`; same-day when `endTime > startTime`; overnight wrap when `endTime < startTime` — Ticket H; equal times rejected), `campaignStartDate` / `campaignEndDate` (`YYYY-MM-DD`, end ≥ start)
 - Status unchanged: `DRAFT` | `ACTIVE` | `ENDED` | `CANCELLED`; cancel; `ACTIVE` → `ENDED` when ONE_OFF `endAt` passed or RECURRING `campaignEndDate` < today in host TZ
 - Only **APPROVED** placements; admin mutate; advertiser read-only
 - Overlap: **warn-first** on same-screen **ACTIVE** across kinds — date∩ + weekday∩ + time∩ in host TZ (409 + `requireAcknowledge`; retry with `acknowledgeOverlap: true`)
@@ -255,7 +255,7 @@ Client-side expand of schedules into **week / month** calendar blocks in each sc
 - **Anchor:** `?date=YYYY-MM-DD` (host-local “today” default)
 - **Default statuses:** ACTIVE + DRAFT; CANCELLED/ENDED hidden unless “Show CANCELLED / ENDED” or status filter
 - **ONE_OFF:** per-day segments from `startAt`–`endAt` in host TZ
-- **RECURRING:** for each visible day within `campaignStartDate`–`campaignEndDate` matching `weekdays`, block at `startTime`–`endTime` in host TZ
+- **RECURRING:** for each visible day within `campaignStartDate`–`campaignEndDate` matching `weekdays`, block at `startTime`–`endTime` in host TZ (overnight: start→24:00 on D + 00:00→end on D+1 — Ticket H)
 - **Click (admin):** `/admin/schedules/[id]`
 - **Advertiser:** same expand, read-only (no detail link)
 
@@ -274,9 +274,27 @@ Client-side expand of schedules into **week / month** calendar blocks in each sc
 3. Click block → schedule detail
 4. `demo.advertiser@adnabbit.com` → **Calendar** → same expand, read-only
 
+
+## Ticket H — Calendar polish
+
+Screen filter on schedule calendars + overnight (cross-midnight) RECURRING dayparts.
+
+### Behavior
+
+- **Screen filter:** `?screenId=` on `/admin/schedules/calendar` and `/schedules/calendar` (default All screens). Options derived from schedules already loaded (advertiser: only screens they see).
+- **Overnight RECURRING:** `endTime < startTime` wraps (e.g. 22:00→02:00); equal times rejected; same-day still requires `endTime > startTime`. Stored as `HH:mm` strings.
+- **Expand:** weekday applies to **start** day D → blocks `start→24:00` on D and `00:00→end` on D+1, clipped to calendar range (host TZ).
+- **Overlap:** normalize overnight to `[start,1440)+[0,end)` before compare; warn-first vs same-screen ACTIVE (as before). ONE_OFF unchanged.
+
+### Demo
+
+1. Admin → Calendar → pick a screen in the Screen filter → URL keeps `?screenId=`
+2. New RECURRING Fri 22:00→02:00 → calendar shows Fri evening + Sat morning blocks
+3. Create overlapping ACTIVE on that screen → 409 warn-first
+
 ## Out of scope (later tickets)
 
-- Host self-serve portal, player, OptiSigns sync, proof-of-play, marketplace, billing, drag-drop calendar edit, multi-screen assign, monthly RRULE, overnight dayparts
+- Host self-serve portal, player, OptiSigns sync (beyond PoP import), marketplace, billing, drag-drop calendar edit, multi-screen assign, monthly RRULE
 
 ## Push to GitHub
 

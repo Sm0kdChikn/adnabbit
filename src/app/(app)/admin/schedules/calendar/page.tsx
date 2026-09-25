@@ -34,6 +34,7 @@ export default async function AdminSchedulesCalendarPage() {
     id: s.id,
     kind: s.kind,
     status: s.status,
+    screenId: s.screenId,
     startAt: s.startAt ? s.startAt.toISOString() : null,
     endAt: s.endAt ? s.endAt.toISOString() : null,
     weekdays: s.weekdays,
