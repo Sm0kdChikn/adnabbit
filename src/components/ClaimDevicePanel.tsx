@@ -19,7 +19,12 @@ type Props = {
 export function ClaimDevicePanel({ screenId, role, device }: Props) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
+  const [refreshLoading, setRefreshLoading] = useState(false);
   const [error, setError] = useState("");
+  const [refreshMsg, setRefreshMsg] = useState<{
+    kind: "ok" | "err";
+    text: string;
+  } | null>(null);
   const [code, setCode] = useState<string | null>(null);
   const [expiresAt, setExpiresAt] = useState<string | null>(null);
 
@@ -27,6 +32,11 @@ export function ClaimDevicePanel({ screenId, role, device }: Props) {
     role === "admin"
       ? `/api/admin/screens/${screenId}/claim`
       : `/api/host/screens/${screenId}/claim`;
+
+  const refreshPath =
+    role === "admin"
+      ? `/api/admin/screens/${screenId}/refresh-playlist`
+      : `/api/host/screens/${screenId}/refresh-playlist`;
 
   async function mint() {
     setLoading(true);
@@ -45,6 +55,27 @@ export function ClaimDevicePanel({ screenId, role, device }: Props) {
     router.refresh();
   }
 
+  async function refreshPlaylist() {
+    setRefreshLoading(true);
+    setRefreshMsg(null);
+    setError("");
+    const res = await fetch(refreshPath, { method: "POST" });
+    const data = await res.json().catch(() => ({}));
+    setRefreshLoading(false);
+    if (!res.ok) {
+      setRefreshMsg({
+        kind: "err",
+        text: data.error || "Failed to refresh playlist",
+      });
+      return;
+    }
+    setRefreshMsg({
+      kind: "ok",
+      text: `Refresh signaled (epoch ${data.playlistEpoch}) — player will re-fetch on next heartbeat (~60s max)`,
+    });
+    router.refresh();
+  }
+
   const lastSeenLabel = device?.lastSeenAt
     ? new Date(device.lastSeenAt).toLocaleString()
     : null;
@@ -58,9 +89,24 @@ export function ClaimDevicePanel({ screenId, role, device }: Props) {
             Mint a one-time claim code (15 min) to pair a Linux kiosk player.
           </p>
         </div>
-        <Button variant="primary" size="sm" onClick={mint} disabled={loading}>
-          {loading ? "Minting…" : "Mint claim code"}
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={refreshPlaylist}
+            disabled={!device || refreshLoading}
+            title={
+              device
+                ? "Bump playlist epoch so the paired player re-fetches ASAP"
+                : "Pair a device first"
+            }
+          >
+            {refreshLoading ? "Signaling…" : "Refresh playlist"}
+          </Button>
+          <Button variant="primary" size="sm" onClick={mint} disabled={loading}>
+            {loading ? "Minting…" : "Mint claim code"}
+          </Button>
+        </div>
       </div>
 
       {device ? (
@@ -98,6 +144,18 @@ export function ClaimDevicePanel({ screenId, role, device }: Props) {
             <code className="text-foreground">npm run claim -- --code {code}</code>
           </p>
         </div>
+      )}
+
+      {refreshMsg && (
+        <p
+          className={
+            refreshMsg.kind === "ok"
+              ? "text-sm text-emerald-600 dark:text-emerald-400"
+              : "text-sm text-[var(--status-danger-fg)]"
+          }
+        >
+          {refreshMsg.text}
+        </p>
       )}
 
       {error && (

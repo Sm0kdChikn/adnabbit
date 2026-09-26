@@ -7,14 +7,16 @@ export async function POST(req: Request) {
   if (auth.error) return auth.error;
 
   const now = new Date();
-  await prisma.device.update({
+  const updated = await prisma.device.update({
     where: { id: auth.device.id },
     data: { lastSeenAt: now },
+    select: { screenId: true, playlistEpoch: true },
   });
 
   return NextResponse.json({
     ok: true,
     lastSeenAt: now.toISOString(),
-    screenId: auth.device.screenId,
+    screenId: updated.screenId,
+    playlistEpoch: updated.playlistEpoch,
   });
 }

@@ -345,7 +345,7 @@ Software-first Linux kiosk player spike (companion repo: `Sm0kdChikn/adnabbit-pl
 
 ### Data model
 
-- **Device**: 1:1 with Screen (`screenId` unique); stores **sha256** of bearer token only; `lastSeenAt`
+- **Device**: 1:1 with Screen (`screenId` unique); stores **sha256** of bearer token only; `lastSeenAt`; **Ticket O** `playlistEpoch` (Int, default 0)
 - **ScreenClaim**: one-time 6–8 char codes from `A–Z0–9` excluding `0O1I`; TTL **15 minutes**; reminting a screen **supersedes** prior unused live codes
 
 ### Device APIs (Bearer device token)
@@ -353,22 +353,40 @@ Software-first Linux kiosk player spike (companion repo: `Sm0kdChikn/adnabbit-pl
 | Method | Path | Notes |
 |--------|------|-------|
 | POST | `/api/device/claim` | `{ code }` → `{ deviceToken, screenId, screenName, hostName, timezone }` |
-| POST | `/api/device/heartbeat` | updates `lastSeenAt` |
-| GET | `/api/device/playlist` | ACTIVE schedules next **24h** (host TZ, overnight dayparts OK) |
+| POST | `/api/device/heartbeat` | updates `lastSeenAt`; returns `playlistEpoch` |
+| GET | `/api/device/playlist` | ACTIVE schedules next **24h** (host TZ, overnight dayparts OK); includes `playlistEpoch` |
 | GET | `/api/device/assets/[creativeId]` | stream upload for creatives on that screen |
 | POST | `/api/device/play-logs` | **202 stub** — console log only, no DB persist |
 
 ### Admin / host UI
 
-Screen detail pages (`/admin/screens/[id]`, `/host/screens/[id]`): **Mint claim code** + paired device last-seen.
+Screen detail pages (`/admin/screens/[id]`, `/host/screens/[id]`): **Mint claim code** + paired device last-seen + **Refresh playlist** (Ticket O).
 
 Mint APIs: `POST /api/admin/screens/[id]/claim`, `POST /api/host/screens/[id]/claim`.
+
+Refresh APIs: `POST /api/admin/screens/[id]/refresh-playlist`, `POST /api/host/screens/[id]/refresh-playlist` → `{ ok, playlistEpoch }` (409 if unpaired or lastSeenAt older than ~5 min).
 
 ### Seed
 
 Includes APPROVED mp4 **Demo Player Spot** + ACTIVE ONE_OFF on **Lobby TV** covering ~next 48h.
 
 
+
+
+
+
+## Ticket O — Force playlist refresh (web → player)
+
+Admin/host **Refresh playlist** on screen detail bumps `Device.playlistEpoch`. Heartbeat and playlist GET return `playlistEpoch`; the player compares to its last seen epoch and calls `refreshPlaylist()` immediately (normal 30s poll / 60s heartbeat unchanged). No WebSockets (soft miss — polling is enough).
+
+| Method | Path | Notes |
+|--------|------|-------|
+| POST | `/api/admin/screens/[id]/refresh-playlist` | Admin; requires paired + recently-seen device |
+| POST | `/api/host/screens/[id]/refresh-playlist` | Host (own screens); same rules |
+| POST | `/api/device/heartbeat` | `{ ok, lastSeenAt, screenId, playlistEpoch }` |
+| GET | `/api/device/playlist` | includes `playlistEpoch` |
+
+UI: `ClaimDevicePanel` — **Refresh playlist** next to mint (disabled if unpaired). 409 inline error when player offline.
 
 
 ## Ticket K — Admin folders (hosts & advertisers)

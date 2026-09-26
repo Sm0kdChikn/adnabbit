@@ -112,3 +112,16 @@ export async function mintClaimCode(opts: {
   }
   throw new Error("Failed to mint unique claim code");
 }
+
+
+/** Ticket O — player considered reachable if lastSeenAt within this window. */
+export const PLAYER_ONLINE_GRACE_MS = 5 * 60 * 1000;
+
+export function isDeviceRecentlySeen(
+  lastSeenAt: Date | null | undefined,
+  now = new Date(),
+  graceMs = PLAYER_ONLINE_GRACE_MS
+): boolean {
+  if (!lastSeenAt) return false;
+  return now.getTime() - lastSeenAt.getTime() <= graceMs;
+}

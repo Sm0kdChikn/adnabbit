@@ -14,9 +14,10 @@ export async function GET(req: Request) {
   const auth = await requireDeviceAuth(req);
   if (auth.error) return auth.error;
 
-  await prisma.device.update({
+  const updated = await prisma.device.update({
     where: { id: auth.device.id },
     data: { lastSeenAt: new Date() },
+    select: { playlistEpoch: true },
   });
 
   const playlist = await buildPlaylistForScreen({
@@ -30,6 +31,7 @@ export async function GET(req: Request) {
     hostName: playlist.hostName,
     timezone: playlist.timezone,
     generatedAt: new Date().toISOString(),
+    playlistEpoch: updated.playlistEpoch,
     items: playlist.items,
   });
 }
