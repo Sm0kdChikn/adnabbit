@@ -6,6 +6,8 @@ import Link from "next/link";
 import { ScreenForm } from "../ScreenForm";
 import { formatVertical } from "@/lib/types";
 import { ClaimDevicePanel } from "@/components/ClaimDevicePanel";
+import { RemoteViewPanel } from "@/components/RemoteViewPanel";
+import { isDeviceRecentlySeen } from "@/lib/device";
 
 export default async function EditScreenPage({ params }: { params: { id: string } }) {
   const session = await getServerSession(authOptions);
@@ -52,6 +54,11 @@ export default async function EditScreenPage({ params }: { params: { id: string 
               }
             : null
         }
+      />
+      <RemoteViewPanel
+        screenId={screen.id}
+        hasDevice={!!screen.device}
+        deviceOnline={isDeviceRecentlySeen(screen.device?.lastSeenAt)}
       />
       <ScreenForm
         mode="edit"

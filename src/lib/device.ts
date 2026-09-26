@@ -125,3 +125,19 @@ export function isDeviceRecentlySeen(
   if (!lastSeenAt) return false;
   return now.getTime() - lastSeenAt.getTime() <= graceMs;
 }
+
+/** Ticket P — max screenshot upload size (JPEG). */
+export const SCREENSHOT_MAX_BYTES = 2 * 1024 * 1024;
+
+/** Ticket P — relative path under uploads/ for the single overwrite preview blob. */
+export function remoteViewRelativePath(deviceId: string): string {
+  return `device-previews/${deviceId}.jpg`;
+}
+
+/** Ticket P — true when admin requested a capture the device has not answered yet. */
+export function needsScreenshotCapture(device: {
+  screenshotEpoch: number;
+  screenshotCapturedEpoch: number;
+}): boolean {
+  return device.screenshotEpoch > device.screenshotCapturedEpoch;
+}

@@ -13,6 +13,7 @@
 // Ticket J: Device (1:1 Screen) + ScreenClaim one-time codes
 // Ticket K: AdminFolder / AdminFolderItem (HOST|ADVERTISER scope)
 // Ticket O: Device.playlistEpoch for force playlist refresh
+// Ticket P: Device.screenshotEpoch + remote-view JPEG overwrite
 
 generator client {
   provider = "prisma-client-js"
@@ -247,6 +248,7 @@ model PlayEvent {
 
 /// Ticket J — paired kiosk player device (1 per Screen for spike; reclaim replaces)
 /// Ticket O — playlistEpoch bumped by admin/host refresh; player compares and re-fetches
+/// Ticket P — screenshotEpoch for admin remote-view capture; single overwrite JPEG blob
 model Device {
   id            String    @id @default(cuid())
   /// Unique: one Device bound per Screen
@@ -259,6 +261,13 @@ model Device {
   claimedAt     DateTime  @default(now())
   /// Ticket O — monotonic counter; bump to force player playlist re-fetch
   playlistEpoch Int       @default(0)
+  /// Ticket P — bumped when admin requests a capture; player compares on heartbeat
+  screenshotEpoch Int     @default(0)
+  /// Ticket P — last epoch the device successfully uploaded a screenshot for
+  screenshotCapturedEpoch Int @default(0)
+  /// Relative path under uploads/ e.g. device-previews/{deviceId}.jpg (overwrite N=1)
+  remoteViewImagePath String?
+  remoteViewCapturedAt DateTime?
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 

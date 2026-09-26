@@ -1,6 +1,6 @@
 # AdNabbit Web MVP
 
-Advertiser signup/login, creative upload (image/video), submit for review, admin approve/reject, **Ticket A — Host/screen inventory**, and **Ticket B — Advertiser public profiles**, and **Ticket C — Placement requests**, and **Ticket D — Scheduling**, and **Ticket E — Recurring dayparts**, and **Ticket E2 — Schedule calendar view**, and **Ticket G — Host self-serve portal**, and **Ticket J — device claim / playlist APIs**, and **Ticket K — admin folders**.
+Advertiser signup/login, creative upload (image/video), submit for review, admin approve/reject, **Ticket A — Host/screen inventory**, and **Ticket B — Advertiser public profiles**, and **Ticket C — Placement requests**, and **Ticket D — Scheduling**, and **Ticket E — Recurring dayparts**, and **Ticket E2 — Schedule calendar view**, and **Ticket G — Host self-serve portal**, and **Ticket J — device claim / playlist APIs**, and **Ticket K — admin folders**, and **Ticket O — playlist refresh**, and **Ticket P — admin remote view (screenshot relay)**.
 
 **Repo target:** https://github.com/Sm0kdChikn/adnabbit
 
@@ -345,7 +345,7 @@ Software-first Linux kiosk player spike (companion repo: `Sm0kdChikn/adnabbit-pl
 
 ### Data model
 
-- **Device**: 1:1 with Screen (`screenId` unique); stores **sha256** of bearer token only; `lastSeenAt`; **Ticket O** `playlistEpoch` (Int, default 0)
+- **Device**: 1:1 with Screen (`screenId` unique); stores **sha256** of bearer token only; `lastSeenAt`; **Ticket O** `playlistEpoch`; **Ticket P** `screenshotEpoch` / `screenshotCapturedEpoch` + single overwrite JPEG under `uploads/device-previews/{deviceId}.jpg`
 - **ScreenClaim**: one-time 6–8 char codes from `A–Z0–9` excluding `0O1I`; TTL **15 minutes**; reminting a screen **supersedes** prior unused live codes
 
 ### Device APIs (Bearer device token)
@@ -353,14 +353,15 @@ Software-first Linux kiosk player spike (companion repo: `Sm0kdChikn/adnabbit-pl
 | Method | Path | Notes |
 |--------|------|-------|
 | POST | `/api/device/claim` | `{ code }` → `{ deviceToken, screenId, screenName, hostName, timezone }` |
-| POST | `/api/device/heartbeat` | updates `lastSeenAt`; returns `playlistEpoch` |
+| POST | `/api/device/heartbeat` | updates `lastSeenAt`; returns `playlistEpoch`, `screenshotEpoch`, `commands.captureScreenshot` |
+| POST | `/api/device/screenshot` | Bearer; JPEG body (raw / multipart / base64); overwrite N=1 preview |
 | GET | `/api/device/playlist` | ACTIVE schedules next **24h** (host TZ, overnight dayparts OK); includes `playlistEpoch` |
 | GET | `/api/device/assets/[creativeId]` | stream upload for creatives on that screen |
 | POST | `/api/device/play-logs` | **202 stub** — console log only, no DB persist |
 
 ### Admin / host UI
 
-Screen detail pages (`/admin/screens/[id]`, `/host/screens/[id]`): **Mint claim code** + paired device last-seen + **Refresh playlist** (Ticket O).
+Screen detail pages (`/admin/screens/[id]`, `/host/screens/[id]`): **Mint claim code** + paired device last-seen + **Refresh playlist** (Ticket O). Admin also has **View screen** remote-view (Ticket P).
 
 Mint APIs: `POST /api/admin/screens/[id]/claim`, `POST /api/host/screens/[id]/claim`.
 
@@ -387,6 +388,35 @@ Admin/host **Refresh playlist** on screen detail bumps `Device.playlistEpoch`. H
 | GET | `/api/device/playlist` | includes `playlistEpoch` |
 
 UI: `ClaimDevicePanel` — **Refresh playlist** next to mint (disabled if unpaired). 409 inline error when player offline.
+
+
+
+
+## Ticket P — Admin remote view (screenshot relay)
+
+**Option A (in-app):** Admin-only on-demand screenshot from a paired player. No mouse/keyboard control, no WebRTC, no host remote-view UI.
+
+**Ops path B (not built in-app):** For true live OS remoting, use **Tailscale + wayvnc** (or similar) on the mini-PC — document that as the operator path; AdNabbit does not embed VNC/Wayland remoting.
+
+**Out of scope / soft miss:** WebRTC (path C), host portal remote view, slow auto-poll is optional UI-only (“Live refresh”).
+
+### Flow
+
+1. Admin **View screen** → `POST /api/admin/screens/[id]/remote-view` bumps `Device.screenshotEpoch` (requires paired + `lastSeenAt` within ~5 min).
+2. Player heartbeat returns `commands.captureScreenshot: true` when `screenshotEpoch > screenshotCapturedEpoch`.
+3. Electron `webContents.capturePage()` → JPEG → `POST /api/device/screenshot` (overwrite single blob).
+4. Admin polls `GET /api/admin/screens/[id]/remote-view` (auth session; private short-cache / no-store) until 200 image or ~30s timeout.
+
+### APIs
+
+| Method | Path | Notes |
+|--------|------|-------|
+| POST | `/api/admin/screens/[id]/remote-view` | Admin; `{ ok, status: 'requested'|'ready', … }` |
+| GET | `/api/admin/screens/[id]/remote-view` | Admin; JPEG bytes or 202 pending / 404 |
+| POST | `/api/device/screenshot` | Device bearer; JPEG ≤ 2MB; sets `remoteViewCapturedAt` |
+| POST | `/api/device/heartbeat` | includes `commands.captureScreenshot` |
+
+UI: `RemoteViewPanel` on `/admin/screens/[id]` (below `ClaimDevicePanel`).
 
 
 ## Ticket K — Admin folders (hosts & advertisers)
@@ -423,7 +453,7 @@ Deep nesting (>1 level), multi-select, mobile DnD polish, folder deep-links / se
 
 ## Out of scope (later tickets)
 
-- OptiSigns sync (beyond PoP import), F2 play-log persistence, fleet management, custom ISO, marketplace, billing, drag-drop calendar edit, multi-screen assign, monthly RRULE, host invites/payouts
+- OptiSigns sync (beyond PoP import), F2 play-log persistence, fleet management, custom ISO, marketplace, billing, drag-drop calendar edit, multi-screen assign, monthly RRULE, host invites/payouts, in-app VNC/WebRTC remoting (use Tailscale + wayvnc)
 
 ## Push to GitHub
 
