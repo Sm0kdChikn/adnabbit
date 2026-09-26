@@ -1,6 +1,6 @@
 # AdNabbit Web MVP
 
-Advertiser signup/login, creative upload (image/video), submit for review, admin approve/reject, **Ticket A — Host/screen inventory**, and **Ticket B — Advertiser public profiles**, and **Ticket C — Placement requests**, and **Ticket D — Scheduling**, and **Ticket E — Recurring dayparts**, and **Ticket E2 — Schedule calendar view**, and **Ticket G — Host self-serve portal**, and **Ticket J — device claim / playlist APIs**, and **Ticket K — admin folders**, and **Ticket O — playlist refresh**, and **Ticket P — admin remote view (screenshot relay)**.
+Advertiser signup/login, creative upload (image/video), submit for review, admin approve/reject, **Ticket A — Host/screen inventory**, and **Ticket B — Advertiser public profiles**, and **Ticket C — Placement requests**, and **Ticket D — Scheduling**, and **Ticket E — Recurring dayparts**, and **Ticket E2 — Schedule calendar view**, and **Ticket G — Host self-serve portal**, and **Ticket J — device claim / playlist APIs**, and **Ticket K — admin folders**, and **Ticket O — playlist refresh**, and **Ticket P — admin remote view (screenshot relay)**, and **Ticket P.1 — admin remote mouse/keyboard control**.
 
 **Repo target:** https://github.com/Sm0kdChikn/adnabbit
 
@@ -345,7 +345,7 @@ Software-first Linux kiosk player spike (companion repo: `Sm0kdChikn/adnabbit-pl
 
 ### Data model
 
-- **Device**: 1:1 with Screen (`screenId` unique); stores **sha256** of bearer token only; `lastSeenAt`; **Ticket O** `playlistEpoch`; **Ticket P** `screenshotEpoch` / `screenshotCapturedEpoch` + single overwrite JPEG under `uploads/device-previews/{deviceId}.jpg`
+- **Device**: 1:1 with Screen (`screenId` unique); stores **sha256** of bearer token only; `lastSeenAt`; **Ticket O** `playlistEpoch`; **Ticket P** `screenshotEpoch` / `screenshotCapturedEpoch` + single overwrite JPEG under `uploads/device-previews/{deviceId}.jpg`; **Ticket P.1** `pendingInputJson` remote-control queue
 - **ScreenClaim**: one-time 6–8 char codes from `A–Z0–9` excluding `0O1I`; TTL **15 minutes**; reminting a screen **supersedes** prior unused live codes
 
 ### Device APIs (Bearer device token)
@@ -361,7 +361,7 @@ Software-first Linux kiosk player spike (companion repo: `Sm0kdChikn/adnabbit-pl
 
 ### Admin / host UI
 
-Screen detail pages (`/admin/screens/[id]`, `/host/screens/[id]`): **Mint claim code** + paired device last-seen + **Refresh playlist** (Ticket O). Admin also has **View screen** remote-view (Ticket P).
+Screen detail pages (`/admin/screens/[id]`, `/host/screens/[id]`): **Mint claim code** + paired device last-seen + **Refresh playlist** (Ticket O). Admin also has **View screen** remote-view (Ticket P) + **Remote control** mouse/keyboard (Ticket P.1).
 
 Mint APIs: `POST /api/admin/screens/[id]/claim`, `POST /api/host/screens/[id]/claim`.
 
@@ -394,11 +394,11 @@ UI: `ClaimDevicePanel` — **Refresh playlist** next to mint (disabled if unpair
 
 ## Ticket P — Admin remote view (screenshot relay)
 
-**Option A (in-app):** Admin-only on-demand screenshot from a paired player. No mouse/keyboard control, no WebRTC, no host remote-view UI.
+**Option A (in-app):** Admin-only on-demand screenshot from a paired player. No WebRTC, no host remote-view UI. Mouse/keyboard is Ticket P.1 (below).
 
-**Ops path B (not built in-app):** For true live OS remoting, use **Tailscale + wayvnc** (or similar) on the mini-PC — document that as the operator path; AdNabbit does not embed VNC/Wayland remoting.
+**Ops path B (not built in-app):** For true live **OS** remoting (outside the Electron window), use **Tailscale + wayvnc** (or similar) on the mini-PC — AdNabbit does not embed VNC/Wayland remoting.
 
-**Out of scope / soft miss:** WebRTC (path C), host portal remote view, slow auto-poll is optional UI-only (“Live refresh”).
+**Out of scope / soft miss:** WebRTC (path C), host portal remote view, slow auto-poll is optional UI-only ("Live refresh").
 
 ### Flow
 
@@ -414,9 +414,49 @@ UI: `ClaimDevicePanel` — **Refresh playlist** next to mint (disabled if unpair
 | POST | `/api/admin/screens/[id]/remote-view` | Admin; `{ ok, status: 'requested'|'ready', … }` |
 | GET | `/api/admin/screens/[id]/remote-view` | Admin; JPEG bytes or 202 pending / 404 |
 | POST | `/api/device/screenshot` | Device bearer; JPEG ≤ 2MB; sets `remoteViewCapturedAt` |
-| POST | `/api/device/heartbeat` | includes `commands.captureScreenshot` |
+| POST | `/api/device/heartbeat` | includes `commands.captureScreenshot`, `commands.inputPending` |
 
 UI: `RemoteViewPanel` on `/admin/screens/[id]` (below `ClaimDevicePanel`).
+
+## Ticket P.1 — Admin remote mouse / keyboard control
+
+Admin-only control of the **Electron player window** (not full OS). Builds on Ticket P remote view.
+
+### Flow
+
+1. Admin enables **Remote control** on the Remote view panel (after a preview is ready).
+2. Clicks map from displayed `object-contain` size → natural JPEG / capture size → `POST /api/admin/screens/[id]/remote-control` (batched ~40ms).
+3. Typing (while the preview surface is focused) forwards Enter / Escape / arrows / Backspace / Tab / printable chars; browser nav shortcuts are not forwarded.
+4. Events append to `Device.pendingInputJson` (cap 64; paired + ~5 min freshness; admin role only).
+5. Player polls `POST /api/device/input` every ~2s (and on heartbeat when `commands.inputPending`) → drains queue → `webContents.sendInputEvent`.
+6. Optional **Exit kiosk** sends `{ type: "command", name: "exitKiosk" }`.
+
+### APIs
+
+| Method | Path | Auth | Body / notes |
+|--------|------|------|----------------|
+| POST | `/api/admin/screens/[id]/remote-control` | Admin session | `{ events: [...] }` or `{ event }` or `{ command: "exitKiosk" }` → `{ ok, queued, queueLength, dropped }` |
+| POST | `/api/device/input` | Device Bearer | drains queue → `{ ok, events, drainedAt }` |
+| POST | `/api/device/heartbeat` | Device Bearer | `commands.inputPending: true` when queue non-empty |
+
+### Event shapes
+
+```json
+{ "type": "mouseClick", "x": 100, "y": 200, "button": "left", "clickCount": 1, "captureWidth": 1280, "captureHeight": 720 }
+{ "type": "mouseMove", "x": 100, "y": 200, "captureWidth": 1280, "captureHeight": 720 }
+{ "type": "keyDown", "keyCode": "Return", "modifiers": [] }
+{ "type": "char", "keyCode": "a" }
+{ "type": "command", "name": "exitKiosk" }
+```
+
+Mouse `x`/`y` are capture/native window coords. Player scales by `captureWidth`/`captureHeight` vs current `getContentSize()` when provided.
+
+### Limits
+
+- Latency ≈ input poll (~2s), not WebRTC.
+- Only the Electron BrowserWindow (ad UI), not the host OS desktop.
+- No host-portal remote UI.
+
 
 
 ## Ticket K — Admin folders (hosts & advertisers)
@@ -453,7 +493,7 @@ Deep nesting (>1 level), multi-select, mobile DnD polish, folder deep-links / se
 
 ## Out of scope (later tickets)
 
-- OptiSigns sync (beyond PoP import), F2 play-log persistence, fleet management, custom ISO, marketplace, billing, drag-drop calendar edit, multi-screen assign, monthly RRULE, host invites/payouts, in-app VNC/WebRTC remoting (use Tailscale + wayvnc)
+- OptiSigns sync (beyond PoP import), F2 play-log persistence, fleet management, custom ISO, marketplace, billing, drag-drop calendar edit, multi-screen assign, monthly RRULE, host invites/payouts, full-OS VNC/WebRTC remoting (use Tailscale + wayvnc; P.1 is Electron-window only)
 
 ## Push to GitHub
 

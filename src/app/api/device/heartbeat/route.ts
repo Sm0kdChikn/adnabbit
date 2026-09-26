@@ -1,6 +1,10 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { needsScreenshotCapture, requireDeviceAuth } from "@/lib/device";
+import {
+  hasPendingInput,
+  needsScreenshotCapture,
+  requireDeviceAuth,
+} from "@/lib/device";
 
 export async function POST(req: Request) {
   const auth = await requireDeviceAuth(req);
@@ -15,10 +19,12 @@ export async function POST(req: Request) {
       playlistEpoch: true,
       screenshotEpoch: true,
       screenshotCapturedEpoch: true,
+      pendingInputJson: true,
     },
   });
 
   const captureScreenshot = needsScreenshotCapture(updated);
+  const inputPending = hasPendingInput(updated.pendingInputJson);
 
   return NextResponse.json({
     ok: true,
@@ -28,6 +34,7 @@ export async function POST(req: Request) {
     screenshotEpoch: updated.screenshotEpoch,
     commands: {
       captureScreenshot,
+      inputPending,
     },
   });
 }
