@@ -1,6 +1,6 @@
 # AdNabbit Web MVP
 
-Advertiser signup/login, creative upload (image/video), submit for review, admin approve/reject, **Ticket A — Host/screen inventory**, and **Ticket B — Advertiser public profiles**, and **Ticket C — Placement requests**, and **Ticket D — Scheduling**, and **Ticket E — Recurring dayparts**, and **Ticket E2 — Schedule calendar view**, and **Ticket G — Host self-serve portal**, and **Ticket J — device claim / playlist APIs**, and **Ticket K — admin folders**, and **Ticket O — playlist refresh**, and **Ticket P — admin remote view (screenshot relay)**, and **Ticket P.1 — admin remote mouse/keyboard control**, and **Ticket P.1.1 — kiosk lock/unlock toggle**, and **Ticket P.1.2 — admin device reboot**, and **Ticket Q — venue open hours / soft blackout / PoP mute**, and **Ticket R — fleet health + offline/empty alerts**, and **Ticket S — campaign windows + emergency take-down**.
+Advertiser signup/login, creative upload (image/video), submit for review, admin approve/reject, **Ticket A — Host/screen inventory**, and **Ticket B — Advertiser public profiles**, and **Ticket C — Placement requests**, and **Ticket D — Scheduling**, and **Ticket E — Recurring dayparts**, and **Ticket E2 — Schedule calendar view**, and **Ticket G — Host self-serve portal**, and **Ticket J — device claim / playlist APIs**, and **Ticket K — admin folders**, and **Ticket O — playlist refresh**, and **Ticket P — admin remote view (screenshot relay)**, and **Ticket P.1 — admin remote mouse/keyboard control**, and **Ticket P.1.1 — kiosk lock/unlock toggle**, and **Ticket P.1.2 — admin device reboot**, and **Ticket Q — venue open hours / soft blackout / PoP mute**, and **Ticket R — fleet health + offline/empty alerts**, and **Ticket S — campaign windows + emergency take-down**, and **Ticket T — host / advertiser / admin analytics (schedule fill)**.
 
 **Repo target:** https://github.com/Sm0kdChikn/adnabbit
 
@@ -592,9 +592,49 @@ Campaign play windows reuse **Schedule** fields from Ticket E (`startAt`/`endAt`
 
 Full audit log table, email alerts, host self-serve take-down of others' ads.
 
+
+## Ticket T — Analytics (schedule fill / daypart / campaigns)
+
+Marketplace analytics from **OpenHours + ACTIVE schedule expansion** (same truth as the playlist builder). **Does not invent play counts.** Device play-logs remain F2 stub; OptiSigns Looker stays production PoP.
+
+| Slice | Meaning |
+|-------|---------|
+| Schedule fill | Per screen/day: open / paid (union) / empty-while-open / closed minutes + paid item count |
+| Daypart heat | Weekday × hour grid of *scheduled* paid minutes (host TZ), summed across the date range |
+| Campaign windows | Active / Scheduled / Expired (+ Draft / Cancelled) via `scheduleWindowPhase` |
+| Plays panel | Soft miss — labeled **Awaits F2** |
+
+### Pages
+
+| Role | Path |
+|------|------|
+| Admin | `/admin/analytics` |
+| Host | `/host/analytics` (own venue screens only) |
+| Advertiser | `/analytics` (own creatives/schedules only) |
+
+Date range: last 7 / 30 days / custom. Filters: host / screen / advertiser (admin). CSV export for fill, daypart, campaigns.
+
+### APIs
+
+| Method | Admin | Host | Advertiser |
+|--------|-------|------|------------|
+| GET fill | `/api/admin/analytics/fill` | `/api/host/analytics/fill` | `/api/analytics/fill` |
+| GET daypart-heat | `/api/admin/analytics/daypart-heat` | `/api/host/analytics/daypart-heat` | `/api/analytics/daypart-heat` |
+| GET campaigns | `/api/admin/analytics/campaigns` | `/api/host/analytics/campaigns` | `/api/analytics/campaigns` |
+| GET export.csv | `/api/admin/analytics/export.csv?table=fill\|daypart\|campaigns` | `/api/host/analytics/export.csv?…` | `/api/analytics/export.csv?…` |
+
+Query: `range=7\|30\|custom`, `from`, `to`, `hostId`, `screenId`, `advertiserId`. Cross-role access → **403**.
+
+### Soft misses / limitations
+
+- force-live overrides are **not** replayed historically (configured hours only).
+- Overlapping schedules: paid minutes use **union** coverage within open hours.
+- No email digests, billing fill-vs-paid, websockets, or chart libraries.
+
 ## Out of scope (later tickets)
 
-- OptiSigns sync (beyond PoP import), F2 play-log persistence, custom ISO, marketplace, billing, drag-drop calendar edit, multi-screen assign, monthly RRULE, host invites/payouts, full-OS VNC/WebRTC remoting (use Tailscale + wayvnc; P.1 is Electron-window only)
+
+- OptiSigns sync (beyond PoP import), F2 play-log persistence, custom ISO, marketplace matching, billing, digests, drag-drop calendar edit, multi-screen assign, monthly RRULE, host invites/payouts, full-OS VNC/WebRTC remoting (use Tailscale + wayvnc; P.1 is Electron-window only)
 
 ## Push to GitHub
 

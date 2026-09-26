@@ -24,7 +24,8 @@ Post–Ticket L cleanup. High-confidence fixes landed in this pass; everything b
 Brandon: **Stripe Connect before advertisers can submit ads.** Out of scope for this QA pass — do not start here.
 
 ### Explicitly out of scope (prior tickets)
-- **F2** — play-log persistence (device `/api/device/play-logs` stays 202 stub)
+- **F2** — play-log persistence (device `/api/device/play-logs` stays 202 stub; Ticket T analytics does not invent plays)
+- **Ticket T** — DONE: schedule fill / daypart heat / campaign rollup + CSV (admin/host/advertiser)
 - Postgres cutover / production deploy
 - Custom ISO, fleet management, OptiSigns cutover
 - Full **OS lockdown** (Electron kiosk + P.1.3 dedicated user/autologin; not a custom ISO)

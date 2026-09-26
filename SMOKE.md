@@ -1056,3 +1056,36 @@ Player heartbeat body includes `playerVersion` (package.json). Optional env `ADN
 4. **Host / screen** — `/admin/hosts/[id]` or `/admin/screens/[id]` → Kill paid playback → playlist items empty (soft); Restore clears stamp + bumps epoch.
 5. **Epoch** — After take-down, `Device.playlistEpoch` increments for affected paired devices (smoke saw Lobby TV epoch advance).
 
+---
+
+## Ticket T — Analytics (2026-09-26 MT)
+
+**Goal:** Admin / host / advertiser schedule-fill analytics + CSV; no fake plays.
+
+### Demo path
+
+1. `npx tsx prisma/seed.ts` — ensures ACTIVE Mon–Fri 09:00–11:00 recurring + open hours.
+2. Login **admin@adnabbit.com** / `admin123!` → **Analytics** (`/admin/analytics`).
+3. Confirm non-empty **Schedule fill** summary, **Daypart heat** cyan cells Mon–Fri 09–10, **Campaign windows** rollup.
+4. Export CSV: Fill / Daypart heat / Campaigns.
+5. Login **demo.host@adnabbit.com** / `host123!` → `/host/analytics` — only Denver Peak Fitness screens.
+6. Login **demo.advertiser@adnabbit.com** / `demo123!` → `/analytics` — own schedules only.
+7. Plays panel shows **Awaits F2** (no invented counts).
+
+### API smoke (session cookie)
+
+```bash
+# After browser login as admin, or use curl with next-auth session —
+curl -s 'http://localhost:3000/api/admin/analytics/fill?range=7' | head
+curl -s 'http://localhost:3000/api/admin/analytics/daypart-heat?range=7' | head
+curl -s 'http://localhost:3000/api/admin/analytics/campaigns' | head
+curl -s -o /tmp/fill.csv -w '%{http_code}' \
+  'http://localhost:3000/api/admin/analytics/export.csv?table=fill&range=7'
+# Host / advertiser hitting admin routes → 403
+```
+
+### Gaps
+
+- force-live not historical
+- F2 play persistence still stub
+- Soft-miss charts (CSS heat table only)

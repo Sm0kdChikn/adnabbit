@@ -382,24 +382,38 @@ async function main() {
     }
 
     // Ticket E — weekly daypart Mon–Fri 09:00–11:00 America/Denver
-    const recurring = await prisma.schedule.findFirst({
+    // Ticket T — keep an ACTIVE recurring so fill / daypart heat are non-empty
+    const today = new Date();
+    // Start ~3 weeks back so Ticket T last-7 fill / daypart heat see Mon–Fri blocks
+    const startDate = new Date(today.getTime() - 21 * 24 * 60 * 60 * 1000);
+    const y = startDate.getFullYear();
+    const m = String(startDate.getMonth() + 1).padStart(2, "0");
+    const d = String(startDate.getDate()).padStart(2, "0");
+    const startYmd = `${y}-${m}-${d}`;
+    const end = new Date(today.getTime() + 60 * 24 * 60 * 60 * 1000);
+    const ey = end.getFullYear();
+    const em = String(end.getMonth() + 1).padStart(2, "0");
+    const ed = String(end.getDate()).padStart(2, "0");
+    const endYmd = `${ey}-${em}-${ed}`;
+
+    let recurring = await prisma.schedule.findFirst({
       where: {
         placementId: approvedPlacement.id,
         kind: "RECURRING",
         note: "Seeded RECURRING Mon–Fri 09:00–11:00 daypart",
+        status: "ACTIVE",
       },
     });
     if (!recurring) {
-      const today = new Date();
-      const y = today.getFullYear();
-      const m = String(today.getMonth() + 1).padStart(2, "0");
-      const d = String(today.getDate()).padStart(2, "0");
-      const startYmd = `${y}-${m}-${d}`;
-      const end = new Date(today.getTime() + 60 * 24 * 60 * 60 * 1000);
-      const ey = end.getFullYear();
-      const em = String(end.getMonth() + 1).padStart(2, "0");
-      const ed = String(end.getDate()).padStart(2, "0");
-      const endYmd = `${ey}-${em}-${ed}`;
+      recurring = await prisma.schedule.findFirst({
+        where: {
+          placementId: approvedPlacement.id,
+          kind: "RECURRING",
+          note: "Seeded RECURRING Mon–Fri 09:00–11:00 daypart",
+        },
+      });
+    }
+    if (!recurring) {
       const s3 = await prisma.schedule.create({
         data: {
           placementId: approvedPlacement.id,
@@ -416,8 +430,30 @@ async function main() {
         },
       });
       console.log(`Seeded RECURRING daypart: ${s3.id} (${startYmd}→${endYmd} Mon–Fri 09:00–11:00)`);
+    } else if (recurring.status !== "ACTIVE") {
+      await prisma.schedule.update({
+        where: { id: recurring.id },
+        data: {
+          status: "ACTIVE",
+          cancelledAt: null,
+          campaignStartDate: startYmd,
+          campaignEndDate: endYmd,
+          weekdays: "1,2,3,4,5",
+          startTime: "09:00",
+          endTime: "11:00",
+        },
+      });
+      console.log(`Reactivated RECURRING daypart for Ticket T: ${recurring.id} (${startYmd}→${endYmd})`);
     } else {
-      console.log(`RECURRING daypart already present: ${recurring.id}`);
+      // Refresh campaign window so analytics demos stay in-range
+      await prisma.schedule.update({
+        where: { id: recurring.id },
+        data: {
+          campaignStartDate: startYmd,
+          campaignEndDate: endYmd,
+        },
+      });
+      console.log(`RECURRING daypart already ACTIVE: ${recurring.id} (window ${startYmd}→${endYmd})`);
     }
   }
 
@@ -575,7 +611,10 @@ async function main() {
     });
   }
 
-  // Ensure at least a couple OPEN screens exist (hosts/screens seeded above)
+  // Ticket T — analytics relies on ACTIVE schedules + open hours (no fake plays)
+  console.log("Ticket T: schedule fill / daypart heat / campaigns use ACTIVE schedules + OpenHours");
+
+    // Ensure at least a couple OPEN screens exist (hosts/screens seeded above)
   const openCount = await prisma.screen.count({ where: { inventoryStatus: "OPEN" } });
   console.log(`OPEN screens available for placement browse: ${openCount}`);
 

@@ -21,12 +21,14 @@ function linksForRole(role?: string | null): NavLink[] {
       { href: "/schedules/calendar", label: "Calendar" },
       { href: "/profile", label: "Profile" },
       { href: "/reports", label: "Reports" },
+      { href: "/analytics", label: "Analytics" },
       { href: "/creatives/new", label: "Upload" },
     ];
   }
   if (role === "HOST") {
     return [
       { href: "/host", label: "My venue" },
+      { href: "/host/analytics", label: "Analytics" },
       { href: "/host/screens/new", label: "Add screen" },
     ];
   }
@@ -42,6 +44,7 @@ function linksForRole(role?: string | null): NavLink[] {
       { href: "/admin/fleet", label: "Fleet" },
       { href: "/admin/alerts", label: "Alerts" },
       { href: "/admin/profiles", label: "Profiles" },
+      { href: "/admin/analytics", label: "Analytics" },
       { href: "/admin/proof-of-play", label: "PoP" },
     ];
   }

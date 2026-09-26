@@ -18,6 +18,7 @@
 // Ticket Q: OpenHours + Screen.useCustomHours/forceLiveUntil + Device.playbackState
 // Ticket R: FleetAlert + Device.playerVersion/disk* for fleet health
 // Ticket S: Creative/User/Host/Screen take-down stamps; Schedule windows already Ticket E
+// Ticket T: analytics from OpenHours + schedule expansion (no PlayEvent invent)
 
 generator client {
   provider = "prisma-client-js"
