@@ -14,6 +14,7 @@ import {
   formatHoursSummary,
   loadWeeklyForTarget,
 } from "@/lib/open-hours";
+import { TakeDownPanel } from "@/components/TakeDownPanel";
 
 export default async function EditHostPage({ params }: { params: { id: string } }) {
   const session = await getServerSession(authOptions);
@@ -64,6 +65,13 @@ export default async function EditHostPage({ params }: { params: { id: string } 
       />
 
       <AttachOwnerForm hostId={host.id} current={host.user} />
+
+      <TakeDownPanel
+        target="host"
+        id={host.id}
+        takenDownAt={host.playbackTakenDownAt}
+        reason={host.playbackTakenDownReason}
+      />
 
       <OpenHoursEditorClient
         timezone={host.timezone}

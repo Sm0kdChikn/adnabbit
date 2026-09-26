@@ -15,6 +15,7 @@ import {
   ViewToggle,
 } from "@/components/ui";
 import { ReviewActions } from "./ReviewActions";
+import { TakeDownPanel } from "@/components/TakeDownPanel";
 
 export default async function AdminPage() {
   const session = await getServerSession(authOptions);
@@ -100,16 +101,29 @@ export default async function AdminPage() {
               {recent.map((c) => (
                 <li
                   key={c.id}
-                  className="flex flex-wrap items-center justify-between gap-2 px-4 py-3"
+                  className="flex flex-col gap-3 px-4 py-3 sm:flex-row sm:items-start sm:justify-between"
                 >
-                  <div>
-                    <span className="font-medium text-foreground">{c.name}</span>
-                    <span className="ml-2 text-sm text-muted">{c.advertiser.email}</span>
+                  <div className="min-w-0 flex-1 space-y-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="font-medium text-foreground">{c.name}</span>
+                      <StatusBadge status={c.status} />
+                    </div>
+                    <p className="text-sm text-muted">{c.advertiser.email}</p>
                     {c.status === "REJECTED" && c.rejectReason && (
                       <p className="text-xs text-[var(--status-danger-fg)]">{c.rejectReason}</p>
                     )}
                   </div>
-                  <StatusBadge status={c.status} />
+                  {c.status === "APPROVED" && (
+                    <div className="w-full max-w-xs shrink-0">
+                      <TakeDownPanel
+                        target="creative"
+                        id={c.id}
+                        takenDownAt={c.takenDownAt}
+                        reason={c.takenDownReason}
+                        compact
+                      />
+                    </div>
+                  )}
                 </li>
               ))}
             </ul>

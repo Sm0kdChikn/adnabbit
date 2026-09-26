@@ -3,8 +3,9 @@ import { authOptions } from "@/lib/auth";
 import { redirect, notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
-import { ScheduleBadge } from "@/components/StatusBadge";
+import { ScheduleBadge, WindowPhaseBadge } from "@/components/StatusBadge";
 import { formatScheduleSummary, materializeEndedSchedules } from "@/lib/schedules";
+import { scheduleWindowPhase } from "@/lib/take-down";
 import { ScheduleEditForm } from "../ScheduleEditForm";
 import { formatVertical } from "@/lib/types";
 
@@ -57,6 +58,9 @@ export default async function AdminScheduleDetailPage({
             {schedule.screen.host.name} · {schedule.screen.name}
           </h1>
           <ScheduleBadge status={schedule.status} />
+          <WindowPhaseBadge
+            phase={scheduleWindowPhase(schedule, schedule.screen.host.timezone)}
+          />
           <span className="rounded-full bg-surface-hover px-2.5 py-0.5 text-xs font-semibold text-muted">
             {schedule.kind}
           </span>

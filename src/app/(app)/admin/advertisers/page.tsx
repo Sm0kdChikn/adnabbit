@@ -52,6 +52,7 @@ export default async function AdminAdvertisersPage() {
     creativeCount: a._count.creatives,
     profileSlug: a.profile?.slug ?? null,
     profilePublished: a.profile?.published ?? false,
+    takenDownAt: a.advertiserTakenDownAt?.toISOString() ?? null,
   }));
 
   return (

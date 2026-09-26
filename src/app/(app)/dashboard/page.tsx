@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 import { StatusBadge } from "@/components/StatusBadge";
+import { TakeDownBadge } from "@/components/TakeDownPanel";
 import {
   Card,
   CardList,
@@ -84,6 +85,10 @@ export default async function DashboardPage() {
                     <div className="flex flex-wrap items-center gap-2">
                       <h2 className="font-semibold text-foreground">{c.name}</h2>
                       <StatusBadge status={c.status} />
+                      <TakeDownBadge
+                        takenDownAt={c.takenDownAt}
+                        reason={c.takenDownReason}
+                      />
                     </div>
                     <p className="text-sm text-muted">
                       {c.fileName} · {(c.fileSize / 1024).toFixed(1)} KB · {c.mimeType}

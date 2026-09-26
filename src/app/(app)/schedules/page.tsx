@@ -3,8 +3,9 @@ import { authOptions } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
-import { ScheduleBadge } from "@/components/StatusBadge";
+import { ScheduleBadge, WindowPhaseBadge } from "@/components/StatusBadge";
 import { formatScheduleSummary, materializeEndedSchedules } from "@/lib/schedules";
+import { scheduleWindowPhase } from "@/lib/take-down";
 import { formatVertical } from "@/lib/types";
 import { EmptyState, PageHeader } from "@/components/ui";
 
@@ -67,6 +68,9 @@ export default async function AdvertiserSchedulesPage() {
                   {s.screen.host.name} · {s.screen.name}
                 </h2>
                 <ScheduleBadge status={s.status} />
+                <WindowPhaseBadge
+                  phase={scheduleWindowPhase(s, s.screen.host.timezone)}
+                />
               </div>
               <p className="text-sm text-muted">
                 {s.placement.creative.name} ·{" "}

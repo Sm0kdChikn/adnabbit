@@ -1,6 +1,6 @@
 # AdNabbit Web MVP
 
-Advertiser signup/login, creative upload (image/video), submit for review, admin approve/reject, **Ticket A — Host/screen inventory**, and **Ticket B — Advertiser public profiles**, and **Ticket C — Placement requests**, and **Ticket D — Scheduling**, and **Ticket E — Recurring dayparts**, and **Ticket E2 — Schedule calendar view**, and **Ticket G — Host self-serve portal**, and **Ticket J — device claim / playlist APIs**, and **Ticket K — admin folders**, and **Ticket O — playlist refresh**, and **Ticket P — admin remote view (screenshot relay)**, and **Ticket P.1 — admin remote mouse/keyboard control**, and **Ticket P.1.1 — kiosk lock/unlock toggle**, and **Ticket P.1.2 — admin device reboot**, and **Ticket Q — venue open hours / soft blackout / PoP mute**, and **Ticket R — fleet health + offline/empty alerts**.
+Advertiser signup/login, creative upload (image/video), submit for review, admin approve/reject, **Ticket A — Host/screen inventory**, and **Ticket B — Advertiser public profiles**, and **Ticket C — Placement requests**, and **Ticket D — Scheduling**, and **Ticket E — Recurring dayparts**, and **Ticket E2 — Schedule calendar view**, and **Ticket G — Host self-serve portal**, and **Ticket J — device claim / playlist APIs**, and **Ticket K — admin folders**, and **Ticket O — playlist refresh**, and **Ticket P — admin remote view (screenshot relay)**, and **Ticket P.1 — admin remote mouse/keyboard control**, and **Ticket P.1.1 — kiosk lock/unlock toggle**, and **Ticket P.1.2 — admin device reboot**, and **Ticket Q — venue open hours / soft blackout / PoP mute**, and **Ticket R — fleet health + offline/empty alerts**, and **Ticket S — campaign windows + emergency take-down**.
 
 **Repo target:** https://github.com/Sm0kdChikn/adnabbit
 
@@ -345,7 +345,7 @@ Software-first Linux kiosk player spike (companion repo: `Sm0kdChikn/adnabbit-pl
 
 ### Data model
 
-- **Device**: 1:1 with Screen (`screenId` unique); stores **sha256** of bearer token only; `lastSeenAt`; **Ticket O** `playlistEpoch`; **Ticket P** `screenshotEpoch` / `screenshotCapturedEpoch` + single overwrite JPEG under `uploads/device-previews/{deviceId}.jpg`; **Ticket P.1** `pendingInputJson` remote-control queue; **Ticket Q** `playbackState` + `OpenHours` / `forceLiveUntil`; **Ticket R** `playerVersion` / optional `disk*` + `FleetAlert`
+- **Device**: 1:1 with Screen (`screenId` unique); stores **sha256** of bearer token only; `lastSeenAt`; **Ticket O** `playlistEpoch`; **Ticket P** `screenshotEpoch` / `screenshotCapturedEpoch` + single overwrite JPEG under `uploads/device-previews/{deviceId}.jpg`; **Ticket P.1** `pendingInputJson` remote-control queue; **Ticket Q** `playbackState` + `OpenHours` / `forceLiveUntil`; **Ticket R** `playerVersion` / optional `disk*` + `FleetAlert`; **Ticket S** take-down stamps on Creative/User/Host/Screen
 - **ScreenClaim**: one-time 6–8 char codes from `A–Z0–9` excluding `0O1I`; TTL **15 minutes**; reminting a screen **supersedes** prior unused live codes
 
 ### Device APIs (Bearer device token)
@@ -565,6 +565,32 @@ Admin fleet board for **paired** screens + in-app alerts. Host sees online/last-
 ### Soft misses
 
 Disk free reporting from player, version-lag vs GitHub releases, email alerts, host alert inbox, auto-remediation.
+
+## Ticket S — Campaign windows + emergency take-down
+
+Campaign play windows reuse **Schedule** fields from Ticket E (`startAt`/`endAt` ONE_OFF; `campaignStartDate`/`campaignEndDate` RECURRING). Outside the window → omitted from device playlists (same as daypart miss). Advertiser schedule UI stays **read-only**; admin sets windows.
+
+| Piece | Behavior |
+|-------|----------|
+| Creative take-down | `takenDownAt` / `takenDownById` / `takenDownReason` — excluded from all playlists |
+| Advertiser take-down | `User.advertiserTakenDownAt` (+ by/reason) — all their creatives excluded |
+| Host / screen soft kill | `playbackTakenDownAt` (+ by/reason) — paid playlist empty for that host's screens or one screen (idle/black OK) |
+| Undo | Clear stamp → restores if still APPROVED and in schedule window |
+| Epoch | Take-down / clear bumps `playlistEpoch` on every affected Device |
+| UI | Admin confirm on creative (review queue + advertiser detail), advertiser detail, host/screen detail; Active/Scheduled/Expired window badges |
+
+### APIs (admin session)
+
+| Method | Path | Body |
+|--------|------|------|
+| POST | `/api/admin/creatives/[id]/take-down` | `{ reason?, undo? }` |
+| POST | `/api/admin/advertisers/[id]/take-down` | `{ reason?, undo? }` |
+| POST | `/api/admin/hosts/[id]/take-down` | `{ reason?, undo? }` |
+| POST | `/api/admin/screens/[id]/take-down` | `{ reason?, undo? }` |
+
+### Soft misses
+
+Full audit log table, email alerts, host self-serve take-down of others' ads.
 
 ## Out of scope (later tickets)
 

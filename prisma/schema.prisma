@@ -17,6 +17,7 @@
 // Ticket P.1: Device.pendingInputJson remote mouse/keyboard queue
 // Ticket Q: OpenHours + Screen.useCustomHours/forceLiveUntil + Device.playbackState
 // Ticket R: FleetAlert + Device.playerVersion/disk* for fleet health
+// Ticket S: Creative/User/Host/Screen take-down stamps; Schedule windows already Ticket E
 
 generator client {
   provider = "prisma-client-js"
@@ -42,6 +43,10 @@ model User {
   reviewedPlacements    PlacementRequest[] @relation("PlacementReviewer")
   schedulesCreated      Schedule[]         @relation("ScheduleCreator")
   playImports           PlayImport[]
+  /// Ticket S — admin emergency take-down of all this advertiser's creatives from playlists
+  advertiserTakenDownAt     DateTime?
+  advertiserTakenDownById   String?
+  advertiserTakenDownReason String?
   createdAt             DateTime           @default(now())
   updatedAt             DateTime           @updatedAt
 }
@@ -59,10 +64,16 @@ model Creative {
   advertiserId      String
   advertiser        User               @relation(fields: [advertiserId], references: [id], onDelete: Cascade)
   reviewedAt        DateTime?
+  /// Ticket S — admin emergency take-down (null = clear / playing if approved + in window)
+  takenDownAt       DateTime?
+  takenDownById     String?
+  takenDownReason   String?
   placementRequests PlacementRequest[]
   playEvents        PlayEvent[]
   createdAt         DateTime           @default(now())
   updatedAt         DateTime           @updatedAt
+
+  @@index([takenDownAt])
 }
 
 /// Venue / host location. Screens inherit vertical from Host (not stored on Screen).
@@ -80,6 +91,10 @@ model Host {
   userId     String?  @unique
   user       User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
   screens    Screen[]
+  /// Ticket S — soft kill: empty paid playlists for all screens under this host
+  playbackTakenDownAt     DateTime?
+  playbackTakenDownById   String?
+  playbackTakenDownReason String?
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 }
@@ -102,6 +117,10 @@ model Screen {
   useCustomHours    Boolean            @default(false)
   /// Ticket Q — admin force-live override until Instant (bypasses closed hours)
   forceLiveUntil    DateTime?
+  /// Ticket S — soft kill: empty paid playlist for this screen
+  playbackTakenDownAt     DateTime?
+  playbackTakenDownById   String?
+  playbackTakenDownReason String?
   /// Ticket R — fleet health alerts
   fleetAlerts       FleetAlert[]
   createdAt         DateTime           @default(now())

@@ -63,3 +63,28 @@ export function ScheduleBadge({ status }: { status: string }) {
     "bg-[var(--status-neutral-bg)] text-[var(--status-neutral-fg)]";
   return <span className={`${badgeBase} ${s}`}>{status}</span>;
 }
+
+const windowPhaseStyles: Record<string, string> = {
+  ACTIVE: "bg-[var(--status-success-bg)] text-[var(--status-success-fg)]",
+  SCHEDULED: "bg-[var(--status-warning-bg)] text-[var(--status-warning-fg)]",
+  EXPIRED: "bg-[var(--status-neutral-bg)] text-[var(--status-neutral-fg)]",
+  DRAFT: "bg-[var(--status-neutral-bg)] text-[var(--status-neutral-fg)]",
+  CANCELLED: "bg-[var(--status-danger-bg)] text-[var(--status-danger-fg)]",
+};
+
+const windowPhaseLabel: Record<string, string> = {
+  ACTIVE: "Active",
+  SCHEDULED: "Scheduled",
+  EXPIRED: "Expired",
+  DRAFT: "Draft",
+  CANCELLED: "Cancelled",
+};
+
+/** Ticket S — campaign window phase (Schedule start/end). */
+export function WindowPhaseBadge({ phase }: { phase: string }) {
+  const s =
+    windowPhaseStyles[phase] ||
+    "bg-[var(--status-neutral-bg)] text-[var(--status-neutral-fg)]";
+  const label = windowPhaseLabel[phase] || phase;
+  return <span className={`${badgeBase} ${s}`}>{label}</span>;
+}

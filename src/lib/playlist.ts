@@ -1,6 +1,8 @@
 /**
  * Ticket J — build next-24h playlist items from ACTIVE schedules for a screen.
  * Reuses calendar-expand + schedules helpers; emits ISO UTC windows.
+ * Ticket S — omit taken-down creatives/advertisers; empty paid set on host/screen take-down.
+ * Campaign windows: Schedule start/end / campaign dates (Ticket E) via expandSchedulesToBlocks.
  */
 import { addDays } from "date-fns";
 import { formatInTimeZone, fromZonedTime } from "date-fns-tz";
@@ -58,7 +60,13 @@ export async function buildPlaylistForScreen(opts: {
   const screen = await prisma.screen.findUnique({
     where: { id: opts.screenId },
     include: {
-      host: { select: { name: true, timezone: true } },
+      host: {
+        select: {
+          name: true,
+          timezone: true,
+          playbackTakenDownAt: true,
+        },
+      },
     },
   });
   if (!screen) {
@@ -71,6 +79,16 @@ export async function buildPlaylistForScreen(opts: {
   }
 
   const tz = screen.host.timezone || DEFAULT_TIMEZONE;
+
+  // Ticket S — host/screen soft kill: empty paid set (idle/black OK)
+  if (screen.playbackTakenDownAt || screen.host.playbackTakenDownAt) {
+    return {
+      timezone: tz,
+      hostName: screen.host.name,
+      screenName: screen.name,
+      items: [],
+    };
+  }
   const rangeStart = formatInTimeZone(now, tz, "yyyy-MM-dd");
   // Include next calendar day so overnight / late windows are covered
   const rangeEnd = formatInTimeZone(windowEnd, tz, "yyyy-MM-dd");
@@ -86,9 +104,16 @@ export async function buildPlaylistForScreen(opts: {
               name: true,
               mimeType: true,
               status: true,
+              takenDownAt: true,
             },
           },
-          advertiser: { select: { name: true, email: true } },
+          advertiser: {
+            select: {
+              name: true,
+              email: true,
+              advertiserTakenDownAt: true,
+            },
+          },
         },
       },
       screen: {
@@ -142,6 +167,9 @@ export async function buildPlaylistForScreen(opts: {
     if (!sched) continue;
     const creative = sched.placement.creative;
     if (creative.status !== "APPROVED") continue;
+    // Ticket S — creative or advertiser emergency take-down
+    if (creative.takenDownAt) continue;
+    if (sched.placement.advertiser.advertiserTakenDownAt) continue;
 
     const mime = creative.mimeType;
     const durationHintSec = mime.startsWith("image/")

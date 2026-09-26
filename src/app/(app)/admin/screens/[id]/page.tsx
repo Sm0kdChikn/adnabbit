@@ -15,6 +15,7 @@ import {
   formatHoursSummary,
   resolveOpenHoursForScreen,
 } from "@/lib/open-hours";
+import { TakeDownPanel } from "@/components/TakeDownPanel";
 
 export default async function EditScreenPage({ params }: { params: { id: string } }) {
   const session = await getServerSession(authOptions);
@@ -104,6 +105,12 @@ export default async function EditScreenPage({ params }: { params: { id: string 
         <span>Device status:</span>
         <DeviceStatusBadge status={displayStatus} />
       </div>
+      <TakeDownPanel
+        target="screen"
+        id={screen.id}
+        takenDownAt={screen.playbackTakenDownAt}
+        reason={screen.playbackTakenDownReason}
+      />
       <ScreenForm
         mode="edit"
         screenId={screen.id}

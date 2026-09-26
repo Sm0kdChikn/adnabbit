@@ -1047,3 +1047,12 @@ Host portal screen cards show Online / Offline / Unpaired + last seen. No Alerts
 
 ### Player version
 Player heartbeat body includes `playerVersion` (package.json). Optional env `ADNNABIT_LATEST_PLAYER_VERSION` for lag flag (soft miss).
+
+## Ticket S — Campaign windows + emergency take-down (2026-09-26)
+
+1. **Window badges** — Admin `/admin/schedules` and advertiser `/schedules` show Active / Scheduled / Expired beside status (Schedule start/end from Ticket E).
+2. **Creative take-down** — Admin review recent APPROVED → Emergency take-down → confirm → creative gone from Lobby TV playlist on next poll; Clear take-down restores if still approved + in window.
+3. **Advertiser take-down** — `/admin/advertisers/[id]` → Take down advertiser → all their creatives leave playlists; clear restores.
+4. **Host / screen** — `/admin/hosts/[id]` or `/admin/screens/[id]` → Kill paid playback → playlist items empty (soft); Restore clears stamp + bumps epoch.
+5. **Epoch** — After take-down, `Device.playlistEpoch` increments for affected paired devices (smoke saw Lobby TV epoch advance).
+

@@ -33,6 +33,7 @@ export type HostFolderItem = {
   screenCount: number;
   ownerEmail: string | null;
   notes: string | null;
+  playbackTakenDownAt?: string | null;
 };
 
 export type AdvertiserFolderItem = {
@@ -42,6 +43,7 @@ export type AdvertiserFolderItem = {
   creativeCount: number;
   profileSlug: string | null;
   profilePublished: boolean;
+  takenDownAt?: string | null;
 };
 
 type Props = {
@@ -71,13 +73,20 @@ function HostCard({ h }: { h: HostFolderItem }) {
     <Card glow className="flex h-full flex-col p-4 pl-12">
       <div className="flex flex-1 flex-col gap-3">
         <div className="min-w-0 flex-1 space-y-1">
-          <Link
-            href={`/admin/hosts/${h.id}`}
-            className="font-semibold text-accent hover:underline"
-            onClick={(e) => e.stopPropagation()}
-          >
-            {h.name}
-          </Link>
+          <div className="flex flex-wrap items-center gap-2">
+            <Link
+              href={`/admin/hosts/${h.id}`}
+              className="font-semibold text-accent hover:underline"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {h.name}
+            </Link>
+            {h.playbackTakenDownAt ? (
+              <span className="rounded-full bg-[var(--status-danger-bg)] px-2 py-0.5 text-[10px] font-semibold text-[var(--status-danger-fg)]">
+                Playback killed
+              </span>
+            ) : null}
+          </div>
           <p className="text-sm text-muted">
             {h.verticalLabel} · {h.screenCount} screen
             {h.screenCount === 1 ? "" : "s"}
@@ -103,29 +112,49 @@ function HostCard({ h }: { h: HostFolderItem }) {
 function AdvertiserCard({ a }: { a: AdvertiserFolderItem }) {
   return (
     <Card glow className="flex h-full flex-col p-4 pl-12">
-      <div className="min-w-0 flex-1 space-y-1">
-        <p className="font-semibold text-foreground">
-          {a.name || "Unnamed"}
-        </p>
-        <p className="text-sm text-accent">{a.email}</p>
-        <p className="text-sm text-muted">
-          {a.creativeCount} creative
-          {a.creativeCount === 1 ? "" : "s"}
-          {a.profileSlug
-            ? ` · profile /a/${a.profileSlug}${
-                a.profilePublished ? "" : " (draft)"
-              }`
-            : " · no public profile"}
-        </p>
-        {a.profileSlug && a.profilePublished && (
-          <Link
-            href={`/a/${a.profileSlug}`}
-            className="inline-block text-sm text-muted hover:text-accent"
-            onClick={(e) => e.stopPropagation()}
-          >
-            View public profile
-          </Link>
-        )}
+      <div className="flex flex-1 flex-col gap-3">
+        <div className="min-w-0 flex-1 space-y-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <Link
+              href={`/admin/advertisers/${a.id}`}
+              className="font-semibold text-accent hover:underline"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {a.name || "Unnamed"}
+            </Link>
+            {a.takenDownAt ? (
+              <span className="rounded-full bg-[var(--status-danger-bg)] px-2 py-0.5 text-[10px] font-semibold text-[var(--status-danger-fg)]">
+                Taken down
+              </span>
+            ) : null}
+          </div>
+          <p className="text-sm text-accent">{a.email}</p>
+          <p className="text-sm text-muted">
+            {a.creativeCount} creative
+            {a.creativeCount === 1 ? "" : "s"}
+            {a.profileSlug
+              ? ` · profile /a/${a.profileSlug}${
+                  a.profilePublished ? "" : " (draft)"
+                }`
+              : " · no public profile"}
+          </p>
+          {a.profileSlug && a.profilePublished && (
+            <Link
+              href={`/a/${a.profileSlug}`}
+              className="inline-block text-sm text-muted hover:text-accent"
+              onClick={(e) => e.stopPropagation()}
+            >
+              View public profile
+            </Link>
+          )}
+        </div>
+        <Link
+          href={`/admin/advertisers/${a.id}`}
+          className="text-sm text-muted hover:text-accent"
+          onClick={(e) => e.stopPropagation()}
+        >
+          Manage / take-down
+        </Link>
       </div>
     </Card>
   );

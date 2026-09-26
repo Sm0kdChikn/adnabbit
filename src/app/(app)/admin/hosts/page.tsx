@@ -53,6 +53,7 @@ export default async function AdminHostsPage() {
     screenCount: h._count.screens,
     ownerEmail: h.user?.email ?? null,
     notes: h.notes,
+    playbackTakenDownAt: h.playbackTakenDownAt?.toISOString() ?? null,
   }));
 
   return (
