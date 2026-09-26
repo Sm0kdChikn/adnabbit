@@ -3,6 +3,10 @@ import { prisma } from "@/lib/prisma";
 import { requireHostApi } from "@/lib/host";
 import { isHostVertical } from "@/lib/types";
 import { isValidTimeZone } from "@/lib/schedules";
+import {
+  isOfflinePolicy,
+  normalizeOfflineCacheTtlHours,
+} from "@/lib/offline-policy";
 
 export async function GET() {
   const auth = await requireHostApi();
@@ -28,6 +32,8 @@ export async function PATCH(req: Request) {
     otherLabel?: string | null;
     notes?: string | null;
     timezone?: string;
+    offlinePolicy?: string;
+    offlineCacheTtlHours?: number | string;
   };
   try {
     body = await req.json();
@@ -69,9 +75,40 @@ export async function PATCH(req: Request) {
     return NextResponse.json({ error: "Invalid IANA timezone" }, { status: 400 });
   }
 
+  let offlinePolicy = existing.offlinePolicy;
+  if (body.offlinePolicy !== undefined) {
+    if (!isOfflinePolicy(body.offlinePolicy)) {
+      return NextResponse.json(
+        { error: "offlinePolicy must be PLAY_CACHE or BLACKOUT" },
+        { status: 400 }
+      );
+    }
+    offlinePolicy = body.offlinePolicy;
+  }
+
+  let offlineCacheTtlHours = existing.offlineCacheTtlHours;
+  if (body.offlineCacheTtlHours !== undefined) {
+    const ttl = normalizeOfflineCacheTtlHours(body.offlineCacheTtlHours);
+    if (ttl === null) {
+      return NextResponse.json(
+        { error: "offlineCacheTtlHours must be an integer 0–8760" },
+        { status: 400 }
+      );
+    }
+    offlineCacheTtlHours = ttl;
+  }
+
   const host = await prisma.host.update({
     where: { id: existing.id },
-    data: { name, vertical, otherLabel, notes, timezone },
+    data: {
+      name,
+      vertical,
+      otherLabel,
+      notes,
+      timezone,
+      offlinePolicy,
+      offlineCacheTtlHours,
+    },
   });
 
   return NextResponse.json({ host });

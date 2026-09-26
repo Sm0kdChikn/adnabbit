@@ -63,6 +63,8 @@ export default async function EditHostPage({ params }: { params: { id: string } 
           otherLabel: host.otherLabel,
           notes: host.notes,
           timezone: host.timezone,
+          offlinePolicy: host.offlinePolicy,
+          offlineCacheTtlHours: host.offlineCacheTtlHours,
         }}
       />
 

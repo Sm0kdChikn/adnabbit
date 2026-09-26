@@ -20,6 +20,7 @@
 // Ticket S: Creative/User/Host/Screen take-down stamps; Schedule windows already Ticket E
 // Ticket T: analytics from OpenHours + schedule expansion (no PlayEvent invent)
 // Ticket U: DownloadHours (host quiet hours) + admin fleet bulk ops
+// Ticket V: Host.offlinePolicy + offlineCacheTtlHours (player offline play)
 
 generator client {
   provider = "prisma-client-js"
@@ -88,6 +89,10 @@ model Host {
   otherLabel String?
   /// IANA timezone; screens inherit for daypart scheduling (Ticket E)
   timezone   String   @default("America/Denver")
+  /// Ticket V — PLAY_CACHE | BLACKOUT when API unreachable / no heartbeat within grace
+  offlinePolicy         String   @default("PLAY_CACHE")
+  /// Ticket V — hours to keep looping last cached playlist (0 = blackout immediately when offline)
+  offlineCacheTtlHours  Int      @default(24)
   notes      String?
   /// Ticket G — owning HOST user (null = unclaimed). One login owns one Host for MVP.
   userId     String?  @unique

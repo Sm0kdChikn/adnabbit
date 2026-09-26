@@ -60,6 +60,11 @@ export type FleetScreenHealth = {
   diskCritical: boolean | null;
   attention: boolean;
   openAlertKinds: FleetAlertKind[];
+  /** Ticket V — host offline play policy (soft miss: per-screen). */
+  offlinePolicy: "PLAY_CACHE" | "BLACKOUT";
+  offlineCacheTtlHours: number;
+  /** Best-effort: offline + PLAY_CACHE + ttl>0 → may still be looping cache. */
+  mayPlayCache: boolean;
 };
 
 export function countActiveItemsNow(
@@ -130,7 +135,14 @@ export async function listFleetHealth(opts?: {
     where: includeUnpaired ? undefined : { device: { isNot: null } },
     orderBy: [{ city: "asc" }, { name: "asc" }],
     include: {
-      host: { select: { id: true, name: true } },
+      host: {
+        select: {
+          id: true,
+          name: true,
+          offlinePolicy: true,
+          offlineCacheTtlHours: true,
+        },
+      },
       device: true,
       fleetAlerts: {
         where: { status: "OPEN" },
@@ -181,6 +193,15 @@ export async function listFleetHealth(opts?: {
         (FLEET_ALERT_KINDS as readonly string[]).includes(k)
       );
 
+    const offlinePolicy =
+      screen.host.offlinePolicy === "BLACKOUT" ? "BLACKOUT" : "PLAY_CACHE";
+    const offlineCacheTtlHours =
+      typeof screen.host.offlineCacheTtlHours === "number"
+        ? screen.host.offlineCacheTtlHours
+        : 24;
+    const mayPlayCache =
+      !!device && !online && offlinePolicy === "PLAY_CACHE" && offlineCacheTtlHours > 0;
+
     const attention =
       !online ||
       emptyPlaylist ||
@@ -213,6 +234,9 @@ export async function listFleetHealth(opts?: {
       diskCritical,
       attention,
       openAlertKinds,
+      offlinePolicy,
+      offlineCacheTtlHours,
+      mayPlayCache,
     });
   }
 
@@ -311,7 +335,14 @@ export async function listFleetAlerts(opts?: {
           id: true,
           name: true,
           city: true,
-          host: { select: { id: true, name: true } },
+          host: {
+            select: {
+              id: true,
+              name: true,
+              offlinePolicy: true,
+              offlineCacheTtlHours: true,
+            },
+          },
           device: {
             select: {
               lastSeenAt: true,

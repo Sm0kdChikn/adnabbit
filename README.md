@@ -1,6 +1,6 @@
 # AdNabbit Web MVP
 
-Advertiser signup/login, creative upload (image/video), submit for review, admin approve/reject, **Ticket A — Host/screen inventory**, and **Ticket B — Advertiser public profiles**, and **Ticket C — Placement requests**, and **Ticket D — Scheduling**, and **Ticket E — Recurring dayparts**, and **Ticket E2 — Schedule calendar view**, and **Ticket G — Host self-serve portal**, and **Ticket J — device claim / playlist APIs**, and **Ticket K — admin folders**, and **Ticket O — playlist refresh**, and **Ticket P — admin remote view (screenshot relay)**, and **Ticket P.1 — admin remote mouse/keyboard control**, and **Ticket P.1.1 — kiosk lock/unlock toggle**, and **Ticket P.1.2 — admin device reboot**, and **Ticket Q — venue open hours / soft blackout / PoP mute**, and **Ticket R — fleet health + offline/empty alerts**, and **Ticket S — campaign windows + emergency take-down**, and **Ticket T — host / advertiser / admin analytics (schedule fill)**, and **Ticket U — download/quiet hours + fleet bulk ops**.
+Advertiser signup/login, creative upload (image/video), submit for review, admin approve/reject, **Ticket A — Host/screen inventory**, and **Ticket B — Advertiser public profiles**, and **Ticket C — Placement requests**, and **Ticket D — Scheduling**, and **Ticket E — Recurring dayparts**, and **Ticket E2 — Schedule calendar view**, and **Ticket G — Host self-serve portal**, and **Ticket J — device claim / playlist APIs**, and **Ticket K — admin folders**, and **Ticket O — playlist refresh**, and **Ticket P — admin remote view (screenshot relay)**, and **Ticket P.1 — admin remote mouse/keyboard control**, and **Ticket P.1.1 — kiosk lock/unlock toggle**, and **Ticket P.1.2 — admin device reboot**, and **Ticket Q — venue open hours / soft blackout / PoP mute**, and **Ticket R — fleet health + offline/empty alerts**, and **Ticket S — campaign windows + emergency take-down**, and **Ticket T — host / advertiser / admin analytics (schedule fill)**, and **Ticket U — download/quiet hours + fleet bulk ops**, and **Ticket V — offline play policy**.
 
 **Repo target:** https://github.com/Sm0kdChikn/adnabbit
 
@@ -345,7 +345,7 @@ Software-first Linux kiosk player spike (companion repo: `Sm0kdChikn/adnabbit-pl
 
 ### Data model
 
-- **Device**: 1:1 with Screen (`screenId` unique); stores **sha256** of bearer token only; `lastSeenAt`; **Ticket O** `playlistEpoch`; **Ticket P** `screenshotEpoch` / `screenshotCapturedEpoch` + single overwrite JPEG under `uploads/device-previews/{deviceId}.jpg`; **Ticket P.1** `pendingInputJson` remote-control queue; **Ticket Q** `playbackState` + `OpenHours` / `forceLiveUntil`; **Ticket R** `playerVersion` / optional `disk*` + `FleetAlert`; **Ticket S** take-down stamps on Creative/User/Host/Screen; **Ticket U** `DownloadHours` (host quiet hours) + fleet bulk refresh/reboot/kiosk
+- **Device**: 1:1 with Screen (`screenId` unique); stores **sha256** of bearer token only; `lastSeenAt`; **Ticket O** `playlistEpoch`; **Ticket P** `screenshotEpoch` / `screenshotCapturedEpoch` + single overwrite JPEG under `uploads/device-previews/{deviceId}.jpg`; **Ticket P.1** `pendingInputJson` remote-control queue; **Ticket Q** `playbackState` + `OpenHours` / `forceLiveUntil`; **Ticket R** `playerVersion` / optional `disk*` + `FleetAlert`; **Ticket S** take-down stamps on Creative/User/Host/Screen; **Ticket U** `DownloadHours` (host quiet hours) + fleet bulk refresh/reboot/kiosk; **Ticket V** `Host.offlinePolicy` / `offlineCacheTtlHours`
 - **ScreenClaim**: one-time 6–8 char codes from `A–Z0–9` excluding `0O1I`; TTL **15 minutes**; reminting a screen **supersedes** prior unused live codes
 
 ### Device APIs (Bearer device token)
@@ -666,3 +666,28 @@ Bulk `action`: `refresh` (bump `playlistEpoch`), `reboot` / `kioskLock` / `kiosk
 
 - Host edit + admin host detail: **Download hours** editor (Overnight 0–6 preset)
 - `/admin/fleet`: multi-select paired devices + bulk bar
+
+## Ticket V — Offline play policy
+
+Host-level policy for when the player cannot reach the API (or misses heartbeat within the 5‑minute grace). Soft miss: per-screen override.
+
+| Field | Default | Meaning |
+|-------|---------|---------|
+| `offlinePolicy` | `PLAY_CACHE` | `PLAY_CACHE` = loop last good playlist; `BLACKOUT` = soft blackout immediately when offline |
+| `offlineCacheTtlHours` | `24` | Max age of cached playlist under `PLAY_CACHE`. `0` = blackout as soon as offline |
+
+### Device payloads
+
+Claim, heartbeat, and playlist include `offlinePolicy` + `offlineCacheTtlHours`. Player persists them with the playlist cache.
+
+### Player behavior
+
+1. Track last successful playlist/heartbeat.
+2. When unreachable / past grace: if `BLACKOUT` or TTL `0` or cache age > TTL → soft blackout, **no play-logs**.
+3. If `PLAY_CACHE` and within TTL → stretch cached item windows and keep looping; mute PoP while offline.
+4. Soft miss: P2P, prefetch, OptiSigns sync, new remote commands — out of scope.
+
+### UI
+
+- Admin host form + host venue edit: offline policy + TTL fields
+- `/admin/fleet`: offline badge (existing) + best-effort “may play cache” when host policy is `PLAY_CACHE` and TTL > 0

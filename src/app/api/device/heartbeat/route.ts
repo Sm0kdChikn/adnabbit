@@ -7,6 +7,7 @@ import {
 } from "@/lib/device";
 import { resolveOpenHoursForScreen } from "@/lib/open-hours";
 import { resolveDownloadHoursForScreen } from "@/lib/download-hours";
+import { resolveOfflinePolicyForScreen } from "@/lib/offline-policy";
 
 const PLAYBACK_STATES = new Set(["LIVE", "BLACKOUT", "IDLE", "EMPTY"]);
 
@@ -77,9 +78,10 @@ export async function POST(req: Request) {
     },
   });
 
-  const [hours, downloadHours] = await Promise.all([
+  const [hours, downloadHours, offlinePolicy] = await Promise.all([
     resolveOpenHoursForScreen(updated.screenId, now),
     resolveDownloadHoursForScreen(updated.screenId, now),
+    resolveOfflinePolicyForScreen(updated.screenId),
   ]);
   const captureScreenshot = needsScreenshotCapture(updated);
   const inputPending = hasPendingInput(updated.pendingInputJson);
@@ -96,6 +98,9 @@ export async function POST(req: Request) {
     downloadHours,
     downloadAllowed: downloadHours.downloadAllowed,
     playbackAllowed: hours.isOpenNow,
+    // Ticket V
+    offlinePolicy: offlinePolicy.offlinePolicy,
+    offlineCacheTtlHours: offlinePolicy.offlineCacheTtlHours,
     commands: {
       captureScreenshot,
       inputPending,

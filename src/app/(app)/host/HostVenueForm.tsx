@@ -11,6 +11,8 @@ type Props = {
     otherLabel: string | null;
     notes: string | null;
     timezone: string;
+    offlinePolicy?: string;
+    offlineCacheTtlHours?: number;
   };
 };
 
@@ -23,12 +25,23 @@ export function HostVenueForm({ initial }: Props) {
   const [otherLabel, setOtherLabel] = useState(initial.otherLabel || "");
   const [notes, setNotes] = useState(initial.notes || "");
   const [timezone, setTimezone] = useState(initial.timezone || "America/Denver");
+  const [offlinePolicy, setOfflinePolicy] = useState(
+    initial.offlinePolicy === "BLACKOUT" ? "BLACKOUT" : "PLAY_CACHE"
+  );
+  const [offlineCacheTtlHours, setOfflineCacheTtlHours] = useState(
+    String(initial.offlineCacheTtlHours ?? 24)
+  );
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
+    const ttl = parseInt(offlineCacheTtlHours, 10);
+    if (!Number.isFinite(ttl) || ttl < 0 || ttl > 8760) {
+      setError("Cache TTL must be an integer 0–8760 hours");
+      return;
+    }
     setSaving(true);
     try {
       const res = await fetch("/api/host", {
@@ -40,6 +53,8 @@ export function HostVenueForm({ initial }: Props) {
           otherLabel: vertical === "OTHER" ? otherLabel : null,
           notes: notes || null,
           timezone,
+          offlinePolicy,
+          offlineCacheTtlHours: ttl,
         }),
       });
       const data = await res.json();
@@ -118,6 +133,39 @@ export function HostVenueForm({ initial }: Props) {
           placeholder="America/Denver"
           className="w-full rounded-md border border-border px-3 py-2 text-sm focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent/50"
         />
+      </div>
+      <div>
+        <label className="mb-1 block text-sm font-medium text-muted">
+          Offline play policy
+        </label>
+        <select
+          value={offlinePolicy}
+          onChange={(e) => setOfflinePolicy(e.target.value)}
+          className="w-full rounded-md border border-border px-3 py-2 text-sm focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent/50"
+        >
+          <option value="PLAY_CACHE">Play cache (loop last playlist)</option>
+          <option value="BLACKOUT">Blackout immediately when offline</option>
+        </select>
+        <p className="mt-1 text-xs text-muted">
+          When the player cannot reach AdNabbit: keep looping the last playlist, or go dark.
+        </p>
+      </div>
+      <div>
+        <label className="mb-1 block text-sm font-medium text-muted">
+          Offline cache TTL (hours)
+        </label>
+        <input
+          type="number"
+          min={0}
+          max={8760}
+          required
+          value={offlineCacheTtlHours}
+          onChange={(e) => setOfflineCacheTtlHours(e.target.value)}
+          className="w-full rounded-md border border-border px-3 py-2 text-sm focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent/50"
+        />
+        <p className="mt-1 text-xs text-muted">
+          Default 24. Set 0 to blackout as soon as the player goes offline.
+        </p>
       </div>
       <div>
         <label className="mb-1 block text-sm font-medium text-muted">

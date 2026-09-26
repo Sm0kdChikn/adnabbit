@@ -1109,3 +1109,26 @@ curl -s -o /tmp/fill.csv -w '%{http_code}' \
 
 ### Gaps / soft miss
 - Per-screen download override, bandwidth caps, host bulk, select-all filters beyond visible list
+
+---
+
+## Ticket V — Offline play policy (2026-09-26 MT)
+
+**Goal:** Host offlinePolicy + cache TTL; player blackout or loop cache when API unreachable.
+
+### Migrate
+1. `npx prisma migrate deploy` — applies `20260926210000_ticket_v_offline_policy`.
+
+### Happy path (PLAY_CACHE)
+1. Admin → Host → Offline play policy = **Play cache**, TTL = **24** → Save.
+2. Claim / heartbeat / playlist JSON includes `offlinePolicy: "PLAY_CACHE"`, `offlineCacheTtlHours: 24`.
+3. Stop web API (or block network). After ~5 min grace: player status **Offline · playing cache**; items keep looping; play-logs muted.
+4. Restart API → next heartbeat clears offline mode; playlist refreshes.
+
+### BLACKOUT / TTL 0
+1. Set policy **Blackout** (or TTL **0**) → Save.
+2. Kill API → after grace: soft blackout screen (“Offline · soft blackout”); empty playlist; no PoP.
+3. Fleet board offline card shows policy hint (“Offline · blackout” or “may play cache”).
+
+### Soft miss
+- Per-screen override, P2P, OptiSigns, new remote commands — deferred (Tickets W–Z held).

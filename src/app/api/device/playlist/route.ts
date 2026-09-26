@@ -3,6 +3,7 @@ import { requireDeviceAuth } from "@/lib/device";
 import { buildPlaylistForScreen } from "@/lib/playlist";
 import { resolveOpenHoursForScreen } from "@/lib/open-hours";
 import { resolveDownloadHoursForScreen } from "@/lib/download-hours";
+import { resolveOfflinePolicyForScreen } from "@/lib/offline-policy";
 import { prisma } from "@/lib/prisma";
 
 function apiBaseFromRequest(req: Request): string {
@@ -23,7 +24,7 @@ export async function GET(req: Request) {
     select: { playlistEpoch: true },
   });
 
-  const [playlist, hours, downloadHours] = await Promise.all([
+  const [playlist, hours, downloadHours, offlinePolicy] = await Promise.all([
     buildPlaylistForScreen({
       screenId: auth.device.screenId,
       apiBase: apiBaseFromRequest(req),
@@ -31,6 +32,7 @@ export async function GET(req: Request) {
     }),
     resolveOpenHoursForScreen(auth.device.screenId, now),
     resolveDownloadHoursForScreen(auth.device.screenId, now),
+    resolveOfflinePolicyForScreen(auth.device.screenId),
   ]);
 
   return NextResponse.json({
@@ -45,6 +47,9 @@ export async function GET(req: Request) {
     downloadHours,
     downloadAllowed: downloadHours.downloadAllowed,
     playbackAllowed: hours.isOpenNow,
+    // Ticket V
+    offlinePolicy: offlinePolicy.offlinePolicy,
+    offlineCacheTtlHours: offlinePolicy.offlineCacheTtlHours,
   });
 }
 

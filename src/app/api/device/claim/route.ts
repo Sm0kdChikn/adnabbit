@@ -10,6 +10,7 @@ import {
 import { DEFAULT_TIMEZONE } from "@/lib/schedules";
 import { resolveOpenHoursForScreen } from "@/lib/open-hours";
 import { resolveDownloadHoursForScreen } from "@/lib/download-hours";
+import { resolveOfflinePolicyForScreen } from "@/lib/offline-policy";
 
 const bodySchema = z.object({
   code: z.string().min(1),
@@ -98,6 +99,7 @@ export async function POST(req: Request) {
     };
     const hours = await resolveOpenHoursForScreen(claimed.screenId);
     const downloadHours = await resolveDownloadHoursForScreen(claimed.screenId);
+    const offlinePolicy = await resolveOfflinePolicyForScreen(claimed.screenId);
     return NextResponse.json({
       deviceToken: claimed.deviceToken,
       screenId: claimed.screenId,
@@ -108,6 +110,9 @@ export async function POST(req: Request) {
       downloadHours,
       downloadAllowed: downloadHours.downloadAllowed,
       playbackAllowed: hours.isOpenNow,
+      // Ticket V
+      offlinePolicy: offlinePolicy.offlinePolicy,
+      offlineCacheTtlHours: offlinePolicy.offlineCacheTtlHours,
     });
   } catch (e) {
     console.error("device claim failed", e);

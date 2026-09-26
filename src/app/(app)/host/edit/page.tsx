@@ -41,7 +41,7 @@ export default async function HostEditPage() {
         </Link>
         <h1 className="mt-2 text-2xl font-bold text-foreground">Edit venue</h1>
         <p className="text-sm text-muted">
-          Update name, vertical, timezone, notes, open hours, and download hours.
+          Update name, vertical, timezone, offline play policy, notes, open hours, and download hours.
         </p>
       </div>
       <HostVenueForm
@@ -51,6 +51,8 @@ export default async function HostEditPage() {
           otherLabel: host.otherLabel,
           notes: host.notes,
           timezone: host.timezone,
+          offlinePolicy: host.offlinePolicy,
+          offlineCacheTtlHours: host.offlineCacheTtlHours,
         }}
       />
       <OpenHoursEditorClient

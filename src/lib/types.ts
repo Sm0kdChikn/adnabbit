@@ -104,3 +104,12 @@ export type AdminFolderScope = (typeof ADMIN_FOLDER_SCOPES)[number];
 export function isAdminFolderScope(v: string): v is AdminFolderScope {
   return (ADMIN_FOLDER_SCOPES as readonly string[]).includes(v);
 }
+
+
+/** Ticket V — host offline play policy */
+export const OFFLINE_POLICIES = ["PLAY_CACHE", "BLACKOUT"] as const;
+export type OfflinePolicy = (typeof OFFLINE_POLICIES)[number];
+
+export function isOfflinePolicy(v: string): v is OfflinePolicy {
+  return (OFFLINE_POLICIES as readonly string[]).includes(v);
+}

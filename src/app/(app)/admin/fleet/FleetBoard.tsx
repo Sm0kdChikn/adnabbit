@@ -333,6 +333,30 @@ export function FleetBoard({ screens }: { screens: FleetScreenHealth[] }) {
                         {s.playbackState || "—"}
                       </dd>
                     </div>
+                    <div>
+                      <dt className="text-muted-strong">Offline policy</dt>
+                      <dd className="text-foreground">
+                        {!s.online ? (
+                          s.mayPlayCache ? (
+                            <span title="Best-effort: host PLAY_CACHE + TTL &gt; 0">
+                              Offline · may play cache ({s.offlineCacheTtlHours}h)
+                            </span>
+                          ) : (
+                            <span>
+                              Offline ·{" "}
+                              {s.offlinePolicy === "BLACKOUT" ||
+                              s.offlineCacheTtlHours === 0
+                                ? "blackout"
+                                : s.offlinePolicy}
+                            </span>
+                          )
+                        ) : s.offlinePolicy === "BLACKOUT" ? (
+                          "BLACKOUT"
+                        ) : (
+                          `Play cache ${s.offlineCacheTtlHours}h`
+                        )}
+                      </dd>
+                    </div>
                   </dl>
 
                   {s.openAlertKinds.length > 0 ? (
