@@ -1,6 +1,6 @@
 # AdNabbit Web MVP
 
-Advertiser signup/login, creative upload (image/video), submit for review, admin approve/reject, **Ticket A — Host/screen inventory**, and **Ticket B — Advertiser public profiles**, and **Ticket C — Placement requests**, and **Ticket D — Scheduling**, and **Ticket E — Recurring dayparts**, and **Ticket E2 — Schedule calendar view**, and **Ticket G — Host self-serve portal**, and **Ticket J — device claim / playlist APIs**, and **Ticket K — admin folders**, and **Ticket O — playlist refresh**, and **Ticket P — admin remote view (screenshot relay)**, and **Ticket P.1 — admin remote mouse/keyboard control**.
+Advertiser signup/login, creative upload (image/video), submit for review, admin approve/reject, **Ticket A — Host/screen inventory**, and **Ticket B — Advertiser public profiles**, and **Ticket C — Placement requests**, and **Ticket D — Scheduling**, and **Ticket E — Recurring dayparts**, and **Ticket E2 — Schedule calendar view**, and **Ticket G — Host self-serve portal**, and **Ticket J — device claim / playlist APIs**, and **Ticket K — admin folders**, and **Ticket O — playlist refresh**, and **Ticket P — admin remote view (screenshot relay)**, and **Ticket P.1 — admin remote mouse/keyboard control**, and **Ticket P.1.1 — kiosk lock/unlock toggle**.
 
 **Repo target:** https://github.com/Sm0kdChikn/adnabbit
 
@@ -361,7 +361,7 @@ Software-first Linux kiosk player spike (companion repo: `Sm0kdChikn/adnabbit-pl
 
 ### Admin / host UI
 
-Screen detail pages (`/admin/screens/[id]`, `/host/screens/[id]`): **Mint claim code** + paired device last-seen + **Refresh playlist** (Ticket O). Admin also has **View screen** remote-view (Ticket P) + **Remote control** mouse/keyboard (Ticket P.1).
+Screen detail pages (`/admin/screens/[id]`, `/host/screens/[id]`): **Mint claim code** + paired device last-seen + **Refresh playlist** (Ticket O). Admin also has **View screen** remote-view (Ticket P) + **Remote control** mouse/keyboard (Ticket P.1) + **Kiosk locked** toggle (Ticket P.1.1).
 
 Mint APIs: `POST /api/admin/screens/[id]/claim`, `POST /api/host/screens/[id]/claim`.
 
@@ -429,13 +429,13 @@ Admin-only control of the **Electron player window** (not full OS). Builds on Ti
 3. Typing (while the preview surface is focused) forwards Enter / Escape / arrows / Backspace / Tab / printable chars; browser nav shortcuts are not forwarded.
 4. Events append to `Device.pendingInputJson` (cap 64; paired + ~5 min freshness; admin role only).
 5. Player polls `POST /api/device/input` every ~2s (and on heartbeat when `commands.inputPending`) → drains queue → `webContents.sendInputEvent`.
-6. Optional **Exit kiosk** sends `{ type: "command", name: "exitKiosk" }`.
+6. **Kiosk locked** toggle (Ticket P.1.1) queues `{ type: "command", name: "setKiosk", enabled: true|false }` (aliases: `enableKiosk` / `disableKiosk` / `exitKiosk`). Admin UI reflects the intended state after a successful queue. Player persists preference under `~/.adnabbit-player/preferences.json`.
 
 ### APIs
 
 | Method | Path | Auth | Body / notes |
 |--------|------|------|----------------|
-| POST | `/api/admin/screens/[id]/remote-control` | Admin session | `{ events: [...] }` or `{ event }` or `{ command: "exitKiosk" }` → `{ ok, queued, queueLength, dropped }` |
+| POST | `/api/admin/screens/[id]/remote-control` | Admin session | `{ events: [...] }` or `{ event }` or `{ command: "setKiosk", enabled: bool }` → `{ ok, queued, queueLength, dropped }` |
 | POST | `/api/device/input` | Device Bearer | drains queue → `{ ok, events, drainedAt }` |
 | POST | `/api/device/heartbeat` | Device Bearer | `commands.inputPending: true` when queue non-empty |
 
@@ -446,10 +446,18 @@ Admin-only control of the **Electron player window** (not full OS). Builds on Ti
 { "type": "mouseMove", "x": 100, "y": 200, "captureWidth": 1280, "captureHeight": 720 }
 { "type": "keyDown", "keyCode": "Return", "modifiers": [] }
 { "type": "char", "keyCode": "a" }
+{ "type": "command", "name": "setKiosk", "enabled": false }
 { "type": "command", "name": "exitKiosk" }
 ```
 
 Mouse `x`/`y` are capture/native window coords. Player scales by `captureWidth`/`captureHeight` vs current `getContentSize()` when provided.
+
+### Ticket P.1.1 — Kiosk lock / unlock
+
+- **Unlock** (`setKiosk` `enabled: false` / `disableKiosk` / `exitKiosk`): player leaves Electron kiosk + fullscreen, windowed with chrome usable so Brandon can work on the mini-PC desktop around the player.
+- **Lock** (`setKiosk` `enabled: true` / `enableKiosk`): restores kiosk + fullscreen lockdown.
+- Preference persisted at `~/.adnabbit-player/preferences.json` (`kiosk: true|false`). `ADNNABIT_KIOSK=0` still wins at process start.
+- Same safety as P.1: admin-only, paired device, ~5 min heartbeat freshness → otherwise 409.
 
 ### Limits
 

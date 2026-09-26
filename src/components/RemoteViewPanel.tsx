@@ -115,6 +115,9 @@ export function RemoteViewPanel({ screenId, deviceOnline, hasDevice }: Props) {
   const [controlFocused, setControlFocused] = useState(false);
   const [controlHint, setControlHint] = useState("");
   const [controlError, setControlError] = useState("");
+  /** Ticket P.1.1 — intended kiosk lock state after last successful command (optimistic). */
+  const [kioskLocked, setKioskLocked] = useState(true);
+  const [kioskBusy, setKioskBusy] = useState(false);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const liveRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const blobUrlRef = useRef<string | null>(null);
@@ -400,10 +403,45 @@ export function RemoteViewPanel({ screenId, deviceOnline, hasDevice }: Props) {
     });
   }
 
-  async function sendExitKiosk() {
-    if (!controlOn || !hasDevice || !deviceOnline) return;
-    enqueueControl({ type: "command", name: "exitKiosk" });
-    setControlHint("Exit kiosk command queued");
+  /**
+   * Ticket P.1.1 — queue setKiosk so Brandon can unlock for mini-PC troubleshooting
+   * then re-lock. Uses the same admin + paired + freshness gate as remote-control.
+   */
+  async function sendKioskCommand(locked: boolean) {
+    if (!hasDevice || !deviceOnline || kioskBusy) return;
+    setKioskBusy(true);
+    setControlError("");
+    try {
+      const res = await fetch(
+        `/api/admin/screens/${screenId}/remote-control`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            events: [{ type: "command", name: "setKiosk", enabled: locked }],
+          }),
+        }
+      );
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setControlError(
+          data.error || `Kiosk command failed (HTTP ${res.status})`
+        );
+        return;
+      }
+      setKioskLocked(locked);
+      setControlHint(
+        locked
+          ? `Enable kiosk queued → player (queue ${data.queueLength ?? "?"})`
+          : `Disable kiosk queued → player (queue ${data.queueLength ?? "?"})`
+      );
+    } catch (e) {
+      setControlError(
+        e instanceof Error ? e.message : "Kiosk command failed"
+      );
+    } finally {
+      setKioskBusy(false);
+    }
   }
 
   const disabled = !hasDevice || !deviceOnline;
@@ -417,8 +455,9 @@ export function RemoteViewPanel({ screenId, deviceOnline, hasDevice }: Props) {
           <h2 className="text-lg font-semibold text-foreground">Remote view</h2>
           <p className="text-sm text-muted">
             On-demand screenshot from the paired player (Ticket P). Enable{" "}
-            <strong>Remote control</strong> for mouse/keyboard (Ticket P.1) —
-            events ride the player&apos;s ~2s input poll.
+            <strong>Remote control</strong> for mouse/keyboard (Ticket P.1).
+            Use <strong>Kiosk locked</strong> to unlock lockdown for mini-PC
+            troubleshooting, then re-lock (Ticket P.1.1).
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -467,19 +506,52 @@ export function RemoteViewPanel({ screenId, deviceOnline, hasDevice }: Props) {
             />
             Remote control
           </label>
-          {controlOn && (
-            <Button
-              variant="secondary"
-              size="sm"
-              onClick={() => void sendExitKiosk()}
-              disabled={disabled}
-              title="Ask player to leave Electron kiosk chrome (windowed)"
-            >
-              Exit kiosk
-            </Button>
-          )}
+          <label
+            className={`inline-flex items-center gap-2 text-sm ${
+              disabled || kioskBusy
+                ? "cursor-not-allowed text-muted"
+                : "text-foreground"
+            }`}
+            title={
+              !hasDevice
+                ? "Pair a device first"
+                : !deviceOnline
+                  ? "Player offline (no recent heartbeat)"
+                  : kioskLocked
+                    ? "Uncheck to unlock kiosk (window + Escape) for mini-PC troubleshooting"
+                    : "Check to re-enable Electron kiosk lockdown"
+            }
+          >
+            <input
+              type="checkbox"
+              className="rounded border-border"
+              checked={kioskLocked}
+              disabled={disabled || kioskBusy}
+              onChange={(e) => void sendKioskCommand(e.target.checked)}
+            />
+            {kioskBusy
+              ? "Kiosk…"
+              : kioskLocked
+                ? "Kiosk locked"
+                : "Unlocked"}
+          </label>
         </div>
       </div>
+
+      {!kioskLocked && (
+        <div className="rounded-lg border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-sm text-foreground">
+          <span className="font-medium">Kiosk unlocked</span>
+          <span className="text-muted">
+            {" "}
+            — intended state after last command; player should be windowed so you
+            can use the desktop around it. Re-check <strong>Kiosk locked</strong>{" "}
+            when done.
+          </span>
+          {controlHint ? (
+            <span className="ml-2 text-xs text-muted">{controlHint}</span>
+          ) : null}
+        </div>
+      )}
 
       {controlOn && (
         <div

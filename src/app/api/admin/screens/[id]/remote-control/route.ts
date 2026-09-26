@@ -55,6 +55,7 @@ export async function POST(req: Request, { params }: Ctx) {
     events?: unknown;
     event?: unknown;
     command?: unknown;
+    enabled?: unknown;
   } | null;
 
   const rawList: unknown[] = [];
@@ -63,7 +64,15 @@ export async function POST(req: Request, { params }: Ctx) {
   } else if (body?.event != null) {
     rawList.push(body.event);
   } else if (typeof body?.command === "string") {
-    rawList.push({ type: "command", name: body.command });
+    const cmd: Record<string, unknown> = {
+      type: "command",
+      name: body.command,
+    };
+    // Ticket P.1.1 — { command: "setKiosk", enabled: true|false }
+    if (typeof body.enabled === "boolean") {
+      cmd.enabled = body.enabled;
+    }
+    rawList.push(cmd);
   }
 
   if (rawList.length === 0) {

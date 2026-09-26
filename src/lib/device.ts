@@ -145,8 +145,13 @@ export function needsScreenshotCapture(device: {
 /** Ticket P.1 — max queued remote-control events (oldest dropped when exceeded). */
 export const INPUT_QUEUE_MAX = 64;
 
-/** Ticket P.1 — allowed named player commands (optional nice-to-have). */
-export const REMOTE_COMMAND_NAMES = ["exitKiosk"] as const;
+/** Ticket P.1 / P.1.1 — allowed named player commands. */
+export const REMOTE_COMMAND_NAMES = [
+  "exitKiosk",
+  "enableKiosk",
+  "disableKiosk",
+  "setKiosk",
+] as const;
 export type RemoteCommandName = (typeof REMOTE_COMMAND_NAMES)[number];
 
 export type RemoteMouseEvent = {
@@ -170,6 +175,8 @@ export type RemoteKeyEvent = {
 export type RemoteCommandEvent = {
   type: "command";
   name: RemoteCommandName;
+  /** Required when name is setKiosk — true = lock, false = unlock. */
+  enabled?: boolean;
 };
 
 export type RemoteInputEvent =
@@ -242,6 +249,14 @@ export function normalizeRemoteInputEvent(raw: unknown): RemoteInputEvent | null
     if (typeof e.name !== "string") return null;
     if (!(REMOTE_COMMAND_NAMES as readonly string[]).includes(e.name)) {
       return null;
+    }
+    if (e.name === "setKiosk") {
+      if (typeof e.enabled !== "boolean") return null;
+      return {
+        type: "command",
+        name: "setKiosk",
+        enabled: e.enabled,
+      };
     }
     return { type: "command", name: e.name as RemoteCommandName };
   }
