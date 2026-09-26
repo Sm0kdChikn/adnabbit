@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireHostApi } from "@/lib/host";
+import { writeAuditEvent } from "@/lib/audit";
 import {
   clearWeeklyHours,
   emptyWeekly,
@@ -75,6 +76,13 @@ export async function PUT(req: Request, { params }: Ctx) {
       where: { id: screen.id },
       data: { useCustomHours: false },
     });
+    await writeAuditEvent({
+      actorUserId: auth.user.id,
+      action: "open_hours.save",
+      targetType: "screen",
+      targetId: screen.id,
+      meta: { clearCustom: true, useCustomHours: false, via: "host" },
+    });
     const effective = await resolveOpenHoursForScreen(screen.id);
     return NextResponse.json({ ok: true, useCustomHours: false, effective });
   }
@@ -109,6 +117,18 @@ export async function PUT(req: Request, { params }: Ctx) {
   await prisma.screen.update({
     where: { id: screen.id },
     data: { useCustomHours: useCustom },
+  });
+
+  await writeAuditEvent({
+    actorUserId: auth.user.id,
+    action: "open_hours.save",
+    targetType: "screen",
+    targetId: screen.id,
+    meta: {
+      useCustomHours: useCustom,
+      weeklyProvided: Array.isArray(body.weekly),
+      via: "host",
+    },
   });
 
   const effective = await resolveOpenHoursForScreen(screen.id);

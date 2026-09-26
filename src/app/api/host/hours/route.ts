@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireHostApi } from "@/lib/host";
+import { writeAuditEvent } from "@/lib/audit";
 import {
   clearWeeklyHours,
   emptyWeekly,
@@ -36,6 +37,13 @@ export async function PUT(req: Request) {
 
   if (body.clear) {
     await clearWeeklyHours("HOST", auth.host.id);
+    await writeAuditEvent({
+      actorUserId: auth.user.id,
+      action: "open_hours.save",
+      targetType: "host",
+      targetId: auth.host.id,
+      meta: { clear: true, alwaysOpen: true, via: "host" },
+    });
     return NextResponse.json({
       ok: true,
       alwaysOpen: true,
@@ -50,6 +58,17 @@ export async function PUT(req: Request) {
 
   try {
     const weekly = await replaceWeeklyHours("HOST", auth.host.id, body.weekly);
+    await writeAuditEvent({
+      actorUserId: auth.user.id,
+      action: "open_hours.save",
+      targetType: "host",
+      targetId: auth.host.id,
+      meta: {
+        clear: false,
+        via: "host",
+        weekdayCount: weekly.filter((r) => r.openTime && r.closeTime).length,
+      },
+    });
     return NextResponse.json({
       ok: true,
       alwaysOpen: false,

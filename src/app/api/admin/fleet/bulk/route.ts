@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAdminApi } from "@/lib/admin";
+import { writeAuditEvent } from "@/lib/audit";
 import {
   appendPendingInput,
   isDeviceRecentlySeen,
@@ -183,11 +184,28 @@ export async function POST(req: Request) {
   }
 
   const okCount = results.filter((r) => r.ok).length;
+  const failCount = results.length - okCount;
+
+  await writeAuditEvent({
+    actorUserId: auth.user.id,
+    action: "fleet.bulk",
+    targetType: "fleet",
+    targetId: action,
+    reason: null,
+    meta: {
+      action,
+      screenIds,
+      okCount,
+      failCount,
+      results,
+    },
+  });
+
   return NextResponse.json({
     ok: true,
     action,
     okCount,
-    failCount: results.length - okCount,
+    failCount,
     results,
   });
 }

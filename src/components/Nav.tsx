@@ -43,6 +43,7 @@ function linksForRole(role?: string | null): NavLink[] {
       { href: "/admin/screens", label: "Screens" },
       { href: "/admin/fleet", label: "Fleet" },
       { href: "/admin/alerts", label: "Alerts" },
+      { href: "/admin/audit", label: "Audit" },
       { href: "/admin/profiles", label: "Profiles" },
       { href: "/admin/analytics", label: "Analytics" },
       { href: "/admin/proof-of-play", label: "PoP" },

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAdminApi } from "@/lib/admin";
+import { writeAuditEvent } from "@/lib/audit";
 import {
   clearWeeklyHours,
   emptyWeekly,
@@ -59,6 +60,7 @@ export async function PUT(req: Request, { params }: Ctx) {
       id: true,
       useCustomHours: true,
       hostId: true,
+      forceLiveUntil: true,
     },
   });
   if (!screen) {
@@ -94,6 +96,13 @@ export async function PUT(req: Request, { params }: Ctx) {
     }
   }
 
+  const prevForceMs = screen.forceLiveUntil?.getTime() ?? null;
+  function forceLiveChanged(next: Date | null | undefined): boolean {
+    if (next === undefined) return false;
+    const nextMs = next ? next.getTime() : null;
+    return nextMs !== prevForceMs;
+  }
+
   if (body.clearCustom) {
     await clearWeeklyHours("SCREEN", screen.id);
     await prisma.screen.update({
@@ -102,6 +111,24 @@ export async function PUT(req: Request, { params }: Ctx) {
         useCustomHours: false,
         ...(forceLiveUntil !== undefined ? { forceLiveUntil } : {}),
       },
+    });
+    if (forceLiveChanged(forceLiveUntil)) {
+      await writeAuditEvent({
+        actorUserId: auth.user.id,
+        action: forceLiveUntil ? "force_live.set" : "force_live.clear",
+        targetType: "screen",
+        targetId: screen.id,
+        meta: {
+          forceLiveUntil: forceLiveUntil ? forceLiveUntil.toISOString() : null,
+        },
+      });
+    }
+    await writeAuditEvent({
+      actorUserId: auth.user.id,
+      action: "open_hours.save",
+      targetType: "screen",
+      targetId: screen.id,
+      meta: { clearCustom: true, useCustomHours: false },
     });
     const effective = await resolveOpenHoursForScreen(screen.id);
     return NextResponse.json({ ok: true, useCustomHours: false, effective });
@@ -135,6 +162,36 @@ export async function PUT(req: Request, { params }: Ctx) {
       ...(forceLiveUntil !== undefined ? { forceLiveUntil } : {}),
     },
   });
+
+  if (forceLiveChanged(forceLiveUntil)) {
+    await writeAuditEvent({
+      actorUserId: auth.user.id,
+      action: forceLiveUntil ? "force_live.set" : "force_live.clear",
+      targetType: "screen",
+      targetId: screen.id,
+      meta: {
+        forceLiveUntil: forceLiveUntil ? forceLiveUntil.toISOString() : null,
+      },
+    });
+  }
+
+  // Log open-hours save when weekly/useCustom changed (or always on PUT that touches hours)
+  if (
+    body.weekly !== undefined ||
+    body.useCustomHours !== undefined ||
+    body.clearCustom
+  ) {
+    await writeAuditEvent({
+      actorUserId: auth.user.id,
+      action: "open_hours.save",
+      targetType: "screen",
+      targetId: screen.id,
+      meta: {
+        useCustomHours: useCustom,
+        weeklyProvided: Array.isArray(body.weekly),
+      },
+    });
+  }
 
   const effective = await resolveOpenHoursForScreen(screen.id);
   const custom = await loadWeeklyForTarget("SCREEN", screen.id);

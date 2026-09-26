@@ -1,6 +1,6 @@
 # AdNabbit Web MVP
 
-Advertiser signup/login, creative upload (image/video), submit for review, admin approve/reject, **Ticket A — Host/screen inventory**, and **Ticket B — Advertiser public profiles**, and **Ticket C — Placement requests**, and **Ticket D — Scheduling**, and **Ticket E — Recurring dayparts**, and **Ticket E2 — Schedule calendar view**, and **Ticket G — Host self-serve portal**, and **Ticket J — device claim / playlist APIs**, and **Ticket K — admin folders**, and **Ticket O — playlist refresh**, and **Ticket P — admin remote view (screenshot relay)**, and **Ticket P.1 — admin remote mouse/keyboard control**, and **Ticket P.1.1 — kiosk lock/unlock toggle**, and **Ticket P.1.2 — admin device reboot**, and **Ticket Q — venue open hours / soft blackout / PoP mute**, and **Ticket R — fleet health + offline/empty alerts**, and **Ticket S — campaign windows + emergency take-down**, and **Ticket T — host / advertiser / admin analytics (schedule fill)**, and **Ticket U — download/quiet hours + fleet bulk ops**, and **Ticket V — offline play policy**.
+Advertiser signup/login, creative upload (image/video), submit for review, admin approve/reject, **Ticket A — Host/screen inventory**, and **Ticket B — Advertiser public profiles**, and **Ticket C — Placement requests**, and **Ticket D — Scheduling**, and **Ticket E — Recurring dayparts**, and **Ticket E2 — Schedule calendar view**, and **Ticket G — Host self-serve portal**, and **Ticket J — device claim / playlist APIs**, and **Ticket K — admin folders**, and **Ticket O — playlist refresh**, and **Ticket P — admin remote view (screenshot relay)**, and **Ticket P.1 — admin remote mouse/keyboard control**, and **Ticket P.1.1 — kiosk lock/unlock toggle**, and **Ticket P.1.2 — admin device reboot**, and **Ticket Q — venue open hours / soft blackout / PoP mute**, and **Ticket R — fleet health + offline/empty alerts**, and **Ticket S — campaign windows + emergency take-down**, and **Ticket T — host / advertiser / admin analytics (schedule fill)**, and **Ticket U — download/quiet hours + fleet bulk ops**, and **Ticket V — offline play policy**, and **Ticket W — audit log**.
 
 **Repo target:** https://github.com/Sm0kdChikn/adnabbit
 
@@ -345,7 +345,7 @@ Software-first Linux kiosk player spike (companion repo: `Sm0kdChikn/adnabbit-pl
 
 ### Data model
 
-- **Device**: 1:1 with Screen (`screenId` unique); stores **sha256** of bearer token only; `lastSeenAt`; **Ticket O** `playlistEpoch`; **Ticket P** `screenshotEpoch` / `screenshotCapturedEpoch` + single overwrite JPEG under `uploads/device-previews/{deviceId}.jpg`; **Ticket P.1** `pendingInputJson` remote-control queue; **Ticket Q** `playbackState` + `OpenHours` / `forceLiveUntil`; **Ticket R** `playerVersion` / optional `disk*` + `FleetAlert`; **Ticket S** take-down stamps on Creative/User/Host/Screen; **Ticket U** `DownloadHours` (host quiet hours) + fleet bulk refresh/reboot/kiosk; **Ticket V** `Host.offlinePolicy` / `offlineCacheTtlHours`
+- **Device**: 1:1 with Screen (`screenId` unique); stores **sha256** of bearer token only; `lastSeenAt`; **Ticket O** `playlistEpoch`; **Ticket P** `screenshotEpoch` / `screenshotCapturedEpoch` + single overwrite JPEG under `uploads/device-previews/{deviceId}.jpg`; **Ticket P.1** `pendingInputJson` remote-control queue; **Ticket Q** `playbackState` + `OpenHours` / `forceLiveUntil`; **Ticket R** `playerVersion` / optional `disk*` + `FleetAlert`; **Ticket S** take-down stamps on Creative/User/Host/Screen; **Ticket U** `DownloadHours` (host quiet hours) + fleet bulk refresh/reboot/kiosk; **Ticket V** `Host.offlinePolicy` / `offlineCacheTtlHours`; **Ticket W** `AuditEvent` append-only log
 - **ScreenClaim**: one-time 6–8 char codes from `A–Z0–9` excluding `0O1I`; TTL **15 minutes**; reminting a screen **supersedes** prior unused live codes
 
 ### Device APIs (Bearer device token)
@@ -590,7 +590,7 @@ Campaign play windows reuse **Schedule** fields from Ticket E (`startAt`/`endAt`
 
 ### Soft misses
 
-Full audit log table, email alerts, host self-serve take-down of others' ads.
+Email alerts, host self-serve take-down of others' ads. (Audit log → Ticket W.)
 
 
 ## Ticket T — Analytics (schedule fill / daypart / campaigns)
@@ -630,6 +630,8 @@ Query: `range=7\|30\|custom`, `from`, `to`, `hostId`, `screenId`, `advertiserId`
 - force-live overrides are **not** replayed historically (configured hours only).
 - Overlapping schedules: paid minutes use **union** coverage within open hours.
 - No email digests, billing fill-vs-paid, websockets, or chart libraries.
+
+
 
 ## Out of scope (later tickets)
 
@@ -691,3 +693,34 @@ Claim, heartbeat, and playlist include `offlinePolicy` + `offlineCacheTtlHours`.
 
 - Admin host form + host venue edit: offline policy + TTL fields
 - `/admin/fleet`: offline badge (existing) + best-effort “may play cache” when host policy is `PLAY_CACHE` and TTL > 0
+## Ticket W — Audit log
+
+Append-only **AuditEvent** for admin (and host self-serve hour/policy) actions. No update/delete APIs. Out of scope: WORM/SIEM/email, Tickets X–Z.
+
+| Field | Notes |
+|-------|-------|
+| `id` / `createdAt` | cuid + timestamp |
+| `actorUserId` | User who performed the action |
+| `action` | `take_down` / `undo_take_down` / `fleet.bulk` / `force_live.set` / `force_live.clear` / `open_hours.save` / `download_hours.save` / `offline_policy.save` |
+| `targetType` / `targetId` | `creative` \| `advertiser` \| `host` \| `screen` \| `fleet` |
+| `reason?` | Optional (take-down) |
+| `meta` | JSON string — fleet bulk stores `meta.results[]` per device |
+
+### Write on
+
+- Take-down + undo (creative / advertiser / host / screen) via `lib/take-down`
+- Fleet bulk — **one event per batch** with `meta.results[]`
+- Force-live set/clear (admin screen hours; only when value changes)
+- Open-hours / download-hours / offline-policy saves (admin + host routes)
+
+### UI / API
+
+| Piece | Path |
+|-------|------|
+| Admin page | `/admin/audit` — filters: action, actor, targetType/id, from/to; newest first; read-only |
+| GET | `/api/admin/audit` — same query params; admin session only |
+
+### Soft misses
+
+CSV export; host/advertiser self-view of own-related events.
+

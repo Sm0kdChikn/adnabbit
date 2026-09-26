@@ -1132,3 +1132,43 @@ curl -s -o /tmp/fill.csv -w '%{http_code}' \
 
 ### Soft miss
 - Per-screen override, P2P, OptiSigns, new remote commands — deferred (Tickets W–Z held).
+
+
+---
+
+# Ticket W — Audit log smoke
+
+**Prereq:** migrated DB, seed admin `admin@adnabbit.com` / `admin123!`, `npm run dev` on :3000.
+
+## W1. Schema — PASS expected
+
+```bash
+npx prisma db execute --stdin <<< "SELECT name FROM sqlite_master WHERE name='AuditEvent';"
+```
+
+## W2. Take-down writes audit — PASS expected
+
+1. Login admin → take down a creative (or use API).
+2. `GET /api/admin/audit?action=take_down` → row with `targetType=creative`, actor = admin.
+3. Undo → `action=undo_take_down`.
+
+## W3. Fleet bulk — one event — PASS expected
+
+`POST /api/admin/fleet/bulk` → one `fleet.bulk` event; `meta.results` array length matches screenIds.
+
+## W4. Admin UI — PASS expected
+
+`/admin/audit` admin-only; filters work; HOST/ADVERTISER redirected. No edit/delete controls.
+
+## Soft misses (not tested)
+
+CSV export; host/advertiser self-view.
+
+## Ticket W verified results (2026-09-26 ~10:16 AM MT)
+
+- Migration `20260926220000_ticket_w_audit_log` applied; `AuditEvent` table present
+- Take-down + undo → `take_down` / `undo_take_down` with reason
+- Force-live set/clear → `force_live.set` / `force_live.clear`
+- Open/download hours + offline policy saves logged
+- Fleet bulk → one `fleet.bulk` event with `meta.results[]`
+- `/admin/audit` 200 admin; advertiser API → 401/403

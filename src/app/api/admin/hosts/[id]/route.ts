@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAdminApi } from "@/lib/admin";
+import { writeAuditEvent } from "@/lib/audit";
 import { isHostVertical } from "@/lib/types";
 import { isValidTimeZone } from "@/lib/schedules";
 import { cleanupHostFolderItem } from "@/lib/folders";
@@ -105,6 +106,10 @@ export async function PATCH(req: Request, { params }: Ctx) {
     offlineCacheTtlHours = ttl;
   }
 
+  const policyChanged =
+    offlinePolicy !== existing.offlinePolicy ||
+    offlineCacheTtlHours !== existing.offlineCacheTtlHours;
+
   const host = await prisma.host.update({
     where: { id: params.id },
     data: {
@@ -117,6 +122,23 @@ export async function PATCH(req: Request, { params }: Ctx) {
       offlineCacheTtlHours,
     },
   });
+
+  if (policyChanged) {
+    await writeAuditEvent({
+      actorUserId: auth.user.id,
+      action: "offline_policy.save",
+      targetType: "host",
+      targetId: host.id,
+      meta: {
+        offlinePolicy,
+        offlineCacheTtlHours,
+        previous: {
+          offlinePolicy: existing.offlinePolicy,
+          offlineCacheTtlHours: existing.offlineCacheTtlHours,
+        },
+      },
+    });
+  }
 
   return NextResponse.json({ host });
 }

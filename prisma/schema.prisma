@@ -21,6 +21,8 @@
 // Ticket T: analytics from OpenHours + schedule expansion (no PlayEvent invent)
 // Ticket U: DownloadHours (host quiet hours) + admin fleet bulk ops
 // Ticket V: Host.offlinePolicy + offlineCacheTtlHours (player offline play)
+// Ticket W: AuditEvent append-only admin audit log
+// Ticket W: AuditEvent append-only admin audit log
 
 generator client {
   provider = "prisma-client-js"
@@ -431,4 +433,25 @@ model DownloadHours {
 
   @@unique([scope, targetId, weekday])
   @@index([scope, targetId])
+}
+
+/// Ticket W — append-only admin audit log (no update/delete APIs)
+model AuditEvent {
+  id          String   @id @default(cuid())
+  createdAt   DateTime @default(now())
+  /// User.id of actor (admin or host who saved hours/policy)
+  actorUserId String
+  /// e.g. take_down | undo_take_down | fleet.bulk | force_live.set | force_live.clear | open_hours.save | download_hours.save | offline_policy.save
+  action      String
+  /// creative | advertiser | host | screen | fleet | batch
+  targetType  String
+  targetId    String
+  reason      String?
+  /// JSON object (string on SQLite) — e.g. fleet meta.results[]
+  meta        String?
+
+  @@index([createdAt])
+  @@index([action])
+  @@index([actorUserId])
+  @@index([targetType, targetId])
 }

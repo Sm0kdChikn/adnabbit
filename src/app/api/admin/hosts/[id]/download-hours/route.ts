@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAdminApi } from "@/lib/admin";
+import { writeAuditEvent } from "@/lib/audit";
 import { emptyWeekly, type WeeklyHourRow } from "@/lib/open-hours";
 import {
   clearDownloadWeeklyHours,
@@ -52,6 +53,13 @@ export async function PUT(req: Request, { params }: Ctx) {
 
   if (body.clear) {
     await clearDownloadWeeklyHours(host.id);
+    await writeAuditEvent({
+      actorUserId: auth.user.id,
+      action: "download_hours.save",
+      targetType: "host",
+      targetId: host.id,
+      meta: { clear: true, alwaysAllow: true },
+    });
     const payload = await resolveDownloadHoursForHost(host.id, host.timezone);
     return NextResponse.json({ ok: true, ...payload, weekly: emptyWeekly() });
   }
@@ -62,6 +70,13 @@ export async function PUT(req: Request, { params }: Ctx) {
 
   try {
     await replaceDownloadWeeklyHours(host.id, body.weekly);
+    await writeAuditEvent({
+      actorUserId: auth.user.id,
+      action: "download_hours.save",
+      targetType: "host",
+      targetId: host.id,
+      meta: { clear: false },
+    });
     const payload = await resolveDownloadHoursForHost(host.id, host.timezone);
     return NextResponse.json({ ok: true, ...payload });
   } catch (e) {

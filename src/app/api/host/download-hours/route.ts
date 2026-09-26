@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireHostApi } from "@/lib/host";
+import { writeAuditEvent } from "@/lib/audit";
 import { emptyWeekly, type WeeklyHourRow } from "@/lib/open-hours";
 import {
   clearDownloadWeeklyHours,
@@ -35,6 +36,13 @@ export async function PUT(req: Request) {
 
   if (body.clear) {
     await clearDownloadWeeklyHours(auth.host.id);
+    await writeAuditEvent({
+      actorUserId: auth.user.id,
+      action: "download_hours.save",
+      targetType: "host",
+      targetId: auth.host.id,
+      meta: { clear: true, alwaysAllow: true, via: "host" },
+    });
     const payload = await resolveDownloadHoursForHost(
       auth.host.id,
       auth.host.timezone
@@ -48,6 +56,13 @@ export async function PUT(req: Request) {
 
   try {
     await replaceDownloadWeeklyHours(auth.host.id, body.weekly);
+    await writeAuditEvent({
+      actorUserId: auth.user.id,
+      action: "download_hours.save",
+      targetType: "host",
+      targetId: auth.host.id,
+      meta: { clear: false, via: "host" },
+    });
     const payload = await resolveDownloadHoursForHost(
       auth.host.id,
       auth.host.timezone

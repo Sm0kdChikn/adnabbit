@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAdminApi } from "@/lib/admin";
+import { writeAuditEvent } from "@/lib/audit";
 import {
   clearWeeklyHours,
   emptyWeekly,
@@ -56,6 +57,13 @@ export async function PUT(req: Request, { params }: Ctx) {
 
   if (body.clear) {
     await clearWeeklyHours("HOST", host.id);
+    await writeAuditEvent({
+      actorUserId: auth.user.id,
+      action: "open_hours.save",
+      targetType: "host",
+      targetId: host.id,
+      meta: { clear: true, alwaysOpen: true },
+    });
     return NextResponse.json({
       ok: true,
       alwaysOpen: true,
@@ -70,6 +78,13 @@ export async function PUT(req: Request, { params }: Ctx) {
 
   try {
     const weekly = await replaceWeeklyHours("HOST", host.id, body.weekly);
+    await writeAuditEvent({
+      actorUserId: auth.user.id,
+      action: "open_hours.save",
+      targetType: "host",
+      targetId: host.id,
+      meta: { clear: false, weekdayCount: weekly.filter((r) => r.openTime && r.closeTime).length },
+    });
     return NextResponse.json({
       ok: true,
       alwaysOpen: false,

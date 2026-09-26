@@ -3,6 +3,7 @@
  * Campaign windows reuse Schedule start/end (Ticket E); see scheduleWindowPhase.
  */
 import { prisma } from "./prisma";
+import { writeAuditEvent } from "./audit";
 import {
   DEFAULT_TIMEZONE,
   todayYmdInZone,
@@ -108,6 +109,15 @@ export async function takeDownCreative(opts: {
   const screens = await screenIdsForCreative(opts.creativeId);
   const affectedDevices = await bumpPlaylistEpochForScreens(screens);
 
+  await writeAuditEvent({
+    actorUserId: opts.adminId,
+    action: undo ? "undo_take_down" : "take_down",
+    targetType: "creative",
+    targetId: opts.creativeId,
+    reason: undo ? null : reason,
+    meta: { affectedDevices, screenIds: screens },
+  });
+
   return {
     ok: true,
     takenDown: !undo,
@@ -166,6 +176,15 @@ export async function takeDownAdvertiser(opts: {
   const screens = await screenIdsForAdvertiser(opts.advertiserId);
   const affectedDevices = await bumpPlaylistEpochForScreens(screens);
 
+  await writeAuditEvent({
+    actorUserId: opts.adminId,
+    action: undo ? "undo_take_down" : "take_down",
+    targetType: "advertiser",
+    targetId: opts.advertiserId,
+    reason: undo ? null : reason,
+    meta: { affectedDevices, screenIds: screens },
+  });
+
   return {
     ok: true,
     takenDown: !undo,
@@ -215,6 +234,15 @@ export async function takeDownHostPlayback(opts: {
   const screens = await screenIdsForHost(opts.hostId);
   const affectedDevices = await bumpPlaylistEpochForScreens(screens);
 
+  await writeAuditEvent({
+    actorUserId: opts.adminId,
+    action: undo ? "undo_take_down" : "take_down",
+    targetType: "host",
+    targetId: opts.hostId,
+    reason: undo ? null : reason,
+    meta: { affectedDevices, screenIds: screens },
+  });
+
   return {
     ok: true,
     takenDown: !undo,
@@ -262,6 +290,15 @@ export async function takeDownScreenPlayback(opts: {
   });
 
   const affectedDevices = await bumpPlaylistEpochForScreens([opts.screenId]);
+
+  await writeAuditEvent({
+    actorUserId: opts.adminId,
+    action: undo ? "undo_take_down" : "take_down",
+    targetType: "screen",
+    targetId: opts.screenId,
+    reason: undo ? null : reason,
+    meta: { affectedDevices },
+  });
 
   return {
     ok: true,
