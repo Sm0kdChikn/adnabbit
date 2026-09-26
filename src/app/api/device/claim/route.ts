@@ -47,7 +47,7 @@ export async function POST(req: Request) {
           },
         },
       });
-      if (!claim || claim.usedAt || claim.expiresAt < now) {
+      if (!claim || claim.usedAt || claim.expiresAt <= now) {
         return { error: "Invalid or expired claim code" as const };
       }
 

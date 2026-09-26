@@ -346,7 +346,7 @@ Software-first Linux kiosk player spike (companion repo: `Sm0kdChikn/adnabbit-pl
 ### Data model
 
 - **Device**: 1:1 with Screen (`screenId` unique); stores **sha256** of bearer token only; `lastSeenAt`
-- **ScreenClaim**: one-time 6–8 char codes from `A–Z0–9` excluding `0O1I`; TTL **15 minutes**
+- **ScreenClaim**: one-time 6–8 char codes from `A–Z0–9` excluding `0O1I`; TTL **15 minutes**; reminting a screen **supersedes** prior unused live codes
 
 ### Device APIs (Bearer device token)
 

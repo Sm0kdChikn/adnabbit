@@ -79,7 +79,17 @@ export async function mintClaimCode(opts: {
   createdById?: string | null;
   length?: number;
 }) {
-  const expiresAt = new Date(Date.now() + CLAIM_TTL_MS);
+  const now = new Date();
+  const expiresAt = new Date(now.getTime() + CLAIM_TTL_MS);
+  // Remint supersedes any still-live unused codes for this screen (TTL edge)
+  await prisma.screenClaim.updateMany({
+    where: {
+      screenId: opts.screenId,
+      usedAt: null,
+      expiresAt: { gt: now },
+    },
+    data: { expiresAt: now },
+  });
   // Retry on rare unique collisions
   for (let attempt = 0; attempt < 8; attempt++) {
     const code = generateClaimCode(opts.length ?? 6);

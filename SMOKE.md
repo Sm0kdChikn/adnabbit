@@ -908,3 +908,24 @@ Screenshot: `demo-shots/ticket-k-folders.png`
 
 Deep nesting, multi-select, mobile DnD polish, folder deep-links / search-within-folder.
 
+
+---
+
+## QA / loose-ends pass (2026-09-25 ~8:16 PM MT)
+
+See **LOOSE_ENDS.md** for parked backlog (Stripe / Ticket M, F2, OS lockdown, deep folders, etc.).
+
+### Fixes verified
+- Remint supersedes prior live claim codes for the same screen
+- Claim expiry uses `expiresAt <= now`
+
+### Device smoke (re-run)
+```bash
+# web seeded + npm start on :3000
+# mint via admin UI or lib, then:
+cd /workspace/adnabbit-player
+export ADNNABIT_API_BASE=http://127.0.0.1:3000
+npm run claim -- --code XXXXXX
+npm run kiosk:headless
+# → heartbeat OK, playlist items, assets cached, play-logs 202
+```
