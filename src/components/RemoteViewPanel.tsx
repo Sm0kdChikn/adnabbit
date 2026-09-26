@@ -2,12 +2,19 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui";
+import { DeviceStatusBadge } from "@/components/DeviceStatusBadge";
+import type { DeviceDisplayStatus } from "@/lib/open-hours";
 
 type Props = {
   screenId: string;
   /** Paired device with recent heartbeat available */
   deviceOnline: boolean;
   hasDevice: boolean;
+  /** Ticket Q — closed hours vs offline vs empty vs live */
+  displayStatus?: DeviceDisplayStatus;
+  hoursOpen?: boolean;
+  hoursSummary?: string | null;
+  forceLiveUntil?: string | null;
 };
 
 type Status =
@@ -105,7 +112,15 @@ function mapClickToCapture(
   };
 }
 
-export function RemoteViewPanel({ screenId, deviceOnline, hasDevice }: Props) {
+export function RemoteViewPanel({
+  screenId,
+  deviceOnline,
+  hasDevice,
+  displayStatus,
+  hoursOpen,
+  hoursSummary,
+  forceLiveUntil,
+}: Props) {
   const [status, setStatus] = useState<Status>("idle");
   const [error, setError] = useState("");
   const [imageUrl, setImageUrl] = useState<string | null>(null);
@@ -507,6 +522,24 @@ export function RemoteViewPanel({ screenId, deviceOnline, hasDevice }: Props) {
             troubleshooting, then re-lock (Ticket P.1.1).{" "}
             <strong>Reboot device</strong> queues a full OS reboot (Ticket P.1.2).
           </p>
+          {displayStatus && (
+            <div className="mt-2 flex flex-wrap items-center gap-2">
+              <DeviceStatusBadge status={displayStatus} />
+              {hoursSummary ? (
+                <span className="text-xs text-muted">{hoursSummary}</span>
+              ) : null}
+              {forceLiveUntil ? (
+                <span className="text-xs text-accent">
+                  Force live until {new Date(forceLiveUntil).toLocaleString()}
+                </span>
+              ) : null}
+              {displayStatus === "BLACKOUT" ? (
+                <span className="text-xs text-muted">
+                  Soft blackout — player dark, PoP muted
+                </span>
+              ) : null}
+            </div>
+          )}
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <Button
@@ -657,7 +690,17 @@ export function RemoteViewPanel({ screenId, deviceOnline, hasDevice }: Props) {
       )}
       {hasDevice && !deviceOnline && (
         <p className="text-sm text-muted">
-          Player appears offline (no heartbeat within ~5 min).
+          Player appears offline (no heartbeat within ~5 min)
+          {hoursOpen === false
+            ? " — note: venue would also be outside open hours right now"
+            : ""}
+          .
+        </p>
+      )}
+      {hasDevice && deviceOnline && displayStatus === "BLACKOUT" && (
+        <p className="text-sm text-muted">
+          Device is online but dark due to closed venue hours (soft blackout).
+          Proof-of-play is muted until open / force-live.
         </p>
       )}
 

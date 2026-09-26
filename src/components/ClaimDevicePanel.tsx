@@ -3,6 +3,8 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Button } from "@/components/ui";
+import { DeviceStatusBadge } from "@/components/DeviceStatusBadge";
+import type { DeviceDisplayStatus } from "@/lib/open-hours";
 
 type Props = {
   screenId: string;
@@ -14,9 +16,10 @@ type Props = {
     lastSeenAt: string | null;
     claimedAt: string;
   } | null;
+  displayStatus?: DeviceDisplayStatus;
 };
 
-export function ClaimDevicePanel({ screenId, role, device }: Props) {
+export function ClaimDevicePanel({ screenId, role, device, displayStatus }: Props) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [refreshLoading, setRefreshLoading] = useState(false);
@@ -111,9 +114,12 @@ export function ClaimDevicePanel({ screenId, role, device }: Props) {
 
       {device ? (
         <div className="rounded-lg border border-border bg-background-elevated px-3 py-2 text-sm">
-          <p className="font-medium text-foreground">
-            Paired{device.name ? `: ${device.name}` : ""}
-          </p>
+          <div className="flex flex-wrap items-center gap-2">
+            <p className="font-medium text-foreground">
+              Paired{device.name ? `: ${device.name}` : ""}
+            </p>
+            {displayStatus ? <DeviceStatusBadge status={displayStatus} /> : null}
+          </div>
           <p className="text-muted">
             Last seen:{" "}
             <span className="text-foreground">

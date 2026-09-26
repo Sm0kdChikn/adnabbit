@@ -8,6 +8,13 @@ import { formatVertical } from "@/lib/types";
 import { ClaimDevicePanel } from "@/components/ClaimDevicePanel";
 import { RemoteViewPanel } from "@/components/RemoteViewPanel";
 import { isDeviceRecentlySeen } from "@/lib/device";
+import { OpenHoursEditorClient } from "@/components/OpenHoursEditorClient";
+import { DeviceStatusBadge } from "@/components/DeviceStatusBadge";
+import {
+  deriveDeviceDisplayStatus,
+  formatHoursSummary,
+  resolveOpenHoursForScreen,
+} from "@/lib/open-hours";
 
 export default async function EditScreenPage({ params }: { params: { id: string } }) {
   const session = await getServerSession(authOptions);
@@ -18,11 +25,20 @@ export default async function EditScreenPage({ params }: { params: { id: string 
   const screen = await prisma.screen.findUnique({
     where: { id: params.id },
     include: {
-      host: { select: { id: true, name: true, vertical: true, otherLabel: true } },
+      host: { select: { id: true, name: true, vertical: true, otherLabel: true, timezone: true } },
       device: true,
     },
   });
   if (!screen) notFound();
+
+  const hours = await resolveOpenHoursForScreen(screen.id);
+  const online = isDeviceRecentlySeen(screen.device?.lastSeenAt);
+  const displayStatus = deriveDeviceDisplayStatus({
+    hasDevice: !!screen.device,
+    online,
+    hours,
+    playbackState: screen.device?.playbackState,
+  });
 
   const hosts = await prisma.host.findMany({
     orderBy: { name: "asc" },
@@ -44,6 +60,7 @@ export default async function EditScreenPage({ params }: { params: { id: string 
       <ClaimDevicePanel
         screenId={screen.id}
         role="admin"
+        displayStatus={displayStatus}
         device={
           screen.device
             ? {
@@ -58,8 +75,35 @@ export default async function EditScreenPage({ params }: { params: { id: string 
       <RemoteViewPanel
         screenId={screen.id}
         hasDevice={!!screen.device}
-        deviceOnline={isDeviceRecentlySeen(screen.device?.lastSeenAt)}
+        deviceOnline={online}
+        displayStatus={displayStatus}
+        hoursOpen={hours.isOpenNow}
+        hoursSummary={
+          hours.alwaysOpen
+            ? "Always open"
+            : formatHoursSummary(hours.weekly)
+        }
+        forceLiveUntil={hours.forceLiveUntil}
       />
+      <OpenHoursEditorClient
+        timezone={hours.timezone}
+        initialWeekly={hours.weekly}
+        showCustomToggle
+        useCustomHours={hours.useCustomHours}
+        showForceLive
+        forceLiveUntil={hours.forceLiveUntil}
+        summary={
+          hours.alwaysOpen
+            ? "Always open (no hours set)"
+            : formatHoursSummary(hours.weekly)
+        }
+        isOpenNow={hours.isOpenNow}
+        savePath={`/api/admin/screens/${screen.id}/hours`}
+      />
+      <div className="flex flex-wrap items-center gap-2 text-sm text-muted">
+        <span>Device status:</span>
+        <DeviceStatusBadge status={displayStatus} />
+      </div>
       <ScreenForm
         mode="edit"
         screenId={screen.id}

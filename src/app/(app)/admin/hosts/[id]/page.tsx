@@ -7,6 +7,13 @@ import { HostForm } from "../HostForm";
 import { InventoryBadge } from "@/components/StatusBadge";
 import { formatVertical } from "@/lib/types";
 import { AttachOwnerForm } from "../AttachOwnerForm";
+import { OpenHoursEditorClient } from "@/components/OpenHoursEditorClient";
+import {
+  emptyWeekly,
+  evaluateOpenState,
+  formatHoursSummary,
+  loadWeeklyForTarget,
+} from "@/lib/open-hours";
 
 export default async function EditHostPage({ params }: { params: { id: string } }) {
   const session = await getServerSession(authOptions);
@@ -22,6 +29,15 @@ export default async function EditHostPage({ params }: { params: { id: string } 
     },
   });
   if (!host) notFound();
+
+  const { weekly, rowCount } = await loadWeeklyForTarget("HOST", host.id);
+  const alwaysOpen = rowCount === 0;
+  const evaled = evaluateOpenState({
+    timezone: host.timezone,
+    weekly,
+    alwaysOpen,
+    forceLiveUntil: null,
+  });
 
   return (
     <div className="space-y-8">
@@ -48,6 +64,18 @@ export default async function EditHostPage({ params }: { params: { id: string } 
       />
 
       <AttachOwnerForm hostId={host.id} current={host.user} />
+
+      <OpenHoursEditorClient
+        timezone={host.timezone}
+        initialWeekly={alwaysOpen ? emptyWeekly() : weekly}
+        summary={
+          alwaysOpen
+            ? "Always open (no hours set)"
+            : formatHoursSummary(weekly)
+        }
+        isOpenNow={evaled.isOpenNow}
+        savePath={`/api/admin/hosts/${host.id}/hours`}
+      />
 
       <section className="space-y-3">
         <div className="flex items-center justify-between">

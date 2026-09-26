@@ -966,3 +966,48 @@ Electron path (mini-PC only): `ADNNABIT_REBOOT_DRY_RUN=1` logs + quits without i
 ./scripts/install-autostart.sh --help
 bash -n scripts/install-autostart.sh packaging/adnabbit-reboot install.sh
 ```
+
+---
+
+## Ticket Q — Open hours / soft blackout (2026-09-26)
+
+### Schema
+```bash
+npx prisma migrate deploy
+# → applies 20260926164100_ticket_q_open_hours
+```
+
+### Set Mon–Fri 9–5 America/Denver (host session)
+```bash
+# Host portal → Edit venue → Open hours → "Mon–Fri 9–5" → Save
+# or API:
+curl -s -b /tmp/host-cookies.txt -X PUT http://127.0.0.1:3000/api/host/hours \
+  -H 'Content-Type: application/json' \
+  -d '{"weekly":[
+    {"weekday":1,"openTime":"09:00","closeTime":"17:00"},
+    {"weekday":2,"openTime":"09:00","closeTime":"17:00"},
+    {"weekday":3,"openTime":"09:00","closeTime":"17:00"},
+    {"weekday":4,"openTime":"09:00","closeTime":"17:00"},
+    {"weekday":5,"openTime":"09:00","closeTime":"17:00"},
+    {"weekday":6,"openTime":null,"closeTime":null},
+    {"weekday":7,"openTime":null,"closeTime":null}
+  ]}'
+```
+
+### Quick blackout demo (exclude "now")
+Temporarily set **today** closed (or open window that does not include current local time) on Lobby TV screen override, then:
+1. Paired player goes **black** within ~1 min (or immediately on next playlist tick).
+2. Status chrome: `Closed hours · soft blackout`.
+3. Console / heartbeat: `playbackState: "BLACKOUT"`; play-log invokes return `{ skipped: true, reason: "blackout" }`.
+4. Admin screen detail / Remote view badge: **Closed hours** (device still online).
+
+### Inside hours
+Restore Mon–Fri 9–5 (or Always open). Player resumes playlist; PoP posts again; badge → Live / Empty / Idle.
+
+### Force live (admin)
+On `/admin/screens/[id]` → Open hours → set **Force live until** a future local time → Save. Closed-hours blackout lifts until that timestamp.
+
+### Authz
+- HOST can edit own venue + own screen overrides only.
+- ADMIN can edit any host/screen + force-live.
+- Advertisers: no hours APIs/UI.

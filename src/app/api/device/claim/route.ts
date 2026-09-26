@@ -8,6 +8,7 @@ import {
   normalizeClaimCode,
 } from "@/lib/device";
 import { DEFAULT_TIMEZONE } from "@/lib/schedules";
+import { resolveOpenHoursForScreen } from "@/lib/open-hours";
 
 const bodySchema = z.object({
   code: z.string().min(1),
@@ -94,12 +95,14 @@ export async function POST(req: Request) {
       timezone: string;
       deviceId: string;
     };
+    const hours = await resolveOpenHoursForScreen(claimed.screenId);
     return NextResponse.json({
       deviceToken: claimed.deviceToken,
       screenId: claimed.screenId,
       screenName: claimed.screenName,
       hostName: claimed.hostName,
       timezone: claimed.timezone,
+      hours,
     });
   } catch (e) {
     console.error("device claim failed", e);

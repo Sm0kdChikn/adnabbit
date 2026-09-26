@@ -6,6 +6,14 @@ import Link from "next/link";
 import { HostScreenForm } from "../HostScreenForm";
 import { PlacementBadge, StatusBadge } from "@/components/StatusBadge";
 import { ClaimDevicePanel } from "@/components/ClaimDevicePanel";
+import { OpenHoursEditorClient } from "@/components/OpenHoursEditorClient";
+import { DeviceStatusBadge } from "@/components/DeviceStatusBadge";
+import {
+  deriveDeviceDisplayStatus,
+  formatHoursSummary,
+  resolveOpenHoursForScreen,
+} from "@/lib/open-hours";
+import { isDeviceRecentlySeen } from "@/lib/device";
 
 export default async function HostScreenDetailPage({
   params,
@@ -46,6 +54,15 @@ export default async function HostScreenDetailPage({
   });
   if (!screen) notFound();
 
+  const hours = await resolveOpenHoursForScreen(screen.id);
+  const online = isDeviceRecentlySeen(screen.device?.lastSeenAt);
+  const displayStatus = deriveDeviceDisplayStatus({
+    hasDevice: !!screen.device,
+    online,
+    hours,
+    playbackState: screen.device?.playbackState,
+  });
+
   return (
     <div className="space-y-8">
       <div>
@@ -71,6 +88,7 @@ export default async function HostScreenDetailPage({
       <ClaimDevicePanel
         screenId={screen.id}
         role="host"
+        displayStatus={displayStatus}
         device={
           screen.device
             ? {
@@ -81,6 +99,26 @@ export default async function HostScreenDetailPage({
               }
             : null
         }
+      />
+      {screen.device ? (
+        <p className="flex flex-wrap items-center gap-2 text-sm text-muted">
+          <span>Playback:</span>
+          <DeviceStatusBadge status={displayStatus} />
+        </p>
+      ) : null}
+
+      <OpenHoursEditorClient
+        timezone={hours.timezone}
+        initialWeekly={hours.weekly}
+        showCustomToggle
+        useCustomHours={hours.useCustomHours}
+        summary={
+          hours.alwaysOpen
+            ? "Always open (no hours set)"
+            : formatHoursSummary(hours.weekly)
+        }
+        isOpenNow={hours.isOpenNow}
+        savePath={`/api/host/screens/${screen.id}/hours`}
       />
 
       <section className="space-y-3">
