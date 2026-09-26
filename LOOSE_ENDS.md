@@ -27,7 +27,7 @@ Brandon: **Stripe Connect before advertisers can submit ads.** Out of scope for 
 - **F2** — play-log persistence (device `/api/device/play-logs` stays 202 stub)
 - Postgres cutover / production deploy
 - Custom ISO, fleet management, OptiSigns cutover
-- Full **OS lockdown** (Electron kiosk only; see player README soft miss)
+- Full **OS lockdown** (Electron kiosk + P.1.3 dedicated user/autologin; not a custom ISO)
 - Deep nesting folders, multi-select, mobile DnD polish, folder deep-links / search-within-folder
 
 ### Soft misses / backlog (no blocker)

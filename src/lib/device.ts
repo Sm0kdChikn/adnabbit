@@ -145,12 +145,14 @@ export function needsScreenshotCapture(device: {
 /** Ticket P.1 — max queued remote-control events (oldest dropped when exceeded). */
 export const INPUT_QUEUE_MAX = 64;
 
-/** Ticket P.1 / P.1.1 — allowed named player commands. */
+/** Ticket P.1 / P.1.1 / P.1.2 — allowed named player commands. */
 export const REMOTE_COMMAND_NAMES = [
   "exitKiosk",
   "enableKiosk",
   "disableKiosk",
   "setKiosk",
+  "reboot",
+  "restartApp",
 ] as const;
 export type RemoteCommandName = (typeof REMOTE_COMMAND_NAMES)[number];
 

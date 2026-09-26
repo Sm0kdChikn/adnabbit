@@ -1,6 +1,6 @@
 # AdNabbit Web MVP
 
-Advertiser signup/login, creative upload (image/video), submit for review, admin approve/reject, **Ticket A — Host/screen inventory**, and **Ticket B — Advertiser public profiles**, and **Ticket C — Placement requests**, and **Ticket D — Scheduling**, and **Ticket E — Recurring dayparts**, and **Ticket E2 — Schedule calendar view**, and **Ticket G — Host self-serve portal**, and **Ticket J — device claim / playlist APIs**, and **Ticket K — admin folders**, and **Ticket O — playlist refresh**, and **Ticket P — admin remote view (screenshot relay)**, and **Ticket P.1 — admin remote mouse/keyboard control**, and **Ticket P.1.1 — kiosk lock/unlock toggle**.
+Advertiser signup/login, creative upload (image/video), submit for review, admin approve/reject, **Ticket A — Host/screen inventory**, and **Ticket B — Advertiser public profiles**, and **Ticket C — Placement requests**, and **Ticket D — Scheduling**, and **Ticket E — Recurring dayparts**, and **Ticket E2 — Schedule calendar view**, and **Ticket G — Host self-serve portal**, and **Ticket J — device claim / playlist APIs**, and **Ticket K — admin folders**, and **Ticket O — playlist refresh**, and **Ticket P — admin remote view (screenshot relay)**, and **Ticket P.1 — admin remote mouse/keyboard control**, and **Ticket P.1.1 — kiosk lock/unlock toggle**, and **Ticket P.1.2 — admin device reboot**.
 
 **Repo target:** https://github.com/Sm0kdChikn/adnabbit
 
@@ -361,7 +361,7 @@ Software-first Linux kiosk player spike (companion repo: `Sm0kdChikn/adnabbit-pl
 
 ### Admin / host UI
 
-Screen detail pages (`/admin/screens/[id]`, `/host/screens/[id]`): **Mint claim code** + paired device last-seen + **Refresh playlist** (Ticket O). Admin also has **View screen** remote-view (Ticket P) + **Remote control** mouse/keyboard (Ticket P.1) + **Kiosk locked** toggle (Ticket P.1.1).
+Screen detail pages (`/admin/screens/[id]`, `/host/screens/[id]`): **Mint claim code** + paired device last-seen + **Refresh playlist** (Ticket O). Admin also has **View screen** remote-view (Ticket P) + **Remote control** mouse/keyboard (Ticket P.1) + **Kiosk locked** toggle (Ticket P.1.1) + **Reboot device** (Ticket P.1.2).
 
 Mint APIs: `POST /api/admin/screens/[id]/claim`, `POST /api/host/screens/[id]/claim`.
 
@@ -435,7 +435,7 @@ Admin-only control of the **Electron player window** (not full OS). Builds on Ti
 
 | Method | Path | Auth | Body / notes |
 |--------|------|------|----------------|
-| POST | `/api/admin/screens/[id]/remote-control` | Admin session | `{ events: [...] }` or `{ event }` or `{ command: "setKiosk", enabled: bool }` → `{ ok, queued, queueLength, dropped }` |
+| POST | `/api/admin/screens/[id]/remote-control` | Admin session | `{ events: [...] }` or `{ event }` or `{ command: "setKiosk"|"reboot"|"restartApp", enabled?: bool }` → `{ ok, queued, queueLength, dropped }` |
 | POST | `/api/device/input` | Device Bearer | drains queue → `{ ok, events, drainedAt }` |
 | POST | `/api/device/heartbeat` | Device Bearer | `commands.inputPending: true` when queue non-empty |
 
@@ -458,6 +458,15 @@ Mouse `x`/`y` are capture/native window coords. Player scales by `captureWidth`/
 - **Lock** (`setKiosk` `enabled: true` / `enableKiosk`): restores kiosk + fullscreen lockdown.
 - Preference persisted at `~/.adnabbit-player/preferences.json` (`kiosk: true|false`). `ADNNABIT_KIOSK=0` still wins at process start.
 - Same safety as P.1: admin-only, paired device, ~5 min heartbeat freshness → otherwise 409.
+
+### Ticket P.1.2 — Admin device reboot
+
+- **Reboot device** button on Remote view (confirm dialog) queues `{ type: "command", name: "reboot" }` via the same `POST …/remote-control` path.
+- Shorthand also accepted: `{ command: "reboot" }`.
+- Player drains the queue, schedules a clean quit, then runs the `adnabbit-reboot` helper (systemd `systemctl reboot`). Requires the helper + polkit/sudoers NOPASSWD on the mini-PC (see player repo packaging).
+- Secondary: `{ type: "command", name: "restartApp" }` relaunches the Electron process only (no OS reboot).
+- Same gates: admin-only, paired, ~5 min freshness → **409** otherwise.
+- Soft miss was process-only Restart; Brandon asked for full device reboot — reboot is the primary path.
 
 ### Limits
 

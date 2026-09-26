@@ -929,3 +929,40 @@ npm run claim -- --code XXXXXX
 npm run kiosk:headless
 # → heartbeat OK, playlist items, assets cached, play-logs 202
 ```
+
+---
+
+## Ticket P.1.2 — Admin device reboot (2026-09-25)
+
+### API queue + gates
+```bash
+# Admin session + paired device with fresh lastSeenAt
+curl -s -b /tmp/admin-cookies.txt -X POST \
+  "http://127.0.0.1:3000/api/admin/screens/$SCREEN_ID/remote-control" \
+  -H 'Content-Type: application/json' \
+  -d '{"events":[{"type":"command","name":"reboot"}]}'
+# → {"ok":true,"queued":1,"queueLength":1,"dropped":0}
+
+# Offline / stale heartbeat → 409
+# Unknown command name → 400
+# Shorthand: {"command":"reboot"} or {"command":"restartApp"}
+```
+
+### Player drain (safe — no OS reboot on build box)
+```bash
+cd /workspace/adnabbit-player
+npm run kiosk:headless
+# → input poll includes { type: 'command', name: 'reboot' }
+# → [dry-run] reboot command received — would schedule clean quit + adnabbit-reboot helper
+
+ADNNABIT_REBOOT_DRY_RUN=1 ./packaging/adnabbit-reboot
+# → adnabbit-reboot: DRY RUN — would systemctl reboot
+```
+
+Electron path (mini-PC only): `ADNNABIT_REBOOT_DRY_RUN=1` logs + quits without invoking helper. Real reboot needs `scripts/install-autostart.sh` (helper + sudoers/polkit).
+
+### P.1.3 install scripts (review)
+```bash
+./scripts/install-autostart.sh --help
+bash -n scripts/install-autostart.sh packaging/adnabbit-reboot install.sh
+```

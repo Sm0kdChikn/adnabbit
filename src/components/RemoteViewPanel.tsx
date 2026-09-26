@@ -118,6 +118,8 @@ export function RemoteViewPanel({ screenId, deviceOnline, hasDevice }: Props) {
   /** Ticket P.1.1 — intended kiosk lock state after last successful command (optimistic). */
   const [kioskLocked, setKioskLocked] = useState(true);
   const [kioskBusy, setKioskBusy] = useState(false);
+  /** Ticket P.1.2 — OS reboot command in flight. */
+  const [rebootBusy, setRebootBusy] = useState(false);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const liveRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const blobUrlRef = useRef<string | null>(null);
@@ -444,6 +446,51 @@ export function RemoteViewPanel({ screenId, deviceOnline, hasDevice }: Props) {
     }
   }
 
+
+  /**
+   * Ticket P.1.2 — queue OS reboot (player runs adnabbit-reboot helper after clean quit).
+   * Same admin + paired + freshness gate as remote-control / setKiosk.
+   */
+  async function sendRebootCommand() {
+    if (!hasDevice || !deviceOnline || rebootBusy) return;
+    const ok = window.confirm(
+      "Reboot this device now?\n\n" +
+        "The player will quit cleanly, then reboot the mini-PC OS. " +
+        "Playback will resume after boot if autostart is installed."
+    );
+    if (!ok) return;
+    setRebootBusy(true);
+    setControlError("");
+    try {
+      const res = await fetch(
+        `/api/admin/screens/${screenId}/remote-control`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            events: [{ type: "command", name: "reboot" }],
+          }),
+        }
+      );
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setControlError(
+          data.error || `Reboot command failed (HTTP ${res.status})`
+        );
+        return;
+      }
+      setControlHint(
+        `Reboot queued → player (queue ${data.queueLength ?? "?"})`
+      );
+    } catch (e) {
+      setControlError(
+        e instanceof Error ? e.message : "Reboot command failed"
+      );
+    } finally {
+      setRebootBusy(false);
+    }
+  }
+
   const disabled = !hasDevice || !deviceOnline;
   const busy = status === "requesting" || status === "waiting";
   const canControl = !disabled && status === "ready" && !!imageUrl;
@@ -457,7 +504,8 @@ export function RemoteViewPanel({ screenId, deviceOnline, hasDevice }: Props) {
             On-demand screenshot from the paired player (Ticket P). Enable{" "}
             <strong>Remote control</strong> for mouse/keyboard (Ticket P.1).
             Use <strong>Kiosk locked</strong> to unlock lockdown for mini-PC
-            troubleshooting, then re-lock (Ticket P.1.1).
+            troubleshooting, then re-lock (Ticket P.1.1).{" "}
+            <strong>Reboot device</strong> queues a full OS reboot (Ticket P.1.2).
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -535,6 +583,21 @@ export function RemoteViewPanel({ screenId, deviceOnline, hasDevice }: Props) {
                 ? "Kiosk locked"
                 : "Unlocked"}
           </label>
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={() => void sendRebootCommand()}
+            disabled={disabled || rebootBusy}
+            title={
+              !hasDevice
+                ? "Pair a device first"
+                : !deviceOnline
+                  ? "Player offline (no recent heartbeat)"
+                  : "Queue OS reboot on the paired mini-PC"
+            }
+          >
+            {rebootBusy ? "Rebooting…" : "Reboot device"}
+          </Button>
         </div>
       </div>
 
