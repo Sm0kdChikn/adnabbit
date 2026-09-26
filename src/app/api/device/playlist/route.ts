@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { requireDeviceAuth } from "@/lib/device";
 import { buildPlaylistForScreen } from "@/lib/playlist";
 import { resolveOpenHoursForScreen } from "@/lib/open-hours";
+import { resolveDownloadHoursForScreen } from "@/lib/download-hours";
 import { prisma } from "@/lib/prisma";
 
 function apiBaseFromRequest(req: Request): string {
@@ -22,13 +23,14 @@ export async function GET(req: Request) {
     select: { playlistEpoch: true },
   });
 
-  const [playlist, hours] = await Promise.all([
+  const [playlist, hours, downloadHours] = await Promise.all([
     buildPlaylistForScreen({
       screenId: auth.device.screenId,
       apiBase: apiBaseFromRequest(req),
       now,
     }),
     resolveOpenHoursForScreen(auth.device.screenId, now),
+    resolveDownloadHoursForScreen(auth.device.screenId, now),
   ]);
 
   return NextResponse.json({
@@ -40,5 +42,9 @@ export async function GET(req: Request) {
     playlistEpoch: updated.playlistEpoch,
     items: playlist.items,
     hours,
+    downloadHours,
+    downloadAllowed: downloadHours.downloadAllowed,
+    playbackAllowed: hours.isOpenNow,
   });
 }
+

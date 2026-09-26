@@ -29,6 +29,17 @@ type Props = {
   savePath: string;
   /** Extra JSON fields merged into PUT body */
   onSaved?: () => void;
+  /** Ticket U — reuse for download/quiet hours labels */
+  title?: string;
+  description?: string;
+  openNowLabel?: string;
+  closedNowLabel?: string;
+  clearButtonLabel?: string;
+  clearOkMessage?: string;
+  saveButtonLabel?: string;
+  footerNote?: string | null;
+  /** Extra presets for download hours (overnight allow window) */
+  showOvernightPreset?: boolean;
 };
 
 function normalizeInitial(rows: WeeklyHourRow[]): WeeklyHourRow[] {
@@ -54,7 +65,19 @@ export function OpenHoursEditor({
   isOpenNow,
   savePath,
   onSaved,
+  title = "Open hours",
+  description,
+  openNowLabel = "Open now",
+  closedNowLabel = "Closed now",
+  clearButtonLabel = "Always open",
+  clearOkMessage = "Always open (hours cleared)",
+  saveButtonLabel = "Save hours",
+  footerNote = "Hard display-off (CEC / DPMS) is stubbed — soft blackout only for now.",
+  showOvernightPreset = false,
 }: Props) {
+  const desc =
+    description ??
+    "Soft blackout outside these hours — player goes dark and skips proof-of-play. Timezone:";
   const [weekly, setWeekly] = useState(() => normalizeInitial(initialWeekly));
   const [useCustom, setUseCustom] = useState(initialCustom);
   const [forceLocal, setForceLocal] = useState(() => {
@@ -226,7 +249,7 @@ export function OpenHoursEditor({
         }))
       );
       if (showCustomToggle) setUseCustom(false);
-      setOkMsg("Always open (hours cleared)");
+      setOkMsg(clearOkMessage);
       onSaved?.();
     } catch {
       setError("Network error");
@@ -239,10 +262,9 @@ export function OpenHoursEditor({
     <section className="space-y-4 rounded-xl border border-border bg-surface p-4 sm:p-5">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h2 className="text-lg font-semibold text-foreground">Open hours</h2>
+          <h2 className="text-lg font-semibold text-foreground">{title}</h2>
           <p className="text-sm text-muted">
-            Soft blackout outside these hours — player goes dark and skips
-            proof-of-play. Timezone:{" "}
+            {desc}{" "}
             <span className="font-medium text-accent">{timezone}</span>
           </p>
         </div>
@@ -254,7 +276,7 @@ export function OpenHoursEditor({
                 : "bg-slate-500/20 text-slate-300"
             }`}
           >
-            {isOpenNow ? "Open now" : "Closed now"}
+            {isOpenNow ? openNowLabel : closedNowLabel}
           </span>
         )}
       </div>
@@ -303,6 +325,24 @@ export function OpenHoursEditor({
             >
               Every day 9–5
             </Button>
+            {showOvernightPreset && (
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                onClick={() =>
+                  setWeekly(
+                    DAY_ORDER.map((weekday) => ({
+                      weekday,
+                      openTime: "00:00",
+                      closeTime: "06:00",
+                    }))
+                  )
+                }
+              >
+                Overnight 0–6
+              </Button>
+            )}
             <Button
               type="button"
               variant="secondary"
@@ -417,7 +457,7 @@ export function OpenHoursEditor({
           onClick={() => void save()}
           disabled={saving}
         >
-          {saving ? "Saving…" : "Save hours"}
+          {saving ? "Saving…" : saveButtonLabel}
         </Button>
         <Button
           type="button"
@@ -425,15 +465,15 @@ export function OpenHoursEditor({
           size="sm"
           onClick={() => void clearToAlwaysOpen()}
           disabled={saving}
-          title="Remove schedule → always open"
+          title="Remove schedule → allow anytime"
         >
-          Always open
+          {clearButtonLabel}
         </Button>
       </div>
 
-      <p className="text-xs text-muted">
-        Hard display-off (CEC / DPMS) is stubbed — soft blackout only for now.
-      </p>
+      {footerNote ? (
+        <p className="text-xs text-muted">{footerNote}</p>
+      ) : null}
     </section>
   );
 }

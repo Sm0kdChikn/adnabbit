@@ -6,6 +6,7 @@ import {
   requireDeviceAuth,
 } from "@/lib/device";
 import { resolveOpenHoursForScreen } from "@/lib/open-hours";
+import { resolveDownloadHoursForScreen } from "@/lib/download-hours";
 
 const PLAYBACK_STATES = new Set(["LIVE", "BLACKOUT", "IDLE", "EMPTY"]);
 
@@ -76,7 +77,10 @@ export async function POST(req: Request) {
     },
   });
 
-  const hours = await resolveOpenHoursForScreen(updated.screenId, now);
+  const [hours, downloadHours] = await Promise.all([
+    resolveOpenHoursForScreen(updated.screenId, now),
+    resolveDownloadHoursForScreen(updated.screenId, now),
+  ]);
   const captureScreenshot = needsScreenshotCapture(updated);
   const inputPending = hasPendingInput(updated.pendingInputJson);
 
@@ -89,9 +93,13 @@ export async function POST(req: Request) {
     playbackState: updated.playbackState,
     playerVersion: updated.playerVersion,
     hours,
+    downloadHours,
+    downloadAllowed: downloadHours.downloadAllowed,
+    playbackAllowed: hours.isOpenNow,
     commands: {
       captureScreenshot,
       inputPending,
     },
   });
 }
+

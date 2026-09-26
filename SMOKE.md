@@ -1089,3 +1089,23 @@ curl -s -o /tmp/fill.csv -w '%{http_code}' \
 - force-live not historical
 - F2 play persistence still stub
 - Soft-miss charts (CSS heat table only)
+
+---
+
+## Ticket U — Download hours + fleet bulk (2026-09-26 MT)
+
+**Goal:** Quiet hours gate player prefetch; admin bulk refresh/reboot/kiosk on fleet board.
+
+### Download hours
+1. `npx prisma migrate deploy` — applies `20260926200000_ticket_u_download_hours`.
+2. Admin → Host detail → **Download hours** → set window that excludes now (e.g. Overnight 0–6 during daytime) → Save.
+3. Player heartbeat/playlist shows `downloadAllowed: false`; logs `download quiet hours — deferring prefetch…`; status shows quiet hours (cache only).
+4. Clear → **Allow anytime** → `downloadAllowed: true` again.
+
+### Fleet bulk
+1. `/admin/fleet` → select paired devices → **Refresh playlist** → per-device epoch bumps (offline → error, not all-or-nothing).
+2. Select online devices → **Reboot…** → confirm → queues `reboot` via pendingInputJson.
+3. Lock/Unlock kiosk likewise queues `setKiosk`.
+
+### Gaps / soft miss
+- Per-screen download override, bandwidth caps, host bulk, select-all filters beyond visible list

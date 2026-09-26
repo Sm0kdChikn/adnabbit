@@ -14,6 +14,7 @@ import {
   formatHoursSummary,
   loadWeeklyForTarget,
 } from "@/lib/open-hours";
+import { resolveDownloadHoursForHost } from "@/lib/download-hours";
 import { TakeDownPanel } from "@/components/TakeDownPanel";
 
 export default async function EditHostPage({ params }: { params: { id: string } }) {
@@ -39,6 +40,7 @@ export default async function EditHostPage({ params }: { params: { id: string } 
     alwaysOpen,
     forceLiveUntil: null,
   });
+  const downloadHours = await resolveDownloadHoursForHost(host.id, host.timezone);
 
   return (
     <div className="space-y-8">
@@ -83,6 +85,25 @@ export default async function EditHostPage({ params }: { params: { id: string } 
         }
         isOpenNow={evaled.isOpenNow}
         savePath={`/api/admin/hosts/${host.id}/hours`}
+      />
+
+      <OpenHoursEditorClient
+        timezone={host.timezone}
+        initialWeekly={
+          downloadHours.alwaysAllow ? emptyWeekly() : downloadHours.weekly
+        }
+        summary={downloadHours.summary}
+        isOpenNow={downloadHours.downloadAllowed}
+        savePath={`/api/admin/hosts/${host.id}/download-hours`}
+        title="Download hours"
+        description="Quiet hours outside this window — player plays from cache and defers new asset downloads. Empty = allow anytime. Timezone:"
+        openNowLabel="Downloads allowed"
+        closedNowLabel="Quiet (cache only)"
+        clearButtonLabel="Allow anytime"
+        clearOkMessage="Downloads allowed anytime (hours cleared)"
+        saveButtonLabel="Save download hours"
+        footerNote="Soft miss: per-screen override and bandwidth caps. Host timezone matches open hours."
+        showOvernightPreset
       />
 
       <section className="space-y-3">

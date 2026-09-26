@@ -3,11 +3,7 @@ import { authOptions } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { Suspense } from "react";
-import { DeviceStatusBadge } from "@/components/DeviceStatusBadge";
 import {
-  Card,
-  CardList,
-  CardListItem,
   EmptyState,
   PageHeader,
   StatPill,
@@ -16,6 +12,7 @@ import {
 import { listFleetHealth, scanFleetAlerts, countOpenFleetAlerts } from "@/lib/fleet";
 import { PLAYER_ONLINE_GRACE_MS } from "@/lib/device";
 import { FleetFilterBar } from "./FleetFilterBar";
+import { FleetBoard } from "./FleetBoard";
 
 export const dynamic = "force-dynamic";
 
@@ -34,20 +31,6 @@ function parseFilter(raw?: string): Filter {
   return "all";
 }
 
-function formatLastSeen(iso: string | null): string {
-  if (!iso) return "Never";
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return "—";
-  return d.toLocaleString();
-}
-
-function versionLabel(status: string, version: string | null): string {
-  if (status === "missing") return "Version unknown";
-  if (status === "lag") return `${version} (behind)`;
-  if (status === "unknown") return version || "—";
-  return version || "—";
-}
-
 export default async function AdminFleetPage({
   searchParams,
 }: {
@@ -58,7 +41,6 @@ export default async function AdminFleetPage({
   if (session.user.role === "HOST") redirect("/host");
   if (session.user.role !== "ADMIN") redirect("/dashboard");
 
-  // Lightweight scan on each visit (also POST /api/admin/fleet for cron)
   await scanFleetAlerts();
 
   const filter = parseFilter(searchParams.filter);
@@ -94,6 +76,7 @@ export default async function AdminFleetPage({
           <>
             Paired screens — online if heartbeat within {graceMin} min. Empty =
             open hours + 0 active playlist items. Closed hours is not a fault.
+            Multi-select for bulk refresh / reboot / kiosk.
           </>
         }
         actions={
@@ -124,99 +107,7 @@ export default async function AdminFleetPage({
             : "No screens match this filter."}
         </EmptyState>
       ) : (
-        <CardList>
-          {screens.map((s) => (
-            <CardListItem key={s.screenId}>
-              <Card
-                glow
-                className={`flex h-full flex-col p-4 ${
-                  !s.online || s.emptyPlaylist
-                    ? "ring-1 ring-[var(--status-danger-fg)]/30"
-                    : ""
-                }`}
-              >
-                <div className="flex flex-1 flex-col gap-3">
-                  <div className="flex flex-wrap items-start justify-between gap-2">
-                    <div className="min-w-0 space-y-1">
-                      <Link
-                        href={`/admin/screens/${s.screenId}`}
-                        className="font-semibold text-accent hover:underline"
-                      >
-                        {s.screenName}
-                      </Link>
-                      <p className="text-sm text-muted">
-                        {s.city}, {s.zip} ·{" "}
-                        <Link
-                          href={`/admin/hosts/${s.hostId}`}
-                          className="hover:text-accent"
-                        >
-                          {s.hostName}
-                        </Link>
-                      </p>
-                    </div>
-                    <DeviceStatusBadge status={s.displayStatus} />
-                  </div>
-
-                  <dl className="grid grid-cols-2 gap-x-3 gap-y-1 text-xs text-muted sm:grid-cols-3">
-                    <div>
-                      <dt className="text-muted-strong">Last seen</dt>
-                      <dd className="text-foreground">
-                        {formatLastSeen(s.lastSeenAt)}
-                      </dd>
-                    </div>
-                    <div>
-                      <dt className="text-muted-strong">Hours</dt>
-                      <dd className="text-foreground">
-                        {s.playbackAllowed
-                          ? s.forceLiveActive
-                            ? "Open (force live)"
-                            : "Open"
-                          : "Closed hours"}
-                      </dd>
-                    </div>
-                    <div>
-                      <dt className="text-muted-strong">Active items</dt>
-                      <dd className="text-foreground">
-                        {s.activeItemCount}
-                        {s.emptyPlaylist ? (
-                          <span className="ml-1 text-amber-300">· empty</span>
-                        ) : null}
-                      </dd>
-                    </div>
-                    <div>
-                      <dt className="text-muted-strong">Player</dt>
-                      <dd className="text-foreground">
-                        {versionLabel(s.versionStatus, s.playerVersion)}
-                      </dd>
-                    </div>
-                    <div>
-                      <dt className="text-muted-strong">Disk</dt>
-                      <dd className="text-foreground">
-                        {s.diskCritical === true
-                          ? "Critical"
-                          : s.diskFreeBytes != null
-                            ? `${Math.round(s.diskFreeBytes / (1024 * 1024))} MB free`
-                            : "— (TODO)"}
-                      </dd>
-                    </div>
-                    <div>
-                      <dt className="text-muted-strong">Playback</dt>
-                      <dd className="text-foreground">
-                        {s.playbackState || "—"}
-                      </dd>
-                    </div>
-                  </dl>
-
-                  {s.openAlertKinds.length > 0 ? (
-                    <p className="text-xs text-[var(--status-danger-fg)]">
-                      Open alert: {s.openAlertKinds.join(", ")}
-                    </p>
-                  ) : null}
-                </div>
-              </Card>
-            </CardListItem>
-          ))}
-        </CardList>
+        <FleetBoard screens={screens} />
       )}
     </div>
   );

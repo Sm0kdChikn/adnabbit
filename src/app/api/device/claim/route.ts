@@ -9,6 +9,7 @@ import {
 } from "@/lib/device";
 import { DEFAULT_TIMEZONE } from "@/lib/schedules";
 import { resolveOpenHoursForScreen } from "@/lib/open-hours";
+import { resolveDownloadHoursForScreen } from "@/lib/download-hours";
 
 const bodySchema = z.object({
   code: z.string().min(1),
@@ -96,6 +97,7 @@ export async function POST(req: Request) {
       deviceId: string;
     };
     const hours = await resolveOpenHoursForScreen(claimed.screenId);
+    const downloadHours = await resolveDownloadHoursForScreen(claimed.screenId);
     return NextResponse.json({
       deviceToken: claimed.deviceToken,
       screenId: claimed.screenId,
@@ -103,6 +105,9 @@ export async function POST(req: Request) {
       hostName: claimed.hostName,
       timezone: claimed.timezone,
       hours,
+      downloadHours,
+      downloadAllowed: downloadHours.downloadAllowed,
+      playbackAllowed: hours.isOpenNow,
     });
   } catch (e) {
     console.error("device claim failed", e);

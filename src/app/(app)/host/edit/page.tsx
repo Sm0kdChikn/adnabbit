@@ -11,6 +11,7 @@ import {
   formatHoursSummary,
   loadWeeklyForTarget,
 } from "@/lib/open-hours";
+import { resolveDownloadHoursForHost } from "@/lib/download-hours";
 
 export default async function HostEditPage() {
   const session = await getServerSession(authOptions);
@@ -30,6 +31,7 @@ export default async function HostEditPage() {
     alwaysOpen,
     forceLiveUntil: null,
   });
+  const downloadHours = await resolveDownloadHoursForHost(host.id, host.timezone);
 
   return (
     <div className="space-y-6">
@@ -39,7 +41,7 @@ export default async function HostEditPage() {
         </Link>
         <h1 className="mt-2 text-2xl font-bold text-foreground">Edit venue</h1>
         <p className="text-sm text-muted">
-          Update name, vertical, timezone, notes, and weekly open hours.
+          Update name, vertical, timezone, notes, open hours, and download hours.
         </p>
       </div>
       <HostVenueForm
@@ -61,6 +63,24 @@ export default async function HostEditPage() {
         }
         isOpenNow={evaled.isOpenNow}
         savePath="/api/host/hours"
+      />
+      <OpenHoursEditorClient
+        timezone={host.timezone}
+        initialWeekly={
+          downloadHours.alwaysAllow ? emptyWeekly() : downloadHours.weekly
+        }
+        summary={downloadHours.summary}
+        isOpenNow={downloadHours.downloadAllowed}
+        savePath="/api/host/download-hours"
+        title="Download hours"
+        description="Quiet hours outside this window — player plays from cache and defers new asset downloads. Empty = allow anytime. Timezone:"
+        openNowLabel="Downloads allowed"
+        closedNowLabel="Quiet (cache only)"
+        clearButtonLabel="Allow anytime"
+        clearOkMessage="Downloads allowed anytime (hours cleared)"
+        saveButtonLabel="Save download hours"
+        footerNote="Host timezone matches open hours. Soft miss: per-screen override."
+        showOvernightPreset
       />
     </div>
   );

@@ -19,6 +19,7 @@
 // Ticket R: FleetAlert + Device.playerVersion/disk* for fleet health
 // Ticket S: Creative/User/Host/Screen take-down stamps; Schedule windows already Ticket E
 // Ticket T: analytics from OpenHours + schedule expansion (no PlayEvent invent)
+// Ticket U: DownloadHours (host quiet hours) + admin fleet bulk ops
 
 generator client {
   provider = "prisma-client-js"
@@ -402,4 +403,27 @@ model FleetAlert {
   @@index([kind])
   @@index([screenId, kind, status])
   @@index([openedAt])
+}
+
+/// Ticket U — weekly download / quiet hours for a Host (venue).
+/// Empty/null rows for host = allow downloads anytime (legacy-safe).
+/// Outside window: player plays from cache only; defers prefetch.
+/// Soft miss: per-screen override / bandwidth caps (not in MVP).
+model DownloadHours {
+  id        String   @id @default(cuid())
+  /// HOST only for MVP (SCREEN soft miss)
+  scope     String
+  /// Host.id
+  targetId  String
+  /// ISO weekday Mon=1 .. Sun=7
+  weekday   Int
+  /// HH:mm window start when downloads are allowed (null+null close = no download that day)
+  openTime  String?
+  /// HH:mm window end; same-day only (end > start)
+  closeTime String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([scope, targetId, weekday])
+  @@index([scope, targetId])
 }

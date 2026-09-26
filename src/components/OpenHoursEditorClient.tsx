@@ -13,6 +13,15 @@ type Props = {
   summary?: string | null;
   isOpenNow?: boolean | null;
   savePath: string;
+  title?: string;
+  description?: string;
+  openNowLabel?: string;
+  closedNowLabel?: string;
+  clearButtonLabel?: string;
+  clearOkMessage?: string;
+  saveButtonLabel?: string;
+  footerNote?: string | null;
+  showOvernightPreset?: boolean;
 };
 
 export function OpenHoursEditorClient(props: Props) {
