@@ -9,16 +9,43 @@ import { resolveOpenHoursForScreen } from "@/lib/open-hours";
 
 const PLAYBACK_STATES = new Set(["LIVE", "BLACKOUT", "IDLE", "EMPTY"]);
 
+function parseOptionalInt(v: unknown): number | undefined {
+  if (typeof v === "number" && Number.isFinite(v) && v >= 0) {
+    return Math.min(Number.MAX_SAFE_INTEGER, Math.floor(v));
+  }
+  if (typeof v === "string" && /^\d+$/.test(v.trim())) {
+    const n = parseInt(v.trim(), 10);
+    if (Number.isFinite(n) && n >= 0) return n;
+  }
+  return undefined;
+}
+
 export async function POST(req: Request) {
   const auth = await requireDeviceAuth(req);
   if (auth.error) return auth.error;
 
   let playbackState: string | null = null;
+  let playerVersion: string | undefined;
+  let diskFreeBytes: number | undefined;
+  let diskTotalBytes: number | undefined;
+
   try {
     const body = await req.json().catch(() => null);
-    if (body && typeof body.playbackState === "string") {
-      const s = body.playbackState.trim().toUpperCase();
-      if (PLAYBACK_STATES.has(s)) playbackState = s;
+    if (body && typeof body === "object") {
+      if (typeof body.playbackState === "string") {
+        const s = body.playbackState.trim().toUpperCase();
+        if (PLAYBACK_STATES.has(s)) playbackState = s;
+      }
+      // Ticket R — player version string (e.g. package.json version)
+      if (typeof body.playerVersion === "string") {
+        const v = body.playerVersion.trim().slice(0, 64);
+        if (v) playerVersion = v;
+      }
+      // Ticket R — optional disk stats (soft miss; only store if reported)
+      const free = parseOptionalInt(body.diskFreeBytes);
+      const total = parseOptionalInt(body.diskTotalBytes);
+      if (free !== undefined) diskFreeBytes = free;
+      if (total !== undefined) diskTotalBytes = total;
     }
   } catch {
     /* body optional */
@@ -32,6 +59,9 @@ export async function POST(req: Request) {
       ...(playbackState
         ? { playbackState, playbackStateAt: now }
         : {}),
+      ...(playerVersion !== undefined ? { playerVersion } : {}),
+      ...(diskFreeBytes !== undefined ? { diskFreeBytes } : {}),
+      ...(diskTotalBytes !== undefined ? { diskTotalBytes } : {}),
     },
     select: {
       screenId: true,
@@ -40,6 +70,9 @@ export async function POST(req: Request) {
       screenshotCapturedEpoch: true,
       pendingInputJson: true,
       playbackState: true,
+      playerVersion: true,
+      diskFreeBytes: true,
+      diskTotalBytes: true,
     },
   });
 
@@ -54,6 +87,7 @@ export async function POST(req: Request) {
     playlistEpoch: updated.playlistEpoch,
     screenshotEpoch: updated.screenshotEpoch,
     playbackState: updated.playbackState,
+    playerVersion: updated.playerVersion,
     hours,
     commands: {
       captureScreenshot,

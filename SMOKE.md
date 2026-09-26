@@ -1011,3 +1011,39 @@ On `/admin/screens/[id]` → Open hours → set **Force live until** a future lo
 - HOST can edit own venue + own screen overrides only.
 - ADMIN can edit any host/screen + force-live.
 - Advertisers: no hours APIs/UI.
+
+---
+
+## Ticket R — Fleet health + alerts (2026-09-26)
+
+### Migrate
+```bash
+npx prisma migrate deploy
+# → applies 20260926180000_ticket_r_fleet_health
+```
+
+### Admin fleet board
+1. Sign in as admin → **Fleet** (`/admin/fleet`).
+2. Paired screens show status badge (Live / Offline / Closed hours / Empty), last seen, player version, active item count.
+3. Filters: All / Offline / Empty / Version / Attention.
+
+### Offline alert (Lobby TV)
+```bash
+# Stop player heartbeats (quit player or block network) for >5 minutes,
+# or age lastSeenAt in DB, then:
+# Admin → Fleet (page load runs scan) or:
+curl -s -b /tmp/admin-cookies.txt -X POST http://127.0.0.1:3000/api/admin/fleet
+# → created ≥1 OFFLINE alert (deduped on repeat)
+# Admin → Alerts shows one OPEN OFFLINE for Lobby TV
+```
+Resume heartbeats → next scan resolves the alert (status RESOLVED).
+
+### Empty vs closed hours
+- Screen in **CLOSED_HOURS** (blackout) with 0 plays → **not** Empty, **not** Offline (if still heartbeating). Badge: Closed hours.
+- Screen **OPEN** / force-live with 0 active playlist items → Empty filter + EMPTY alert once.
+
+### Host
+Host portal screen cards show Online / Offline / Unpaired + last seen. No Alerts nav.
+
+### Player version
+Player heartbeat body includes `playerVersion` (package.json). Optional env `ADNNABIT_LATEST_PLAYER_VERSION` for lag flag (soft miss).

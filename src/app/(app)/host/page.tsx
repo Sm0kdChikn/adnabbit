@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 import { InventoryBadge } from "@/components/StatusBadge";
 import { formatVertical } from "@/lib/types";
+import { isDeviceRecentlySeen } from "@/lib/device";
 import {
   Card,
   CardList,
@@ -25,7 +26,12 @@ export default async function HostPortalPage() {
 
   const host = await prisma.host.findUnique({
     where: { userId: session.user.id },
-    include: { screens: { orderBy: { name: "asc" } } },
+    include: {
+      screens: {
+        orderBy: { name: "asc" },
+        include: { device: { select: { lastSeenAt: true } } },
+      },
+    },
   });
 
   if (!host) {
@@ -113,7 +119,24 @@ export default async function HostPortalPage() {
                       </p>
                     </div>
                     <div className="flex flex-wrap items-center justify-between gap-2">
-                      <InventoryBadge status={s.inventoryStatus} />
+                      <div className="flex flex-wrap items-center gap-2">
+                        <InventoryBadge status={s.inventoryStatus} />
+                        {s.device ? (
+                          isDeviceRecentlySeen(s.device.lastSeenAt) ? (
+                            <span className="rounded-full bg-emerald-500/15 px-2 py-0.5 text-xs font-semibold text-emerald-400">
+                              Online
+                            </span>
+                          ) : (
+                            <span className="rounded-full bg-[var(--status-danger-bg)] px-2 py-0.5 text-xs font-semibold text-[var(--status-danger-fg)]">
+                              Offline
+                            </span>
+                          )
+                        ) : (
+                          <span className="rounded-full bg-slate-500/20 px-2 py-0.5 text-xs font-semibold text-slate-300">
+                            Unpaired
+                          </span>
+                        )}
+                      </div>
                       <Link
                         href={`/host/screens/${s.id}`}
                         className="text-sm text-muted hover:text-accent"
@@ -121,6 +144,13 @@ export default async function HostPortalPage() {
                         Manage
                       </Link>
                     </div>
+                    {s.device?.lastSeenAt ? (
+                      <p className="text-xs text-muted-strong">
+                        Last seen {s.device.lastSeenAt.toLocaleString()}
+                      </p>
+                    ) : s.device ? (
+                      <p className="text-xs text-muted-strong">Last seen: never</p>
+                    ) : null}
                   </div>
                 </Card>
               </CardListItem>

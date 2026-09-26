@@ -16,6 +16,7 @@
 // Ticket P: Device.screenshotEpoch + remote-view JPEG overwrite
 // Ticket P.1: Device.pendingInputJson remote mouse/keyboard queue
 // Ticket Q: OpenHours + Screen.useCustomHours/forceLiveUntil + Device.playbackState
+// Ticket R: FleetAlert + Device.playerVersion/disk* for fleet health
 
 generator client {
   provider = "prisma-client-js"
@@ -101,6 +102,8 @@ model Screen {
   useCustomHours    Boolean            @default(false)
   /// Ticket Q — admin force-live override until Instant (bypasses closed hours)
   forceLiveUntil    DateTime?
+  /// Ticket R — fleet health alerts
+  fleetAlerts       FleetAlert[]
   createdAt         DateTime           @default(now())
   updatedAt         DateTime           @updatedAt
 
@@ -257,6 +260,7 @@ model PlayEvent {
 /// Ticket P — screenshotEpoch for admin remote-view capture; single overwrite JPEG blob
 /// Ticket P.1 — pendingInputJson queue for admin remote mouse/keyboard
 /// Ticket Q — playbackState for closed-hours / idle / live status
+/// Ticket R — playerVersion + optional disk stats from heartbeat
 model Device {
   id            String    @id @default(cuid())
   /// Unique: one Device bound per Screen
@@ -281,6 +285,11 @@ model Device {
   /// Ticket Q — last player-reported state: LIVE | BLACKOUT | IDLE | EMPTY
   playbackState   String?
   playbackStateAt DateTime?
+  /// Ticket R — semver/string from player package (heartbeat)
+  playerVersion   String?
+  /// Ticket R — optional disk stats (bytes); null until player reports (no fake metrics)
+  diskFreeBytes   Int?
+  diskTotalBytes  Int?
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
@@ -352,4 +361,25 @@ model OpenHours {
 
   @@unique([scope, targetId, weekday])
   @@index([scope, targetId])
+}
+
+/// Ticket R — in-app fleet alert (one OPEN per screen+kind until resolved)
+model FleetAlert {
+  id         String    @id @default(cuid())
+  screenId   String
+  screen     Screen    @relation(fields: [screenId], references: [id], onDelete: Cascade)
+  /// OFFLINE | EMPTY
+  kind       String
+  /// OPEN | RESOLVED
+  status     String    @default("OPEN")
+  message    String?
+  openedAt   DateTime  @default(now())
+  resolvedAt DateTime?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  @@index([status])
+  @@index([kind])
+  @@index([screenId, kind, status])
+  @@index([openedAt])
 }

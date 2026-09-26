@@ -7,6 +7,7 @@ import { useEffect, useState } from "react";
 import { BrandLogo } from "@/components/BrandLogo";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { Button } from "@/components/ui";
+import { FleetAlertNavBadge } from "@/components/admin/FleetAlertNavBadge";
 
 type NavLink = { href: string; label: string };
 
@@ -38,6 +39,8 @@ function linksForRole(role?: string | null): NavLink[] {
       { href: "/admin/hosts", label: "Hosts" },
       { href: "/admin/advertisers", label: "Advertisers" },
       { href: "/admin/screens", label: "Screens" },
+      { href: "/admin/fleet", label: "Fleet" },
+      { href: "/admin/alerts", label: "Alerts" },
       { href: "/admin/profiles", label: "Profiles" },
       { href: "/admin/proof-of-play", label: "PoP" },
     ];
@@ -111,12 +114,16 @@ export function Nav() {
           {session?.user ? (
             <>
               {links.map((l) => (
-                <NavLinkItem
-                  key={l.href}
-                  href={l.href}
-                  label={l.label}
-                  active={isActive(pathname, l.href)}
-                />
+                <span key={l.href} className="inline-flex items-center">
+                  <NavLinkItem
+                    href={l.href}
+                    label={l.label}
+                    active={isActive(pathname, l.href)}
+                  />
+                  {role === "ADMIN" && l.href === "/admin/alerts" ? (
+                    <FleetAlertNavBadge />
+                  ) : null}
+                </span>
               ))}
               <span className="ml-2 max-w-[11rem] truncate text-xs text-muted-strong" title={session.user.email || ""}>
                 {session.user.email}
