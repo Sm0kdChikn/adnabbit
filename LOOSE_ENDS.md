@@ -15,7 +15,7 @@ Post–Ticket L cleanup. High-confidence fixes landed in this pass; everything b
 | Player JS syntax (`node --check`) | PASS (no build script) |
 | Landing / login / admin+host portals | PASS |
 | Admin folders API HOST/ADVERTISER | PASS |
-| Device claim → heartbeat → playlist → cache → play-logs stub | PASS |
+| Device claim → heartbeat → playlist → cache → play-logs persist (F2) | PASS |
 | Host authz on `/admin/*` (307→`/host`) + admin APIs 403 | PASS |
 
 ## Parked for Brandon / later tickets
@@ -24,8 +24,8 @@ Post–Ticket L cleanup. High-confidence fixes landed in this pass; everything b
 Brandon: **Stripe Connect before advertisers can submit ads.** Out of scope for this QA pass — do not start here.
 
 ### Explicitly out of scope (prior tickets)
-- **F2** — play-log persistence (device `/api/device/play-logs` stays 202 stub; Ticket T analytics does not invent plays)
-- **Ticket T** — DONE: schedule fill / daypart heat / campaign rollup + CSV (admin/host/advertiser)
+- ~~**F2**~~ — **DONE**: `PlayLog` persist + Ticket T Plays real counts (OptiSigns still prod PoP)
+- **Ticket T** — DONE: schedule fill / daypart heat / campaign rollup + CSV + F2 Plays (admin/host/advertiser)
 - Postgres cutover / production deploy
 - Custom ISO, fleet management, OptiSigns cutover
 - Full **OS lockdown** (Electron kiosk + P.1.3 dedicated user/autologin; not a custom ISO)
@@ -39,7 +39,7 @@ Brandon: **Stripe Connect before advertisers can submit ads.** Out of scope for 
 | Empty `adnabbit-player/scripts/` | Placeholder dir; no scripts |
 | Web README drift | No dedicated Ticket L section; cinematic landing + list/grid mostly covered under K / UX commits |
 | Player cursor hide | Soft miss on some Linux WMs (documented in player README) |
-| Headless play-log when playlist empty | Posts `creativeId: undefined`; stub still 202 — fine until F2 |
+| Headless play-log when playlist empty | Skips post when no creative (F2 validates creative) |
 | Reclaim invalidates prior device token | By design (`deleteMany` then create); old player token → 401 until re-claim |
 | Demo-shots / untracked PNGs | Local only; do not commit |
 

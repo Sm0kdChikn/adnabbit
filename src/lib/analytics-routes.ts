@@ -7,8 +7,10 @@ import {
   computeCampaigns,
   computeDaypartHeat,
   computeFill,
+  computePlays,
   daypartHeatToCsv,
   fillRowsToCsv,
+  playsToCsv,
   parseAnalyticsDateRange,
   parseAnalyticsFilters,
   type AnalyticsScope,
@@ -74,7 +76,7 @@ export async function handleFillGet(
       "Fill uses OpenHours + ACTIVE schedule expansion (playlist truth).",
       "Paid minutes are union coverage within open hours — not play counts.",
       "force-live overrides are not replayed historically (configured hours only).",
-      "Plays / PoP: awaits F2 device persistence; OptiSigns Looker remains production PoP.",
+      "Plays: first-party PlayLog soak (Ticket F2). OptiSigns Looker remains production PoP.",
     ],
   });
 }
@@ -132,6 +134,37 @@ export async function handleCampaignsGet(
   });
 }
 
+
+export async function handlePlaysGet(
+  req: Request,
+  allowed: Array<AnalyticsScope["role"]>
+) {
+  const auth = await withScope(allowed);
+  if (auth.error) return auth.error;
+  const q = queryFrom(req);
+  const range = parseAnalyticsDateRange(q);
+  const filters = parseAnalyticsFilters(q);
+  if (auth.scope.role === "HOST") {
+    filters.hostId = auth.scope.hostId;
+    filters.advertiserId = null;
+  }
+  if (auth.scope.role === "ADVERTISER") {
+    filters.advertiserId = auth.scope.advertiserId;
+  }
+  const data = await computePlays(auth.scope, range, filters);
+  return NextResponse.json({
+    range,
+    filters,
+    summary: data.summary,
+    rows: data.rows,
+    notes: [
+      "Plays are first-party device PlayLog counts (Ticket F2 soak).",
+      "OptiSigns CSV import + Looker remain production proof-of-play until cutover.",
+      "Mute paths (closed hours / maintenance / take-down) produce zero new rows.",
+    ],
+  });
+}
+
 export async function handleExportGet(
   req: Request,
   allowed: Array<AnalyticsScope["role"]>
@@ -161,6 +194,10 @@ export async function handleExportGet(
     const data = await computeCampaigns(auth.scope, filters);
     csv = campaignsToCsv(data.rows);
     filename = `adnabbit-campaigns.csv`;
+  } else if (table === "plays") {
+    const data = await computePlays(auth.scope, range, filters);
+    csv = playsToCsv(data.rows);
+    filename = `adnabbit-plays-${range.fromYmd}_${range.toYmd}.csv`;
   } else {
     const data = await computeFill(auth.scope, range, filters);
     csv = fillRowsToCsv(data.rows);

@@ -25,6 +25,7 @@
 // Ticket X: MaintenanceWindow one-off HOST|SCREEN soft blackout (beats force-live)
 // Ticket Y: Screen/Host volume+brightness prefs; Device last-applied; setOutput queue
 // Ticket Z: DeviceGroup / DeviceGroupMember (admin flat groups of paired devices)
+// Ticket F2: PlayLog first-party device PoP (separate from OptiSigns PlayEvent)
 
 generator client {
   provider = "prisma-client-js"
@@ -77,6 +78,7 @@ model Creative {
   takenDownReason   String?
   placementRequests PlacementRequest[]
   playEvents        PlayEvent[]
+  playLogs          PlayLog[]
   createdAt         DateTime           @default(now())
   updatedAt         DateTime           @updatedAt
 
@@ -142,6 +144,8 @@ model Screen {
   brightness        Int?
   /// Ticket R — fleet health alerts
   fleetAlerts       FleetAlert[]
+  /// Ticket F2 — first-party play logs
+  playLogs          PlayLog[]
   createdAt         DateTime           @default(now())
   updatedAt         DateTime           @updatedAt
 
@@ -231,6 +235,7 @@ model Schedule {
   createdById  String
   createdBy    User             @relation("ScheduleCreator", fields: [createdById], references: [id], onDelete: Cascade)
   cancelledAt  DateTime?
+  playLogs     PlayLog[]
   createdAt    DateTime         @default(now())
   updatedAt    DateTime         @updatedAt
 
@@ -333,6 +338,8 @@ model Device {
   lastAppliedBrightness Int?
   /// Ticket Z — membership in admin device groups
   groupMembers  DeviceGroupMember[]
+  /// Ticket F2 — first-party play logs
+  playLogs      PlayLog[]
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
@@ -518,4 +525,29 @@ model DeviceGroupMember {
   @@unique([groupId, deviceId])
   @@index([deviceId])
   @@index([groupId])
+}
+
+/// Ticket F2 — first-party device play-log / PoP (separate from OptiSigns PlayEvent)
+model PlayLog {
+  id            String    @id @default(cuid())
+  deviceId      String
+  device        Device    @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+  screenId      String
+  screen        Screen    @relation(fields: [screenId], references: [id], onDelete: Cascade)
+  creativeId    String
+  creative      Creative  @relation(fields: [creativeId], references: [id], onDelete: Cascade)
+  scheduleId    String?
+  schedule      Schedule? @relation(fields: [scheduleId], references: [id], onDelete: SetNull)
+  startedAt     DateTime
+  endedAt       DateTime?
+  durationMs    Int?
+  /// Client-generated uuid for idempotent retries
+  clientEventId String
+  createdAt     DateTime  @default(now())
+
+  @@unique([deviceId, clientEventId])
+  @@index([screenId, startedAt])
+  @@index([creativeId, startedAt])
+  @@index([deviceId, startedAt])
+  @@index([startedAt])
 }

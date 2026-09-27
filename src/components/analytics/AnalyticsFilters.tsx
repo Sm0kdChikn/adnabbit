@@ -234,6 +234,12 @@ export function AnalyticsFilters({
         >
           Campaigns
         </a>
+        <a
+          href={exportHref("plays")}
+          className="rounded-md border border-accent/40 bg-accent-dim px-3 py-1.5 text-sm font-medium text-accent hover:border-accent/70"
+        >
+          Plays
+        </a>
       </div>
     </form>
   );

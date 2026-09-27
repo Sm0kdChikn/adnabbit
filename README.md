@@ -1,6 +1,6 @@
 # AdNabbit Web MVP
 
-Advertiser signup/login, creative upload (image/video), submit for review, admin approve/reject, **Ticket A — Host/screen inventory**, and **Ticket B — Advertiser public profiles**, and **Ticket C — Placement requests**, and **Ticket D — Scheduling**, and **Ticket E — Recurring dayparts**, and **Ticket E2 — Schedule calendar view**, and **Ticket G — Host self-serve portal**, and **Ticket J — device claim / playlist APIs**, and **Ticket K — admin folders**, and **Ticket O — playlist refresh**, and **Ticket P — admin remote view (screenshot relay)**, and **Ticket P.1 — admin remote mouse/keyboard control**, and **Ticket P.1.1 — kiosk lock/unlock toggle**, and **Ticket P.1.2 — admin device reboot**, and **Ticket Q — venue open hours / soft blackout / PoP mute**, and **Ticket R — fleet health + offline/empty alerts**, and **Ticket S — campaign windows + emergency take-down**, and **Ticket T — host / advertiser / admin analytics (schedule fill)**, and **Ticket U — download/quiet hours + fleet bulk ops**, and **Ticket V — offline play policy**, and **Ticket W — audit log**, and **Ticket X — maintenance windows**, and **Ticket Y — volume / brightness remote**, and **Ticket Z — device groups**.
+Advertiser signup/login, creative upload (image/video), submit for review, admin approve/reject, **Ticket A — Host/screen inventory**, and **Ticket B — Advertiser public profiles**, and **Ticket C — Placement requests**, and **Ticket D — Scheduling**, and **Ticket E — Recurring dayparts**, and **Ticket E2 — Schedule calendar view**, and **Ticket G — Host self-serve portal**, and **Ticket J — device claim / playlist APIs**, and **Ticket K — admin folders**, and **Ticket O — playlist refresh**, and **Ticket P — admin remote view (screenshot relay)**, and **Ticket P.1 — admin remote mouse/keyboard control**, and **Ticket P.1.1 — kiosk lock/unlock toggle**, and **Ticket P.1.2 — admin device reboot**, and **Ticket Q — venue open hours / soft blackout / PoP mute**, and **Ticket R — fleet health + offline/empty alerts**, and **Ticket S — campaign windows + emergency take-down**, and **Ticket T — host / advertiser / admin analytics (schedule fill)**, and **Ticket U — download/quiet hours + fleet bulk ops**, and **Ticket V — offline play policy**, and **Ticket W — audit log**, and **Ticket X — maintenance windows**, and **Ticket Y — volume / brightness remote**, and **Ticket Z — device groups**, and **Ticket F2 — first-party PlayLog / PoP persistence**.
 
 **Repo target:** https://github.com/Sm0kdChikn/adnabbit
 
@@ -341,11 +341,11 @@ Screen filter on schedule calendars + overnight (cross-midnight) RECURRING daypa
 
 ## Ticket J — Device claim, playlist, asset APIs
 
-Software-first Linux kiosk player spike (companion repo: `Sm0kdChikn/adnabbit-player`). OptiSigns remains production PoP; play-logs are stub-only.
+Software-first Linux kiosk player spike (companion repo: `Sm0kdChikn/adnabbit-player`). OptiSigns remains production PoP; **Ticket F2** persists first-party `PlayLog` (separate from OptiSigns `PlayEvent`).
 
 ### Data model
 
-- **Device**: 1:1 with Screen (`screenId` unique); stores **sha256** of bearer token only; `lastSeenAt`; **Ticket O** `playlistEpoch`; **Ticket P** `screenshotEpoch` / `screenshotCapturedEpoch` + single overwrite JPEG under `uploads/device-previews/{deviceId}.jpg`; **Ticket P.1** `pendingInputJson` remote-control queue; **Ticket Q** `playbackState` + `OpenHours` / `forceLiveUntil`; **Ticket R** `playerVersion` / optional `disk*` + `FleetAlert`; **Ticket S** take-down stamps on Creative/User/Host/Screen; **Ticket U** `DownloadHours` (host quiet hours) + fleet bulk refresh/reboot/kiosk; **Ticket V** `Host.offlinePolicy` / `offlineCacheTtlHours`; **Ticket W** `AuditEvent` append-only log; **Ticket X** `MaintenanceWindow` HOST|SCREEN soft blackout (beats force-live); **Ticket Y** `Screen.volume/brightness` + `Host.defaultVolume/defaultBrightness` + `Device.lastApplied*` + `setOutput` queue; **Ticket Z** `DeviceGroup` / `DeviceGroupMember` (admin flat groups of paired devices) + fleet `?groupId=` + bulk `groupId`/`deviceIds`
+- **Device**: 1:1 with Screen (`screenId` unique); stores **sha256** of bearer token only; `lastSeenAt`; **Ticket O** `playlistEpoch`; **Ticket P** `screenshotEpoch` / `screenshotCapturedEpoch` + single overwrite JPEG under `uploads/device-previews/{deviceId}.jpg`; **Ticket P.1** `pendingInputJson` remote-control queue; **Ticket Q** `playbackState` + `OpenHours` / `forceLiveUntil`; **Ticket R** `playerVersion` / optional `disk*` + `FleetAlert`; **Ticket S** take-down stamps on Creative/User/Host/Screen; **Ticket U** `DownloadHours` (host quiet hours) + fleet bulk refresh/reboot/kiosk; **Ticket V** `Host.offlinePolicy` / `offlineCacheTtlHours`; **Ticket W** `AuditEvent` append-only log; **Ticket X** `MaintenanceWindow` HOST|SCREEN soft blackout (beats force-live); **Ticket Y** `Screen.volume/brightness` + `Host.defaultVolume/defaultBrightness` + `Device.lastApplied*` + `setOutput` queue; **Ticket Z** `DeviceGroup` / `DeviceGroupMember` (admin flat groups of paired devices) + fleet `?groupId=` + bulk `groupId`/`deviceIds`; **Ticket F2** `PlayLog` first-party device PoP (≠ OptiSigns `PlayEvent`)
 - **ScreenClaim**: one-time 6–8 char codes from `A–Z0–9` excluding `0O1I`; TTL **15 minutes**; reminting a screen **supersedes** prior unused live codes
 
 ### Device APIs (Bearer device token)
@@ -357,7 +357,7 @@ Software-first Linux kiosk player spike (companion repo: `Sm0kdChikn/adnabbit-pl
 | POST | `/api/device/screenshot` | Bearer; JPEG body (raw / multipart / base64); overwrite N=1 preview |
 | GET | `/api/device/playlist` | ACTIVE schedules next **24h** (host TZ, overnight dayparts OK); includes `playlistEpoch` |
 | GET | `/api/device/assets/[creativeId]` | stream upload for creatives on that screen |
-| POST | `/api/device/play-logs` | **202 stub** — console log only, no DB persist |
+| POST | `/api/device/play-logs` | **Ticket F2** — persist `PlayLog` batch (`{ events }`); device auth; idempotent `clientEventId`; gate closed hours / maintenance / take-down |
 
 ### Admin / host UI
 
@@ -595,14 +595,14 @@ Email alerts, host self-serve take-down of others' ads. (Audit log → Ticket W.
 
 ## Ticket T — Analytics (schedule fill / daypart / campaigns)
 
-Marketplace analytics from **OpenHours + ACTIVE schedule expansion** (same truth as the playlist builder). **Does not invent play counts.** Device play-logs remain F2 stub; OptiSigns Looker stays production PoP.
+Marketplace analytics from **OpenHours + ACTIVE schedule expansion** (same truth as the playlist builder). **Ticket F2** wires Plays from first-party `PlayLog` (soak). OptiSigns Looker stays production PoP until cutover.
 
 | Slice | Meaning |
 |-------|---------|
 | Schedule fill | Per screen/day: open / paid (union) / empty-while-open / closed minutes + paid item count |
 | Daypart heat | Weekday × hour grid of *scheduled* paid minutes (host TZ), summed across the date range |
 | Campaign windows | Active / Scheduled / Expired (+ Draft / Cancelled) via `scheduleWindowPhase` |
-| Plays panel | Soft miss — labeled **Awaits F2** |
+| Plays | First-party `PlayLog` COUNT + SUM(durationMs), scoped admin/host/advertiser |
 
 ### Pages
 
@@ -612,7 +612,7 @@ Marketplace analytics from **OpenHours + ACTIVE schedule expansion** (same truth
 | Host | `/host/analytics` (own venue screens only) |
 | Advertiser | `/analytics` (own creatives/schedules only) |
 
-Date range: last 7 / 30 days / custom. Filters: host / screen / advertiser (admin). CSV export for fill, daypart, campaigns.
+Date range: last 7 / 30 days / custom. Filters: host / screen / advertiser (admin). CSV export for fill, daypart, campaigns, plays.
 
 ### APIs
 
@@ -621,7 +621,8 @@ Date range: last 7 / 30 days / custom. Filters: host / screen / advertiser (admi
 | GET fill | `/api/admin/analytics/fill` | `/api/host/analytics/fill` | `/api/analytics/fill` |
 | GET daypart-heat | `/api/admin/analytics/daypart-heat` | `/api/host/analytics/daypart-heat` | `/api/analytics/daypart-heat` |
 | GET campaigns | `/api/admin/analytics/campaigns` | `/api/host/analytics/campaigns` | `/api/analytics/campaigns` |
-| GET export.csv | `/api/admin/analytics/export.csv?table=fill\|daypart\|campaigns` | `/api/host/analytics/export.csv?…` | `/api/analytics/export.csv?…` |
+| GET plays | `/api/admin/analytics/plays` | `/api/host/analytics/plays` | `/api/analytics/plays` |
+| GET export.csv | `/api/admin/analytics/export.csv?table=fill\|daypart\|campaigns\|plays` | `/api/host/analytics/export.csv?…` | `/api/analytics/export.csv?…` |
 
 Query: `range=7\|30\|custom`, `from`, `to`, `hostId`, `screenId`, `advertiserId`. Cross-role access → **403**.
 
@@ -636,7 +637,7 @@ Query: `range=7\|30\|custom`, `from`, `to`, `hostId`, `screenId`, `advertiserId`
 ## Out of scope (later tickets)
 
 
-- OptiSigns sync (beyond PoP import), F2 play-log persistence, custom ISO, marketplace matching, billing, digests, drag-drop calendar edit, multi-screen assign, monthly RRULE, host invites/payouts, full-OS VNC/WebRTC remoting (use Tailscale + wayvnc; P.1 is Electron-window only)
+- OptiSigns sync / cutover (beyond PoP import), custom ISO, marketplace matching, billing, digests, drag-drop calendar edit, multi-screen assign, monthly RRULE, host invites/payouts, full-OS VNC/WebRTC remoting (use Tailscale + wayvnc; P.1 is Electron-window only)
 
 ## Push to GitHub
 
@@ -822,4 +823,31 @@ Nested groups; host-owned groups; group-scoped fleet count chips.
 
 ### Out of scope
 
-Auto-geo groups; new roles; OptiSigns; bug hunt / F2.
+Auto-geo groups; new roles; OptiSigns cutover; bug hunt.
+
+## Ticket F2 — First-party PlayLog / PoP persistence
+
+Device-originated play events persist to **`PlayLog`** (separate from OptiSigns **`PlayEvent`** CSV import). OptiSigns Looker remains **production** PoP until cutover.
+
+### Schema
+
+`PlayLog`: `deviceId`, `screenId`, `creativeId`, `scheduleId?`, `startedAt`, `endedAt?`, `durationMs?`, `clientEventId` with `@@unique([deviceId, clientEventId])`. Indexes on `(screenId, startedAt)`, `(creativeId, startedAt)`, `(deviceId, startedAt)`.
+
+### Ingest
+
+`POST /api/device/play-logs` — Bearer device token. Body `{ events: [...] }` (raw array accepted during transition). Cap ~100.
+
+Per event: validate creative; soft-drop bad `scheduleId`; **skip** (not 403) when `!playbackAllowed` (`!maintenance.active && hours.isOpenNow`), screen/host/creative/advertiser take-down, or duplicate `clientEventId`.
+
+Response **200** `{ accepted, persisted, skipped: [{ clientEventId, reason }] }`.
+
+`deviceId` / `screenId` always from auth device — never trusted from client.
+
+### Analytics
+
+`computePlays` aggregates COUNT + SUM(`durationMs`) for admin / host / advertiser scopes. Plays panel on analytics dashboards shows real numbers; CSV via `?table=plays`.
+
+### Soft misses / out
+
+Rich charts; durable offline queue beyond simple retry. Out: OptiSigns cutover, Looker parity, fill-vs-paid, websockets, digests.
+

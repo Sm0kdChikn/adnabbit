@@ -6,6 +6,7 @@ import {
   computeCampaigns,
   computeDaypartHeat,
   computeFill,
+  computePlays,
   parseAnalyticsDateRange,
   parseAnalyticsFilters,
   type AnalyticsScope,
@@ -62,16 +63,17 @@ export default async function AdvertiserAnalyticsPage({
           },
         });
 
-  const [fill, heat, campaigns] = await Promise.all([
+  const [fill, heat, campaigns, plays] = await Promise.all([
     computeFill(scope, range, filters),
     computeDaypartHeat(scope, range, filters),
     computeCampaigns(scope, filters),
+    computePlays(scope, range, filters),
   ]);
 
   return (
     <AnalyticsDashboard
       title="Campaign analytics"
-      description="Your scheduled fill, daypart heat, and campaign windows. Not device plays (F2)."
+      description="Your scheduled fill, daypart heat, campaigns, and first-party plays on your creatives."
       basePath="/analytics"
       exportBase="/api/analytics/export.csv"
       range={range}
@@ -79,6 +81,8 @@ export default async function AdvertiserAnalyticsPage({
       fillRows={fill.rows}
       heat={heat}
       campaigns={campaigns}
+      playsSummary={plays.summary}
+      playRows={plays.rows}
       screens={screens.map((s) => ({
         id: s.id,
         label: `${s.host.name} · ${s.name}`,

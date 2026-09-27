@@ -873,8 +873,8 @@ curl -s http://localhost:3000/api/device/playlist \
 curl -s -X POST http://localhost:3000/api/device/play-logs \
   -H "Authorization: Bearer $DEVICE_TOKEN" \
   -H 'Content-Type: application/json' \
-  -d '[{"creativeId":"…","playedAt":"…"}]'
-# → 202 { accepted, persisted: false }
+  -d '{"events":[{"clientEventId":"demo-1","creativeId":"…","startedAt":"2026-09-26T20:00:00.000Z","durationMs":10000}]}'
+# → 200 { accepted, persisted, skipped }  (see Ticket F2 section)
 ```
 
 Player: see `adnabbit-player` README (`npm run claim -- --code …` then `npm start`).
@@ -913,7 +913,7 @@ Deep nesting, multi-select, mobile DnD polish, folder deep-links / search-within
 
 ## QA / loose-ends pass (2026-09-25 ~8:16 PM MT)
 
-See **LOOSE_ENDS.md** for parked backlog (Stripe / Ticket M, F2, OS lockdown, deep folders, etc.).
+See **LOOSE_ENDS.md** for parked backlog (Stripe / Ticket M, OS lockdown, deep folders, etc.).
 
 ### Fixes verified
 - Remint supersedes prior live claim codes for the same screen
@@ -927,7 +927,7 @@ cd /workspace/adnabbit-player
 export ADNNABIT_API_BASE=http://127.0.0.1:3000
 npm run claim -- --code XXXXXX
 npm run kiosk:headless
-# → heartbeat OK, playlist items, assets cached, play-logs 202
+# → heartbeat OK, playlist items, assets cached, play-logs 200 persisted
 ```
 
 ---
@@ -1070,7 +1070,7 @@ Player heartbeat body includes `playerVersion` (package.json). Optional env `ADN
 4. Export CSV: Fill / Daypart heat / Campaigns.
 5. Login **demo.host@adnabbit.com** / `host123!` → `/host/analytics` — only Denver Peak Fitness screens.
 6. Login **demo.advertiser@adnabbit.com** / `demo123!` → `/analytics` — own schedules only.
-7. Plays panel shows **Awaits F2** (no invented counts).
+7. Plays panel shows real first-party counts when `PlayLog` rows exist (Ticket F2).
 
 ### API smoke (session cookie)
 
@@ -1087,8 +1087,8 @@ curl -s -o /tmp/fill.csv -w '%{http_code}' \
 ### Gaps
 
 - force-live not historical
-- F2 play persistence still stub
 - Soft-miss charts (CSS heat table only)
+- OptiSigns Looker still production PoP (F2 is soak)
 
 ---
 
@@ -1313,4 +1313,62 @@ Nested groups; host-owned groups.
 
 ## Out of scope
 
-Auto-geo, new roles, OptiSigns; bug hunt / F2.
+Auto-geo, new roles, OptiSigns cutover; bug hunt.
+
+---
+
+## Ticket F2 — First-party PlayLog persistence (2026-09-26 MT)
+
+**Goal:** Persist device play-logs to `PlayLog`; wire Ticket T Plays; leave OptiSigns `PlayEvent` / Looker untouched.
+
+**Prereq:** migration `20260926231800_ticket_f2_play_log` (`npx prisma migrate deploy` or `db:migrate`).
+
+### Demo path
+
+1. Pair a device (claim) → export `DEVICE_TOKEN`.
+2. Pick an APPROVED creative id on that screen's playlist (or from seed).
+3. POST play-logs (below) → rows in `PlayLog`; duplicate `clientEventId` → `skipped: duplicate`, no second row.
+4. Simulate closed hours / maintenance → `skipped: playback_not_allowed`, zero new rows.
+5. Admin `/admin/analytics` → **Plays** > 0; CSV Export → Plays.
+6. OptiSigns admin proof-of-play / `PlayEvent` path unchanged.
+
+### Curl smoke
+
+```bash
+# Persist one play (use real creativeId from playlist / seed)
+CEID=$(uuidgen | tr '[:upper:]' '[:lower:]')
+curl -s -X POST http://localhost:3000/api/device/play-logs \
+  -H "Authorization: Bearer $DEVICE_TOKEN" \
+  -H 'Content-Type: application/json' \
+  -d "{\"events\":[{\"clientEventId\":\"$CEID\",\"creativeId\":\"$CREATIVE_ID\",\"startedAt\":\"$(date -u +%Y-%m-%dT%H:%M:%S.000Z)\",\"durationMs\":10000}]}"
+# → 200 { "accepted":1, "persisted":1, "skipped":[] }
+
+# Idempotent retry
+curl -s -X POST http://localhost:3000/api/device/play-logs \
+  -H "Authorization: Bearer $DEVICE_TOKEN" \
+  -H 'Content-Type: application/json' \
+  -d "{\"events\":[{\"clientEventId\":\"$CEID\",\"creativeId\":\"$CREATIVE_ID\",\"startedAt\":\"$(date -u +%Y-%m-%dT%H:%M:%S.000Z)\",\"durationMs\":10000}]}"
+# → 200 persisted:0, skipped:[{reason:"duplicate"}]
+
+# Analytics (admin session)
+curl -s 'http://localhost:3000/api/admin/analytics/plays?range=7' | head
+curl -s -o /tmp/plays.csv -w '%{http_code}\n' \
+  'http://localhost:3000/api/admin/analytics/export.csv?table=plays&range=7'
+```
+
+### Mute / gate checks
+
+- Player already mutes on blackout / offline / maintenance (defense in depth).
+- Server skips when `!playbackAllowed` or take-down stamps active — no DB write.
+- Confirm with SQLite: `SELECT COUNT(*) FROM PlayLog;` before/after mute window.
+
+### Pass criteria
+
+- Play → rows in `PlayLog` + T Plays > 0
+- Mute paths → zero new rows
+- OptiSigns CSV / `PlayEvent` / Looker path untouched
+
+### Soft misses / out
+
+Rich charts; durable offline queue. Out: OptiSigns cutover, Looker parity, fill-vs-paid, websockets, digests.
+

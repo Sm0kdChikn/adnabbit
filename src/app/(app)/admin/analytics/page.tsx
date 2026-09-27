@@ -6,6 +6,7 @@ import {
   computeCampaigns,
   computeDaypartHeat,
   computeFill,
+  computePlays,
   parseAnalyticsDateRange,
   parseAnalyticsFilters,
   type AnalyticsScope,
@@ -39,10 +40,11 @@ export default async function AdminAnalyticsPage({
   const range = parseAnalyticsDateRange(searchParams);
   const filters = parseAnalyticsFilters(searchParams);
 
-  const [fill, heat, campaigns, hosts, screens, advertisers] = await Promise.all([
+  const [fill, heat, campaigns, plays, hosts, screens, advertisers] = await Promise.all([
     computeFill(scope, range, filters),
     computeDaypartHeat(scope, range, filters),
     computeCampaigns(scope, filters),
+    computePlays(scope, range, filters),
     prisma.host.findMany({
       orderBy: { name: "asc" },
       select: { id: true, name: true },
@@ -65,7 +67,7 @@ export default async function AdminAnalyticsPage({
   return (
     <AnalyticsDashboard
       title="Marketplace analytics"
-      description="Schedule fill, daypart heat, and campaign windows across the network. Not device plays (F2)."
+      description="Schedule fill, daypart heat, campaigns, and first-party PlayLog plays. OptiSigns Looker remains production PoP."
       basePath="/admin/analytics"
       exportBase="/api/admin/analytics/export.csv"
       range={range}
@@ -73,6 +75,8 @@ export default async function AdminAnalyticsPage({
       fillRows={fill.rows}
       heat={heat}
       campaigns={campaigns}
+      playsSummary={plays.summary}
+      playRows={plays.rows}
       hosts={hosts.map((h) => ({ id: h.id, label: h.name }))}
       screens={screens.map((s) => ({
         id: s.id,

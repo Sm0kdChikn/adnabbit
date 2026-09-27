@@ -1,9 +1,10 @@
 /**
  * Ticket T — schedule fill, daypart heat, campaign rollup analytics.
+ * Ticket F2 — computePlays from first-party PlayLog (device PoP soak).
  * Truth sources: OpenHours + expandSchedulesToBlocks (same as playlist).
- * Does NOT invent play counts — Plays panel awaits F2 / OptiSigns PoP.
+ * OptiSigns PlayEvent / Looker remains production PoP until cutover.
  */
-import { formatInTimeZone } from "date-fns-tz";
+import { formatInTimeZone, fromZonedTime } from "date-fns-tz";
 import {
   addYmd,
   eachYmdInclusive,
@@ -843,3 +844,240 @@ export function campaignsToCsv(rows: CampaignRow[]): string {
 }
 
 export { WEEKDAY_LABELS };
+
+/* -------------------------------------------------------------------------- */
+/* Ticket F2 — first-party PlayLog plays                                      */
+/* -------------------------------------------------------------------------- */
+
+export type PlayRow = {
+  screenId: string;
+  screenName: string;
+  hostId: string;
+  hostName: string;
+  creativeId: string;
+  creativeName: string;
+  advertiserId: string;
+  advertiserEmail: string;
+  playCount: number;
+  totalDurationMs: number;
+};
+
+export type PlaysSummary = {
+  playCount: number;
+  totalDurationMs: number;
+  screenCount: number;
+  creativeCount: number;
+};
+
+export type PlaysResult = {
+  summary: PlaysSummary;
+  rows: PlayRow[];
+};
+
+function rangeToUtcBounds(range: DateRange): { from: Date; toExclusive: Date } {
+  const tz = DEFAULT_TIMEZONE;
+  const from = fromZonedTime(`${range.fromYmd} 00:00:00`, tz);
+  // inclusive toYmd → exclusive next day
+  const nextYmd = addYmd(range.toYmd, 1);
+  const toExclusive = fromZonedTime(`${nextYmd} 00:00:00`, tz);
+  return { from, toExclusive };
+}
+
+/**
+ * Aggregate COUNT + SUM(durationMs) from PlayLog, scoped like other analytics.
+ * Admin: all (filters apply). Host: own screens. Advertiser: own creatives.
+ */
+export async function computePlays(
+  scope: AnalyticsScope,
+  range: DateRange,
+  filters: AnalyticsFilters
+): Promise<PlaysResult> {
+  const { from, toExclusive } = rangeToUtcBounds(range);
+
+  const where: {
+    startedAt: { gte: Date; lt: Date };
+    screenId?: string | { in: string[] };
+    creativeId?: { in: string[] };
+    screen?: { hostId?: string };
+  } = {
+    startedAt: { gte: from, lt: toExclusive },
+  };
+
+  if (filters.screenId) {
+    where.screenId = filters.screenId;
+  }
+
+  if (scope.role === "HOST") {
+    if (!scope.hostId) {
+      return {
+        summary: {
+          playCount: 0,
+          totalDurationMs: 0,
+          screenCount: 0,
+          creativeCount: 0,
+        },
+        rows: [],
+      };
+    }
+    where.screen = { hostId: scope.hostId };
+  } else if (filters.hostId) {
+    where.screen = { hostId: filters.hostId };
+  }
+
+  // Advertiser: only their creatives
+  if (scope.role === "ADVERTISER" && scope.advertiserId) {
+    const creatives = await prisma.creative.findMany({
+      where: { advertiserId: scope.advertiserId },
+      select: { id: true },
+    });
+    const advertiserCreativeIds = creatives.map((c) => c.id);
+    if (advertiserCreativeIds.length === 0) {
+      return {
+        summary: {
+          playCount: 0,
+          totalDurationMs: 0,
+          screenCount: 0,
+          creativeCount: 0,
+        },
+        rows: [],
+      };
+    }
+    where.creativeId = { in: advertiserCreativeIds };
+  } else if (filters.advertiserId) {
+    const creatives = await prisma.creative.findMany({
+      where: { advertiserId: filters.advertiserId },
+      select: { id: true },
+    });
+    const ids = creatives.map((c) => c.id);
+    if (ids.length === 0) {
+      return {
+        summary: {
+          playCount: 0,
+          totalDurationMs: 0,
+          screenCount: 0,
+          creativeCount: 0,
+        },
+        rows: [],
+      };
+    }
+    where.creativeId = { in: ids };
+  }
+
+  const logs = await prisma.playLog.findMany({
+    where,
+    select: {
+      screenId: true,
+      creativeId: true,
+      durationMs: true,
+      screen: {
+        select: {
+          name: true,
+          host: { select: { id: true, name: true } },
+        },
+      },
+      creative: {
+        select: {
+          name: true,
+          advertiser: { select: { id: true, email: true } },
+        },
+      },
+    },
+  });
+
+  type Acc = {
+    screenId: string;
+    screenName: string;
+    hostId: string;
+    hostName: string;
+    creativeId: string;
+    creativeName: string;
+    advertiserId: string;
+    advertiserEmail: string;
+    playCount: number;
+    totalDurationMs: number;
+  };
+  const map = new Map<string, Acc>();
+  let playCount = 0;
+  let totalDurationMs = 0;
+  const screenSet = new Set<string>();
+  const creativeSet = new Set<string>();
+
+  for (const log of logs) {
+    const key = `${log.screenId}|${log.creativeId}`;
+    let row = map.get(key);
+    if (!row) {
+      row = {
+        screenId: log.screenId,
+        screenName: log.screen.name,
+        hostId: log.screen.host.id,
+        hostName: log.screen.host.name,
+        creativeId: log.creativeId,
+        creativeName: log.creative.name,
+        advertiserId: log.creative.advertiser.id,
+        advertiserEmail: log.creative.advertiser.email,
+        playCount: 0,
+        totalDurationMs: 0,
+      };
+      map.set(key, row);
+    }
+    row.playCount += 1;
+    row.totalDurationMs += log.durationMs ?? 0;
+    playCount += 1;
+    totalDurationMs += log.durationMs ?? 0;
+    screenSet.add(log.screenId);
+    creativeSet.add(log.creativeId);
+  }
+
+  const rows = Array.from(map.values()).sort(
+    (a, b) =>
+      b.playCount - a.playCount ||
+      a.hostName.localeCompare(b.hostName) ||
+      a.screenName.localeCompare(b.screenName) ||
+      a.creativeName.localeCompare(b.creativeName)
+  );
+
+  return {
+    summary: {
+      playCount,
+      totalDurationMs,
+      screenCount: screenSet.size,
+      creativeCount: creativeSet.size,
+    },
+    rows,
+  };
+}
+
+export function playsToCsv(rows: PlayRow[]): string {
+  const headers = [
+    "screenId",
+    "screenName",
+    "hostId",
+    "hostName",
+    "creativeId",
+    "creativeName",
+    "advertiserId",
+    "advertiserEmail",
+    "playCount",
+    "totalDurationMs",
+  ];
+  const lines = [headers.join(",")];
+  for (const r of rows) {
+    lines.push(
+      [
+        r.screenId,
+        r.screenName,
+        r.hostId,
+        r.hostName,
+        r.creativeId,
+        r.creativeName,
+        r.advertiserId,
+        r.advertiserEmail,
+        String(r.playCount),
+        String(r.totalDurationMs),
+      ]
+        .map((c) => csvEscape(String(c)))
+        .join(",")
+    );
+  }
+  return lines.join("\n") + "\n";
+}

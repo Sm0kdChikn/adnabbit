@@ -6,6 +6,7 @@ import {
   computeCampaigns,
   computeDaypartHeat,
   computeFill,
+  computePlays,
   parseAnalyticsDateRange,
   parseAnalyticsFilters,
   type AnalyticsScope,
@@ -54,16 +55,17 @@ export default async function HostAnalyticsPage({
     hostId: host.id,
   });
 
-  const [fill, heat, campaigns] = await Promise.all([
+  const [fill, heat, campaigns, plays] = await Promise.all([
     computeFill(scope, range, filters),
     computeDaypartHeat(scope, range, filters),
     computeCampaigns(scope, filters),
+    computePlays(scope, range, filters),
   ]);
 
   return (
     <AnalyticsDashboard
       title="Venue analytics"
-      description={`${host.name} — fill vs closed hours, daypart heat, and campaigns on your screens.`}
+      description={`${host.name} — fill vs closed hours, daypart heat, campaigns, and first-party plays on your screens.`}
       basePath="/host/analytics"
       exportBase="/api/host/analytics/export.csv"
       range={range}
@@ -71,6 +73,8 @@ export default async function HostAnalyticsPage({
       fillRows={fill.rows}
       heat={heat}
       campaigns={campaigns}
+      playsSummary={plays.summary}
+      playRows={plays.rows}
       screens={host.screens.map((s) => ({ id: s.id, label: s.name }))}
       showScreenFilter
     />

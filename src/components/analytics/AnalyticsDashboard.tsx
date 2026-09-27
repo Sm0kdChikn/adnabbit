@@ -5,6 +5,8 @@ import {
   type DateRange,
   type FillRow,
   type FillSummary,
+  type PlayRow,
+  type PlaysSummary,
   WEEKDAY_LABELS,
 } from "@/lib/analytics";
 import { WindowPhaseBadge } from "@/components/StatusBadge";
@@ -18,6 +20,18 @@ import {
   StatRow,
 } from "@/components/ui";
 import { AnalyticsFilters } from "./AnalyticsFilters";
+
+function fmtDurMs(ms: number): string {
+  if (ms <= 0) return "0s";
+  const sec = Math.round(ms / 1000);
+  if (sec < 60) return `${sec}s`;
+  const min = Math.floor(sec / 60);
+  const r = sec % 60;
+  if (min < 60) return r ? `${min}m ${r}s` : `${min}m`;
+  const h = Math.floor(min / 60);
+  const mr = min % 60;
+  return mr ? `${h}h ${mr}m` : `${h}h`;
+}
 
 function fmtMin(m: number): string {
   if (m >= 60) {
@@ -48,6 +62,8 @@ export function AnalyticsDashboard({
   fillRows,
   heat,
   campaigns,
+  playsSummary,
+  playRows = [],
   hosts = [],
   screens = [],
   advertisers = [],
@@ -64,6 +80,8 @@ export function AnalyticsDashboard({
   fillRows: FillRow[];
   heat: DaypartHeatResult;
   campaigns: CampaignRollup;
+  playsSummary: PlaysSummary;
+  playRows?: PlayRow[];
   hosts?: Option[];
   screens?: Option[];
   advertisers?: Option[];
@@ -304,21 +322,75 @@ export function AnalyticsDashboard({
         )}
       </section>
 
-      <Card className="border-dashed border-border/80">
-        <CardHeader>
-          <h3 className="text-sm font-semibold text-foreground">Plays</h3>
-        </CardHeader>
-        <CardBody>
-          <p className="text-sm text-muted">
-            <span className="font-medium text-accent">Awaits F2</span> — device{" "}
-            <code className="text-xs text-muted-strong">/api/device/play-logs</code>{" "}
-            remains a 202 stub (no persistence). OptiSigns CSV import + Looker
-            stay production proof-of-play. This dashboard does{" "}
-            <strong className="text-foreground">not</strong> invent play counts
-            from schedules.
+      <section className="space-y-3">
+        <SectionTitle>Plays (first-party)</SectionTitle>
+        <p className="text-xs text-muted">
+          Device <code className="text-muted-strong">PlayLog</code> soak counts
+          for this range. OptiSigns CSV + Looker remain production PoP until
+          cutover.
+        </p>
+        <StatRow className="lg:grid-cols-4">
+          <StatPill label="Plays" value={String(playsSummary.playCount)} />
+          <StatPill
+            label="Duration"
+            value={fmtDurMs(playsSummary.totalDurationMs)}
+          />
+          <StatPill
+            label="Screens"
+            value={String(playsSummary.screenCount)}
+          />
+          <StatPill
+            label="Creatives"
+            value={String(playsSummary.creativeCount)}
+          />
+        </StatRow>
+        {playRows.length === 0 ? (
+          <p className="rounded-xl border border-dashed border-border bg-surface p-6 text-center text-sm text-muted">
+            No first-party plays in this range yet.
           </p>
-        </CardBody>
-      </Card>
+        ) : (
+          <div className="overflow-x-auto rounded-xl border border-border bg-surface shadow-sm">
+            <table className="min-w-full text-left text-sm">
+              <thead className="border-b border-border bg-background-elevated text-xs uppercase text-muted">
+                <tr>
+                  <th className="px-3 py-2">Screen</th>
+                  <th className="px-3 py-2">Creative</th>
+                  <th className="px-3 py-2">Advertiser</th>
+                  <th className="px-3 py-2 text-right">Plays</th>
+                  <th className="px-3 py-2 text-right">Duration</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border">
+                {playRows.slice(0, 100).map((r) => (
+                  <tr
+                    key={`${r.screenId}-${r.creativeId}`}
+                    className="hover:bg-background-elevated"
+                  >
+                    <td className="px-3 py-2">
+                      <div className="font-medium text-foreground">
+                        {r.screenName}
+                      </div>
+                      <div className="text-xs text-muted">{r.hostName}</div>
+                    </td>
+                    <td className="px-3 py-2 font-medium text-foreground">
+                      {r.creativeName}
+                    </td>
+                    <td className="px-3 py-2 text-xs text-muted">
+                      {r.advertiserEmail}
+                    </td>
+                    <td className="px-3 py-2 text-right text-foreground">
+                      {r.playCount}
+                    </td>
+                    <td className="px-3 py-2 text-right text-muted">
+                      {fmtDurMs(r.totalDurationMs)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </section>
     </div>
   );
 }
