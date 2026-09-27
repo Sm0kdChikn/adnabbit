@@ -622,8 +622,8 @@ async function main() {
     method: "POST",
     body: JSON.stringify({ name: gName }),
   });
-  if (gCreate.status >= 200 && gCreate.status < 300 && gCreate.json?.group?.id || gCreate.json?.id) {
-    const gid = gCreate.json.id;
+  const gid = gCreate.json?.group?.id || gCreate.json?.id;
+  if (gCreate.status >= 200 && gCreate.status < 300 && gid) {
     const mem = await api(cookie, `/api/admin/device-groups/${gid}/members`, {
       method: "POST",
       body: JSON.stringify({ screenIds: [screen!.id] }),
