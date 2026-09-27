@@ -24,6 +24,7 @@
 // Ticket W: AuditEvent append-only admin audit log
 // Ticket X: MaintenanceWindow one-off HOST|SCREEN soft blackout (beats force-live)
 // Ticket Y: Screen/Host volume+brightness prefs; Device last-applied; setOutput queue
+// Ticket Z: DeviceGroup / DeviceGroupMember (admin flat groups of paired devices)
 
 generator client {
   provider = "prisma-client-js"
@@ -330,6 +331,8 @@ model Device {
   /// Ticket Y — last player-applied volume/brightness from heartbeat output
   lastAppliedVolume     Int?
   lastAppliedBrightness Int?
+  /// Ticket Z — membership in admin device groups
+  groupMembers  DeviceGroupMember[]
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
@@ -488,4 +491,31 @@ model MaintenanceWindow {
   @@index([scope, targetId])
   @@index([startsAt, endsAt])
   @@index([endsAt])
+}
+
+/// Ticket Z — admin named groups of paired devices (flat; no nesting / host-owned)
+model DeviceGroup {
+  id        String              @id @default(cuid())
+  name      String
+  note      String?
+  members   DeviceGroupMember[]
+  createdAt DateTime            @default(now())
+  updatedAt DateTime            @updatedAt
+
+  @@index([name])
+}
+
+/// Membership: one Device may sit in many groups; unique per (group, device).
+/// Add rejects unpaired screens (device must exist).
+model DeviceGroupMember {
+  id        String      @id @default(cuid())
+  groupId   String
+  group     DeviceGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  deviceId  String
+  device    Device      @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+  createdAt DateTime    @default(now())
+
+  @@unique([groupId, deviceId])
+  @@index([deviceId])
+  @@index([groupId])
 }

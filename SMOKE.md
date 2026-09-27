@@ -1215,7 +1215,7 @@ Recurring / bulk create.
 
 ## Out of scope
 
-Auto-reboot-into-window, OptiSigns, email; Ticket Z.
+Auto-reboot-into-window, OptiSigns, email.
 
 ---
 
@@ -1260,4 +1260,57 @@ Host self-service; fleet bulk.
 
 ## Out of scope
 
-CEC TV, sensors, per-creative gain, OptiSigns; Ticket Z groups.
+CEC TV, sensors, per-creative gain, OptiSigns.
+
+---
+
+# Ticket Z — Device groups smoke
+
+**Prereq:** migrated DB (`DeviceGroup`, `DeviceGroupMember`), seed admin, `npm run dev` on :3000. At least one paired device preferred.
+
+## Z1. Schema — PASS expected
+
+```bash
+npx prisma db execute --stdin <<< "PRAGMA table_info(DeviceGroup);"
+# expect name, note
+npx prisma db execute --stdin <<< "PRAGMA table_info(DeviceGroupMember);"
+# expect groupId, deviceId unique
+```
+
+## Z2. Create group + list counts — PASS expected
+
+1. Admin `POST /api/admin/device-groups` `{ "name": "Smoke Z" }` → 201.
+2. `GET /api/admin/device-groups` includes group with `memberCount: 0`.
+3. Audit `device_group.create`.
+
+## Z3. Add paired / reject unpaired — PASS expected
+
+1. `POST /api/admin/device-groups/{id}/members` with a paired `deviceId` → `added: 1`.
+2. Same with unknown / unpaired id → per-result error (not all-or-nothing).
+3. `screenIds` of unpaired screen → `No device paired`.
+4. Audit `device_group.member_add`.
+
+## Z4. Fleet filter — PASS expected
+
+1. `/admin/fleet?groupId={id}` shows only member screens.
+2. `GET /api/admin/fleet?groupId={id}` returns filtered `screens` + `group` meta.
+
+## Z5. Bulk by groupId — PASS expected
+
+1. `POST /api/admin/fleet/bulk` `{ "action": "refresh", "groupId": "…" }` → per-device results.
+2. Also works with `deviceIds[]` (exactly one target kind).
+3. `setOutput` without volume/brightness queues resolved prefs.
+
+## Z6. UI — PASS expected
+
+1. `/admin/groups` create / list / delete.
+2. Group detail: add/remove members, bulk action.
+3. Fleet: group chips + Add to group / Remove from group on selection.
+
+## Soft misses (not tested)
+
+Nested groups; host-owned groups.
+
+## Out of scope
+
+Auto-geo, new roles, OptiSigns; bug hunt / F2.

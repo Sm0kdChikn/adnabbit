@@ -1,6 +1,6 @@
 # AdNabbit Web MVP
 
-Advertiser signup/login, creative upload (image/video), submit for review, admin approve/reject, **Ticket A — Host/screen inventory**, and **Ticket B — Advertiser public profiles**, and **Ticket C — Placement requests**, and **Ticket D — Scheduling**, and **Ticket E — Recurring dayparts**, and **Ticket E2 — Schedule calendar view**, and **Ticket G — Host self-serve portal**, and **Ticket J — device claim / playlist APIs**, and **Ticket K — admin folders**, and **Ticket O — playlist refresh**, and **Ticket P — admin remote view (screenshot relay)**, and **Ticket P.1 — admin remote mouse/keyboard control**, and **Ticket P.1.1 — kiosk lock/unlock toggle**, and **Ticket P.1.2 — admin device reboot**, and **Ticket Q — venue open hours / soft blackout / PoP mute**, and **Ticket R — fleet health + offline/empty alerts**, and **Ticket S — campaign windows + emergency take-down**, and **Ticket T — host / advertiser / admin analytics (schedule fill)**, and **Ticket U — download/quiet hours + fleet bulk ops**, and **Ticket V — offline play policy**, and **Ticket W — audit log**, and **Ticket X — maintenance windows**, and **Ticket Y — volume / brightness remote**.
+Advertiser signup/login, creative upload (image/video), submit for review, admin approve/reject, **Ticket A — Host/screen inventory**, and **Ticket B — Advertiser public profiles**, and **Ticket C — Placement requests**, and **Ticket D — Scheduling**, and **Ticket E — Recurring dayparts**, and **Ticket E2 — Schedule calendar view**, and **Ticket G — Host self-serve portal**, and **Ticket J — device claim / playlist APIs**, and **Ticket K — admin folders**, and **Ticket O — playlist refresh**, and **Ticket P — admin remote view (screenshot relay)**, and **Ticket P.1 — admin remote mouse/keyboard control**, and **Ticket P.1.1 — kiosk lock/unlock toggle**, and **Ticket P.1.2 — admin device reboot**, and **Ticket Q — venue open hours / soft blackout / PoP mute**, and **Ticket R — fleet health + offline/empty alerts**, and **Ticket S — campaign windows + emergency take-down**, and **Ticket T — host / advertiser / admin analytics (schedule fill)**, and **Ticket U — download/quiet hours + fleet bulk ops**, and **Ticket V — offline play policy**, and **Ticket W — audit log**, and **Ticket X — maintenance windows**, and **Ticket Y — volume / brightness remote**, and **Ticket Z — device groups**.
 
 **Repo target:** https://github.com/Sm0kdChikn/adnabbit
 
@@ -345,7 +345,7 @@ Software-first Linux kiosk player spike (companion repo: `Sm0kdChikn/adnabbit-pl
 
 ### Data model
 
-- **Device**: 1:1 with Screen (`screenId` unique); stores **sha256** of bearer token only; `lastSeenAt`; **Ticket O** `playlistEpoch`; **Ticket P** `screenshotEpoch` / `screenshotCapturedEpoch` + single overwrite JPEG under `uploads/device-previews/{deviceId}.jpg`; **Ticket P.1** `pendingInputJson` remote-control queue; **Ticket Q** `playbackState` + `OpenHours` / `forceLiveUntil`; **Ticket R** `playerVersion` / optional `disk*` + `FleetAlert`; **Ticket S** take-down stamps on Creative/User/Host/Screen; **Ticket U** `DownloadHours` (host quiet hours) + fleet bulk refresh/reboot/kiosk; **Ticket V** `Host.offlinePolicy` / `offlineCacheTtlHours`; **Ticket W** `AuditEvent` append-only log; **Ticket X** `MaintenanceWindow` HOST|SCREEN soft blackout (beats force-live); **Ticket Y** `Screen.volume/brightness` + `Host.defaultVolume/defaultBrightness` + `Device.lastApplied*` + `setOutput` queue
+- **Device**: 1:1 with Screen (`screenId` unique); stores **sha256** of bearer token only; `lastSeenAt`; **Ticket O** `playlistEpoch`; **Ticket P** `screenshotEpoch` / `screenshotCapturedEpoch` + single overwrite JPEG under `uploads/device-previews/{deviceId}.jpg`; **Ticket P.1** `pendingInputJson` remote-control queue; **Ticket Q** `playbackState` + `OpenHours` / `forceLiveUntil`; **Ticket R** `playerVersion` / optional `disk*` + `FleetAlert`; **Ticket S** take-down stamps on Creative/User/Host/Screen; **Ticket U** `DownloadHours` (host quiet hours) + fleet bulk refresh/reboot/kiosk; **Ticket V** `Host.offlinePolicy` / `offlineCacheTtlHours`; **Ticket W** `AuditEvent` append-only log; **Ticket X** `MaintenanceWindow` HOST|SCREEN soft blackout (beats force-live); **Ticket Y** `Screen.volume/brightness` + `Host.defaultVolume/defaultBrightness` + `Device.lastApplied*` + `setOutput` queue; **Ticket Z** `DeviceGroup` / `DeviceGroupMember` (admin flat groups of paired devices) + fleet `?groupId=` + bulk `groupId`/`deviceIds`
 - **ScreenClaim**: one-time 6–8 char codes from `A–Z0–9` excluding `0O1I`; TTL **15 minutes**; reminting a screen **supersedes** prior unused live codes
 
 ### Device APIs (Bearer device token)
@@ -726,7 +726,7 @@ CSV export; host/advertiser self-view of own-related events.
 
 ## Ticket X — Maintenance windows
 
-One-off **MaintenanceWindow** soft blackout for a venue (`HOST`) or single `SCREEN`. Active = now ∈ `[startsAt, endsAt)` (UTC). **Screen overlapping window wins**; else inherit host windows. **Maintenance beats force-live** (and open hours). Soft blackout + play-log mute like closed hours. Hold Ticket Z (groups). Ticket Y (volume/brightness) shipped separately.
+One-off **MaintenanceWindow** soft blackout for a venue (`HOST`) or single `SCREEN`. Active = now ∈ `[startsAt, endsAt)` (UTC). **Screen overlapping window wins**; else inherit host windows. **Maintenance beats force-live** (and open hours). Soft blackout + play-log mute like closed hours. Ticket Y (volume/brightness) and Ticket Z (device groups) shipped separately.
 
 | Field | Notes |
 |-------|-------|
@@ -773,7 +773,7 @@ Recurring windows; bulk create across screens.
 
 ### Out of scope
 
-Auto-reboot-into-window; OptiSigns; email; Ticket Z groups.
+Auto-reboot-into-window; OptiSigns; email.
 
 ## Ticket Y — Volume / brightness remote
 
@@ -798,4 +798,28 @@ Host self-service UI; fleet bulk volume/brightness.
 
 ### Out of scope
 
-CEC TV; ambient sensors; per-creative gain; OptiSigns; Ticket Z device groups.
+CEC TV; ambient sensors; per-creative gain; OptiSigns.
+
+## Ticket Z — Device groups
+
+Admin **flat** named groups of **paired** devices (`DeviceGroup` + `DeviceGroupMember` unique on `groupId,deviceId`). Unpaired add → reject. Soft miss: nested groups, host-owned groups. Out: auto-geo groups, new roles, OptiSigns.
+
+### Wire
+
+| Piece | Notes |
+|-------|-------|
+| Schema | `DeviceGroup(name, note?)`, `DeviceGroupMember(groupId, deviceId)` |
+| CRUD | `GET/POST /api/admin/device-groups`, `GET/PATCH/DELETE …/:id` |
+| Members | `POST/DELETE …/:id/members` with `deviceIds[]` and/or `screenIds[]` |
+| Fleet | `?groupId=` filter; multi-select add/remove to group |
+| Bulk | Ticket U endpoint accepts **exactly one** of `groupId` \| `deviceIds[]` \| `screenIds[]`; actions refresh / reboot / kiosk / **setOutput** |
+| UI | `/admin/groups` + group detail; Fleet group chips; charcoal/cyan |
+| Audit | `device_group.create/update/delete/member_add/member_remove` |
+
+### Soft misses
+
+Nested groups; host-owned groups; group-scoped fleet count chips.
+
+### Out of scope
+
+Auto-geo groups; new roles; OptiSigns; bug hunt / F2.

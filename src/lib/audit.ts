@@ -10,7 +10,8 @@ export type AuditTargetType =
   | "host"
   | "screen"
   | "fleet"
-  | "batch";
+  | "batch"
+  | "device_group";
 
 export type AuditAction =
   | "take_down"
@@ -24,7 +25,12 @@ export type AuditAction =
   | "maintenance.create"
   | "maintenance.clear"
   | "output.save"
-  | "output.apply";
+  | "output.apply"
+  | "device_group.create"
+  | "device_group.update"
+  | "device_group.delete"
+  | "device_group.member_add"
+  | "device_group.member_remove";
 
 export type WriteAuditInput = {
   actorUserId: string;

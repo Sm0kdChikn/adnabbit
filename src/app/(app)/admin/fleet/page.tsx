@@ -10,6 +10,7 @@ import {
   StatRow,
 } from "@/components/ui";
 import { listFleetHealth, scanFleetAlerts, countOpenFleetAlerts } from "@/lib/fleet";
+import { listDeviceGroups, listScreenIdsInGroup } from "@/lib/device-groups";
 import { PLAYER_ONLINE_GRACE_MS } from "@/lib/device";
 import { FleetFilterBar } from "./FleetFilterBar";
 import { FleetBoard } from "./FleetBoard";
@@ -34,7 +35,7 @@ function parseFilter(raw?: string): Filter {
 export default async function AdminFleetPage({
   searchParams,
 }: {
-  searchParams: { filter?: string; scan?: string };
+  searchParams: { filter?: string; scan?: string; groupId?: string };
 }) {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) redirect("/login");
@@ -44,8 +45,10 @@ export default async function AdminFleetPage({
   await scanFleetAlerts();
 
   const filter = parseFilter(searchParams.filter);
+  const groupId = (searchParams.groupId || "").trim() || null;
   const all = await listFleetHealth();
   const openAlerts = await countOpenFleetAlerts();
+  const groups = await listDeviceGroups();
 
   const counts = {
     all: all.length,
@@ -66,6 +69,16 @@ export default async function AdminFleetPage({
     );
   else if (filter === "attention") screens = all.filter((s) => s.attention);
 
+  let activeGroupName: string | null = null;
+  if (groupId) {
+    const g = groups.find((x) => x.id === groupId);
+    if (g) {
+      activeGroupName = g.name;
+      const screenIds = new Set(await listScreenIdsInGroup(groupId));
+      screens = screens.filter((s) => screenIds.has(s.screenId));
+    }
+  }
+
   const graceMin = PLAYER_ONLINE_GRACE_MS / 60000;
 
   return (
@@ -76,16 +89,31 @@ export default async function AdminFleetPage({
           <>
             Paired screens — online if heartbeat within {graceMin} min. Empty =
             open hours + 0 active playlist items. Closed hours is not a fault.
-            Multi-select for bulk refresh / reboot / kiosk.
+            Multi-select for bulk refresh / reboot / kiosk / output
+            {activeGroupName ? (
+              <>
+                . Filtered to group <strong>{activeGroupName}</strong>.
+              </>
+            ) : (
+              <>.</>
+            )}
           </>
         }
         actions={
-          <Link
-            href="/admin/alerts"
-            className="rounded-md border border-border bg-accent-dim px-3 py-1.5 text-sm text-accent hover:border-accent/40"
-          >
-            Alerts{openAlerts > 0 ? ` (${openAlerts})` : ""}
-          </Link>
+          <div className="flex flex-wrap gap-2">
+            <Link
+              href="/admin/groups"
+              className="rounded-md border border-border bg-surface px-3 py-1.5 text-sm text-accent hover:border-accent/40"
+            >
+              Device groups
+            </Link>
+            <Link
+              href="/admin/alerts"
+              className="rounded-md border border-border bg-accent-dim px-3 py-1.5 text-sm text-accent hover:border-accent/40"
+            >
+              Alerts{openAlerts > 0 ? ` (${openAlerts})` : ""}
+            </Link>
+          </div>
         }
       />
 
@@ -97,17 +125,28 @@ export default async function AdminFleetPage({
       </StatRow>
 
       <Suspense fallback={null}>
-        <FleetFilterBar filter={filter} counts={counts} />
+        <FleetFilterBar
+          filter={filter}
+          counts={counts}
+          groups={groups}
+          groupId={groupId}
+        />
       </Suspense>
 
       {screens.length === 0 ? (
         <EmptyState>
           {all.length === 0
             ? "No paired screens yet. Claim a device from a screen detail page."
-            : "No screens match this filter."}
+            : groupId
+              ? "No screens in this group match the current filter."
+              : "No screens match this filter."}
         </EmptyState>
       ) : (
-        <FleetBoard screens={screens} />
+        <FleetBoard
+          screens={screens}
+          groups={groups}
+          activeGroupId={groupId}
+        />
       )}
     </div>
   );

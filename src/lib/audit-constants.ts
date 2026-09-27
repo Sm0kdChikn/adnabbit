@@ -13,6 +13,11 @@ export const AUDIT_ACTION_OPTIONS: { value: string; label: string }[] = [
   { value: "maintenance.clear", label: "Maintenance clear" },
   { value: "output.save", label: "Output save" },
   { value: "output.apply", label: "Output apply" },
+  { value: "device_group.create", label: "Device group create" },
+  { value: "device_group.update", label: "Device group update" },
+  { value: "device_group.delete", label: "Device group delete" },
+  { value: "device_group.member_add", label: "Device group member add" },
+  { value: "device_group.member_remove", label: "Device group member remove" },
 ];
 
 export const AUDIT_TARGET_TYPE_OPTIONS = [
@@ -22,4 +27,5 @@ export const AUDIT_TARGET_TYPE_OPTIONS = [
   "screen",
   "fleet",
   "batch",
+  "device_group",
 ] as const;

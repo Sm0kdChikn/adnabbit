@@ -2,11 +2,18 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { DeviceStatusBadge } from "@/components/DeviceStatusBadge";
 import { Button, Card, CardList, CardListItem } from "@/components/ui";
 import type { FleetScreenHealth } from "@/lib/fleet";
+import type { DeviceGroupListItem } from "@/lib/device-groups";
 
-type BulkAction = "refresh" | "reboot" | "kioskLock" | "kioskUnlock";
+type BulkAction =
+  | "refresh"
+  | "reboot"
+  | "kioskLock"
+  | "kioskUnlock"
+  | "setOutput";
 
 type BulkResult = {
   screenId: string;
@@ -15,6 +22,8 @@ type BulkResult = {
   error?: string;
   playlistEpoch?: number;
   queued?: number;
+  volume?: number;
+  brightness?: number;
 };
 
 function formatLastSeen(iso: string | null): string {
@@ -31,12 +40,27 @@ function versionLabel(status: string, version: string | null): string {
   return version || "—";
 }
 
-export function FleetBoard({ screens }: { screens: FleetScreenHealth[] }) {
+export function FleetBoard({
+  screens,
+  groups,
+  activeGroupId,
+}: {
+  screens: FleetScreenHealth[];
+  groups: DeviceGroupListItem[];
+  activeGroupId: string | null;
+}) {
+  const router = useRouter();
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [busy, setBusy] = useState(false);
   const [confirmAction, setConfirmAction] = useState<BulkAction | null>(null);
   const [results, setResults] = useState<BulkResult[] | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [groupTargetId, setGroupTargetId] = useState(
+    activeGroupId || groups[0]?.id || ""
+  );
+  const [outputVolume, setOutputVolume] = useState("");
+  const [outputBrightness, setOutputBrightness] = useState("");
+  const [showOutput, setShowOutput] = useState(false);
 
   const pairedIds = useMemo(
     () => screens.filter((s) => s.paired).map((s) => s.screenId),
@@ -73,22 +97,36 @@ export function FleetBoard({ screens }: { screens: FleetScreenHealth[] }) {
       setConfirmAction(action);
       return;
     }
+    if (action === "setOutput") {
+      setShowOutput(true);
+      return;
+    }
     void runBulk(action);
   }
 
   async function runBulk(action: BulkAction) {
     setConfirmAction(null);
+    setShowOutput(false);
     setBusy(true);
     setError(null);
     setResults(null);
     try {
+      const payload: Record<string, unknown> = {
+        action,
+        screenIds: Array.from(selected),
+      };
+      if (action === "setOutput") {
+        if (outputVolume.trim() !== "") {
+          payload.volume = parseInt(outputVolume.trim(), 10);
+        }
+        if (outputBrightness.trim() !== "") {
+          payload.brightness = parseInt(outputBrightness.trim(), 10);
+        }
+      }
       const res = await fetch("/api/admin/fleet/bulk", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          action,
-          screenIds: Array.from(selected),
-        }),
+        body: JSON.stringify(payload),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
@@ -96,6 +134,57 @@ export function FleetBoard({ screens }: { screens: FleetScreenHealth[] }) {
         return;
       }
       setResults(data.results || []);
+    } catch {
+      setError("Network error");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function runGroupMembers(op: "add" | "remove") {
+    if (!groupTargetId || selected.size === 0) return;
+    setBusy(true);
+    setError(null);
+    setResults(null);
+    try {
+      const res = await fetch(
+        `/api/admin/device-groups/${groupTargetId}/members`,
+        {
+          method: op === "add" ? "POST" : "DELETE",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ screenIds: Array.from(selected) }),
+        }
+      );
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setError(data.error || `Group ${op} failed`);
+        return;
+      }
+      if (op === "add" && Array.isArray(data.screenResults)) {
+        setResults(
+          data.screenResults.map(
+            (r: {
+              screenId: string;
+              ok: boolean;
+              error?: string;
+            }) => ({
+              screenId: r.screenId,
+              ok: r.ok,
+              error: r.error,
+            })
+          )
+        );
+      } else {
+        setResults([
+          {
+            screenId: groupTargetId,
+            screenName: "Group",
+            ok: true,
+            queued: op === "add" ? data.added : data.removed,
+          },
+        ]);
+      }
+      router.refresh();
     } catch {
       setError("Network error");
     } finally {
@@ -160,6 +249,15 @@ export function FleetBoard({ screens }: { screens: FleetScreenHealth[] }) {
           </Button>
           <Button
             type="button"
+            variant="secondary"
+            size="sm"
+            disabled={busy || selected.size === 0}
+            onClick={() => requestAction("setOutput")}
+          >
+            Set output…
+          </Button>
+          <Button
+            type="button"
             variant="primary"
             size="sm"
             disabled={busy || selected.size === 0}
@@ -170,6 +268,43 @@ export function FleetBoard({ screens }: { screens: FleetScreenHealth[] }) {
           </Button>
         </div>
       </div>
+
+      {groups.length > 0 && (
+        <div className="flex flex-col gap-2 rounded-xl border border-border bg-surface p-3 sm:flex-row sm:flex-wrap sm:items-center">
+          <label className="flex items-center gap-2 text-sm text-muted">
+            <span className="whitespace-nowrap">Group</span>
+            <select
+              className="rounded-md border border-border bg-background px-2 py-1.5 text-sm text-foreground"
+              value={groupTargetId}
+              onChange={(e) => setGroupTargetId(e.target.value)}
+            >
+              {groups.map((g) => (
+                <option key={g.id} value={g.id}>
+                  {g.name} ({g.memberCount})
+                </option>
+              ))}
+            </select>
+          </label>
+          <Button
+            type="button"
+            variant="secondary"
+            size="sm"
+            disabled={busy || selected.size === 0 || !groupTargetId}
+            onClick={() => void runGroupMembers("add")}
+          >
+            Add to group
+          </Button>
+          <Button
+            type="button"
+            variant="secondary"
+            size="sm"
+            disabled={busy || selected.size === 0 || !groupTargetId}
+            onClick={() => void runGroupMembers("remove")}
+          >
+            Remove from group
+          </Button>
+        </div>
+      )}
 
       {confirmAction === "reboot" && (
         <div className="rounded-xl border border-[var(--status-danger-fg)]/40 bg-[var(--status-danger-fg)]/10 p-4">
@@ -203,6 +338,60 @@ export function FleetBoard({ screens }: { screens: FleetScreenHealth[] }) {
         </div>
       )}
 
+      {showOutput && (
+        <div className="rounded-xl border border-accent/30 bg-accent-dim/40 p-4">
+          <p className="text-sm text-foreground">
+            Queue <strong>setOutput</strong> on {selected.size} device
+            {selected.size === 1 ? "" : "s"}. Leave blank to use each screen&apos;s
+            resolved prefs (screen → host → 80/100).
+          </p>
+          <div className="mt-3 flex flex-wrap items-end gap-3">
+            <label className="text-xs text-muted">
+              Volume 0–100
+              <input
+                type="number"
+                min={0}
+                max={100}
+                className="mt-1 block w-24 rounded-md border border-border bg-background px-2 py-1.5 text-sm text-foreground"
+                value={outputVolume}
+                onChange={(e) => setOutputVolume(e.target.value)}
+                placeholder="resolve"
+              />
+            </label>
+            <label className="text-xs text-muted">
+              Brightness 0–100
+              <input
+                type="number"
+                min={0}
+                max={100}
+                className="mt-1 block w-24 rounded-md border border-border bg-background px-2 py-1.5 text-sm text-foreground"
+                value={outputBrightness}
+                onChange={(e) => setOutputBrightness(e.target.value)}
+                placeholder="resolve"
+              />
+            </label>
+            <Button
+              type="button"
+              variant="primary"
+              size="sm"
+              disabled={busy}
+              onClick={() => void runBulk("setOutput")}
+            >
+              {busy ? "Queuing…" : "Confirm setOutput"}
+            </Button>
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              disabled={busy}
+              onClick={() => setShowOutput(false)}
+            >
+              Cancel
+            </Button>
+          </div>
+        </div>
+      )}
+
       {error && (
         <p className="rounded-lg border border-[var(--status-danger-fg)]/40 bg-[var(--status-danger-fg)]/10 px-3 py-2 text-sm text-[var(--status-danger-fg)]">
           {error}
@@ -212,22 +401,24 @@ export function FleetBoard({ screens }: { screens: FleetScreenHealth[] }) {
       {results && (
         <div className="rounded-xl border border-border bg-surface p-3 text-sm">
           <p className="mb-2 font-medium text-foreground">
-            Bulk results — {results.filter((r) => r.ok).length} ok,{" "}
+            Results — {results.filter((r) => r.ok).length} ok,{" "}
             {results.filter((r) => !r.ok).length} failed
           </p>
           <ul className="max-h-40 space-y-1 overflow-y-auto text-xs">
-            {results.map((r) => (
+            {results.map((r, i) => (
               <li
-                key={r.screenId}
+                key={`${r.screenId}-${i}`}
                 className={
                   r.ok ? "text-emerald-400" : "text-[var(--status-danger-fg)]"
                 }
               >
-                {r.screenName || r.screenId}:{" "}
+                {r.screenName || r.screenId || "—"}:{" "}
                 {r.ok
                   ? r.playlistEpoch != null
                     ? `epoch → ${r.playlistEpoch}`
-                    : `queued ${r.queued ?? 1}`
+                    : r.volume != null || r.brightness != null
+                      ? `setOutput v${r.volume} b${r.brightness}`
+                      : `ok${r.queued != null ? ` (${r.queued})` : ""}`
                   : r.error || "failed"}
               </li>
             ))}
@@ -342,8 +533,9 @@ export function FleetBoard({ screens }: { screens: FleetScreenHealth[] }) {
                       <dd className="text-foreground">
                         {!s.online ? (
                           s.mayPlayCache ? (
-                            <span title="Best-effort: host PLAY_CACHE + TTL &gt; 0">
-                              Offline · may play cache ({s.offlineCacheTtlHours}h)
+                            <span title="Best-effort: host PLAY_CACHE + TTL > 0">
+                              Offline · may play cache ({s.offlineCacheTtlHours}
+                              h)
                             </span>
                           ) : (
                             <span>
