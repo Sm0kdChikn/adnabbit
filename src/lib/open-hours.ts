@@ -1,5 +1,6 @@
 /**
  * Ticket Q — venue / screen open hours, soft blackout, force-live override.
+ * Ticket Q.1 / BH — overnight wrap when close < open (Ticket H rule).
  * Soft blackout = black + idle (no PoP). Hard display-off = TODO.
  */
 import { fromZonedTime } from "date-fns-tz";
@@ -66,7 +67,12 @@ export function emptyWeekly(): WeeklyHourRow[] {
   }));
 }
 
-/** Validate a single day row. Closed = both null. Open = both HH:mm with end > start. */
+/**
+ * Validate a single day row. Closed = both null.
+ * Open = both HH:mm. Same-day: close > open. Overnight wrap (Ticket H / Q.1):
+ * close < open → open through midnight into next calendar day until close.
+ * Equal times rejected (zero-length).
+ */
 export function validateHourRow(
   row: WeeklyHourRow
 ): { ok: true; row: WeeklyHourRow } | { ok: false; error: string } {
@@ -92,10 +98,10 @@ export function validateHourRow(
       error: `${WEEKDAY_LABELS[row.weekday]}: times must be HH:mm`,
     };
   }
-  if (t1 <= t0) {
+  if (t0 === t1) {
     return {
       ok: false,
-      error: `${WEEKDAY_LABELS[row.weekday]}: close must be after open (same-day only; overnight TODO)`,
+      error: `${WEEKDAY_LABELS[row.weekday]}: close must not equal open (zero-length window)`,
     };
   }
   return {
@@ -149,12 +155,16 @@ function addDaysYmd(ymd: string, days: number): string {
 
 function dayWindow(
   row: WeeklyHourRow | undefined
-): { openMin: number; closeMin: number } | null {
+): { openMin: number; closeMin: number; overnight: boolean } | null {
   if (!row?.openTime || !row?.closeTime) return null;
   const openMin = parseHHMM(row.openTime);
   const closeMin = parseHHMM(row.closeTime);
-  if (openMin === null || closeMin === null || closeMin <= openMin) return null;
-  return { openMin, closeMin };
+  if (openMin === null || closeMin === null || closeMin === openMin) return null;
+  return { openMin, closeMin, overnight: closeMin < openMin };
+}
+
+function prevIsoWeekday(d: number): number {
+  return d === 1 ? 7 : d - 1;
 }
 
 export function evaluateOpenState(opts: {
@@ -200,6 +210,23 @@ export function evaluateOpenState(opts: {
   const parts = zonedParts(now, opts.timezone);
   const byDay = new Map(opts.weekly.map((r) => [r.weekday, r]));
   const win = dayWindow(byDay.get(parts.isoWeekday));
+  const prevWin = dayWindow(byDay.get(prevIsoWeekday(parts.isoWeekday)));
+
+  // Overnight spill from previous weekday: [00:00, closeMin) on this calendar day.
+  if (prevWin?.overnight && parts.minutes < prevWin.closeMin) {
+    const closeAt = instantFromYmdMinutes(
+      parts.ymd,
+      prevWin.closeMin,
+      opts.timezone
+    );
+    return {
+      isOpenNow: true,
+      reason: "within_hours",
+      forceLiveActive: false,
+      nextOpenAt: null,
+      nextCloseAt: closeAt.toISOString(),
+    };
+  }
 
   if (!win) {
     const next = findNextTransition(opts.weekly, opts.timezone, now);
@@ -212,9 +239,17 @@ export function evaluateOpenState(opts: {
     };
   }
 
-  if (parts.minutes >= win.openMin && parts.minutes < win.closeMin) {
+  const inSameDay =
+    !win.overnight &&
+    parts.minutes >= win.openMin &&
+    parts.minutes < win.closeMin;
+  // Overnight start day: open from openMin through midnight.
+  const inOvernightStart = win.overnight && parts.minutes >= win.openMin;
+
+  if (inSameDay || inOvernightStart) {
+    const closeYmd = win.overnight ? addDaysYmd(parts.ymd, 1) : parts.ymd;
     const closeAt = instantFromYmdMinutes(
-      parts.ymd,
+      closeYmd,
       win.closeMin,
       opts.timezone
     );
@@ -257,18 +292,34 @@ function findNextTransition(
     if (!win) continue;
 
     const openAt = instantFromYmdMinutes(ymd, win.openMin, timeZone);
-    const closeAt = instantFromYmdMinutes(ymd, win.closeMin, timeZone);
+    const closeYmd = win.overnight ? addDaysYmd(ymd, 1) : ymd;
+    const closeAt = instantFromYmdMinutes(closeYmd, win.closeMin, timeZone);
 
     if (!nextOpenAt && openAt.getTime() > now.getTime()) {
       nextOpenAt = openAt.toISOString();
     }
     if (!nextCloseAt && closeAt.getTime() > now.getTime()) {
-      // only meaningful if currently inside or about to open same day
+      // currently inside this window (same-day or overnight start / spill)
       if (openAt.getTime() <= now.getTime() && closeAt.getTime() > now.getTime()) {
         nextCloseAt = closeAt.toISOString();
       }
     }
     if (nextOpenAt && (nextCloseAt || offset > 0)) break;
+  }
+
+  // Also detect overnight spill already in progress (prev weekday overnight).
+  if (!nextCloseAt) {
+    const prevWin = dayWindow(byDay.get(prevIsoWeekday(parts.isoWeekday)));
+    if (prevWin?.overnight && parts.minutes < prevWin.closeMin) {
+      const closeAt = instantFromYmdMinutes(
+        parts.ymd,
+        prevWin.closeMin,
+        timeZone
+      );
+      if (closeAt.getTime() > now.getTime()) {
+        nextCloseAt = closeAt.toISOString();
+      }
+    }
   }
 
   return { nextOpenAt, nextCloseAt };

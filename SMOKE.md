@@ -1372,3 +1372,78 @@ curl -s -o /tmp/plays.csv -w '%{http_code}\n' \
 
 Rich charts; durable offline queue. Out: OptiSigns cutover, Looker parity, fill-vs-paid, websockets, digests.
 
+
+---
+
+# Ticket BH — Bug hunt (2026-09-26 MT)
+
+**Goal:** Harden only (no UI polish). Fix Q.1 overnight wrap; F2 + regression smoke; lobby soak checklist if no hardware.
+
+## Q.1 Overnight wrap — PASS
+
+Rule (Ticket H): when `close < open` (or endMin < startMin), window wraps midnight — open from open→24:00 on weekday D and 00:00→close on D+1. Equal times rejected.
+
+```bash
+# Unit smoke (no server)
+cd /workspace/adnabbit-web && npx tsx scripts/bh-overnight-smoke.ts
+# Player mirror
+cd /workspace/adnabbit-player && node scripts/bh-overnight-smoke.js
+```
+
+Expected: Fri 22:00–02:00 → open at Fri 23:00 and Sat 01:00; closed at Sat 03:00 and Fri 21:00.
+
+API save: `PUT /api/admin/hosts/:id/hours` with `{ weekly: [{ weekday:5, openTime:"22:00", closeTime:"02:00" }, ...] }` → 200 (was rejected with overnight TODO).
+
+DownloadHours reuses the same validator / `evaluateOpenState` → overnight quiet windows work too.
+
+## F2 smoke (local web :3000) — PASS
+
+```bash
+# Requires npm run dev; admin seed; Lobby TV screen + APPROVED creative
+cd /workspace/adnabbit-web && npx tsx scripts/bh-f2-regression-smoke.ts
+```
+
+| Check | Result |
+|-------|--------|
+| play-log persist → PlayLog row + analytics Plays > 0 | PASS |
+| mute closed hours → `playback_not_allowed`, zero new rows | PASS |
+| mute maintenance → `playback_not_allowed`, zero new rows | PASS |
+| mute take-down → `screen_taken_down`, zero new rows | PASS |
+| duplicate `clientEventId` → one row (`skipped: duplicate`) | PASS |
+
+## Regression — PASS (scripted)
+
+| Check | Result |
+|-------|--------|
+| take-down bumps `playlistEpoch` | PASS |
+| DownloadHours overnight save | PASS |
+| offline PLAY_CACHE TTL / BLACKOUT (player unit) | PASS |
+| maintenance beats force-live (player unit) | PASS |
+| fleet board + device groups create/add/delete | PASS |
+| remote setOutput volume/brightness queue | PASS |
+
+## Lobby TV soak (P.1.2 / P.1.3) — SOFT MISS (no hardware on box)
+
+Lobby mini-PC / AppImage cold-boot hardware is **not** available on this agent box. Do **not** treat as pass.
+
+### Brandon checklist (AppImage ≥ v0.3.5)
+
+1. Install/update AppImage (`npm run dist` or GitHub release ≥ 0.3.5 with Q.1 overnight).
+2. Optional kiosk autostart: `sudo ./scripts/install-autostart.sh --appimage ./AdNabbit-Player-*.AppImage`.
+3. Claim Lobby TV (admin mint code → player setup GUI).
+4. Confirm playlist items + heartbeat `playbackAllowed` during open hours.
+5. **Cold boot:** full power-off → power-on → DM autologin → AppImage starts → paired kiosk (no re-claim).
+6. **F2:** play through one creative → `PlayLog` row + admin Analytics Plays increments.
+7. **Overnight (if venue uses wrap):** set Fri 22:00–02:00; at ~23:00 and ~01:00 player stays LIVE; at ~03:00 soft blackout.
+8. Reboot from admin remote (P.1.2) once; confirm reconnect + playlistEpoch honor.
+
+Headless-only on box: `npm run kiosk:headless` after claim — API path only (no Electron GUI / autologin / real reboot).
+
+## Soft misses / parked
+
+| Item | Sev | Notes |
+|------|-----|-------|
+| Lobby hardware soak | soft miss | Checklist above; blocked on hardware |
+| Full matrix every host TZ | soft miss | Out of BH scope |
+| UI polish | next ticket | Do not start here |
+
