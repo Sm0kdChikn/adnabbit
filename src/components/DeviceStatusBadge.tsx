@@ -1,23 +1,33 @@
 import type { DeviceDisplayStatus } from "@/lib/open-hours";
+import { badgeBase, statusTone } from "@/components/StatusBadge";
 
 const LABELS: Record<DeviceDisplayStatus, string> = {
   UNPAIRED: "Unpaired",
-  OFFLINE: "Offline",
+  OFFLINE: "OFFLINE",
   LIVE: "Live",
-  BLACKOUT: "Closed hours",
-  MAINTENANCE: "Maintenance",
+  BLACKOUT: "CLOSED",
+  MAINTENANCE: "MAINTENANCE",
   IDLE: "Idle",
   EMPTY: "Empty playlist",
 };
 
 const STYLES: Record<DeviceDisplayStatus, string> = {
-  UNPAIRED: "bg-slate-500/20 text-slate-300",
-  OFFLINE: "bg-[var(--status-danger-bg)] text-[var(--status-danger-fg)]",
-  LIVE: "bg-emerald-500/15 text-emerald-400",
-  BLACKOUT: "bg-slate-700/60 text-slate-200 ring-1 ring-slate-500/40",
-  MAINTENANCE: "bg-violet-500/20 text-violet-300 ring-1 ring-violet-400/40",
-  IDLE: "bg-amber-500/15 text-amber-300",
-  EMPTY: "bg-amber-500/15 text-amber-300",
+  UNPAIRED: statusTone.neutral,
+  OFFLINE: statusTone.danger,
+  LIVE: statusTone.success,
+  BLACKOUT: statusTone.neutral,
+  MAINTENANCE: statusTone.info,
+  IDLE: statusTone.warning,
+  EMPTY: statusTone.warning,
+};
+
+const TITLES: Partial<Record<DeviceDisplayStatus, string>> = {
+  MAINTENANCE:
+    "Device online but dark — maintenance window (soft blackout; beats force-live)",
+  BLACKOUT:
+    "Device online but dark — outside venue open hours (soft blackout)",
+  EMPTY: "Online and open, but no creatives in the current window",
+  IDLE: "Online — waiting / idle",
 };
 
 export function DeviceStatusBadge({
@@ -29,18 +39,8 @@ export function DeviceStatusBadge({
 }) {
   return (
     <span
-      className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${STYLES[status]} ${className}`}
-      title={
-        status === "MAINTENANCE"
-          ? "Device online but dark — maintenance window (soft blackout; beats force-live)"
-          : status === "BLACKOUT"
-          ? "Device online but dark — outside venue open hours (soft blackout)"
-          : status === "EMPTY"
-            ? "Online and open, but no creatives in the current window"
-            : status === "IDLE"
-              ? "Online — waiting / idle"
-              : undefined
-      }
+      className={`${badgeBase} ${STYLES[status]} ${className}`}
+      title={TITLES[status]}
     >
       {LABELS[status]}
     </span>

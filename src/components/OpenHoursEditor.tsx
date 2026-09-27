@@ -1,7 +1,8 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Button } from "@/components/ui";
+import { Button, FormFeedback, FormPanel } from "@/components/ui";
+import { HoursStatusChip } from "@/components/StatusBadge";
 import { WEEKDAY_LABELS } from "@/lib/schedules";
 
 const DAY_ORDER = [1, 2, 3, 4, 5, 6, 7] as const;
@@ -259,7 +260,7 @@ export function OpenHoursEditor({
   }
 
   return (
-    <section className="space-y-4 rounded-xl border border-border bg-surface p-4 sm:p-5">
+    <FormPanel>
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h2 className="text-lg font-semibold text-foreground">{title}</h2>
@@ -269,15 +270,11 @@ export function OpenHoursEditor({
           </p>
         </div>
         {typeof isOpenNow === "boolean" && (
-          <span
-            className={`rounded-full px-2.5 py-1 text-xs font-semibold ${
-              isOpenNow
-                ? "bg-emerald-500/15 text-emerald-400"
-                : "bg-slate-500/20 text-slate-300"
-            }`}
-          >
-            {isOpenNow ? openNowLabel : closedNowLabel}
-          </span>
+          <HoursStatusChip
+            open={isOpenNow}
+            openLabel={openNowLabel}
+            closedLabel={closedNowLabel}
+          />
         )}
       </div>
 
@@ -442,12 +439,7 @@ export function OpenHoursEditor({
         </div>
       )}
 
-      {error && (
-        <p className="text-sm text-[var(--status-danger-fg)]">{error}</p>
-      )}
-      {okMsg && (
-        <p className="text-sm text-emerald-600 dark:text-emerald-400">{okMsg}</p>
-      )}
+      <FormFeedback error={error} ok={okMsg} />
 
       <div className="flex flex-wrap gap-2">
         <Button
@@ -474,6 +466,6 @@ export function OpenHoursEditor({
       {footerNote ? (
         <p className="text-xs text-muted">{footerNote}</p>
       ) : null}
-    </section>
+    </FormPanel>
   );
 }

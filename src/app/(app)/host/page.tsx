@@ -3,7 +3,7 @@ import { authOptions } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
-import { InventoryBadge } from "@/components/StatusBadge";
+import { InventoryBadge, OnlineStatusChip } from "@/components/StatusBadge";
 import { formatVertical } from "@/lib/types";
 import { isDeviceRecentlySeen } from "@/lib/device";
 import {
@@ -121,21 +121,15 @@ export default async function HostPortalPage() {
                     <div className="flex flex-wrap items-center justify-between gap-2">
                       <div className="flex flex-wrap items-center gap-2">
                         <InventoryBadge status={s.inventoryStatus} />
-                        {s.device ? (
-                          isDeviceRecentlySeen(s.device.lastSeenAt) ? (
-                            <span className="rounded-full bg-emerald-500/15 px-2 py-0.5 text-xs font-semibold text-emerald-400">
-                              Online
-                            </span>
-                          ) : (
-                            <span className="rounded-full bg-[var(--status-danger-bg)] px-2 py-0.5 text-xs font-semibold text-[var(--status-danger-fg)]">
-                              Offline
-                            </span>
-                          )
-                        ) : (
-                          <span className="rounded-full bg-slate-500/20 px-2 py-0.5 text-xs font-semibold text-slate-300">
-                            Unpaired
-                          </span>
-                        )}
+                        <OnlineStatusChip
+                          state={
+                            !s.device
+                              ? "unpaired"
+                              : isDeviceRecentlySeen(s.device.lastSeenAt)
+                                ? "online"
+                                : "offline"
+                          }
+                        />
                       </div>
                       <Link
                         href={`/host/screens/${s.id}`}

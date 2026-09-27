@@ -1,6 +1,11 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import {
+  formControlClass,
+  formHintClass,
+  formLabelClass,
+} from "@/components/ui";
 import { useState } from "react";
 import { HOST_VERTICALS, HOST_VERTICAL_LABELS, type HostVertical } from "@/lib/types";
 
@@ -80,23 +85,23 @@ export function HostVenueForm({ initial }: Props) {
         <p className="rounded-md bg-[var(--status-danger-bg)] px-3 py-2 text-sm text-[var(--status-danger-fg)]">{error}</p>
       )}
       <div>
-        <label className="mb-1 block text-sm font-medium text-muted">Name</label>
+        <label className={formLabelClass}>Name</label>
         <input
           required
           value={name}
           onChange={(e) => setName(e.target.value)}
-          className="w-full rounded-md border border-border px-3 py-2 text-sm focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent/50"
+          className={formControlClass}
         />
       </div>
       <div>
-        <label className="mb-1 block text-sm font-medium text-muted">
+        <label className={formLabelClass}>
           Primary vertical
         </label>
         <select
           required
           value={vertical}
           onChange={(e) => setVertical(e.target.value as HostVertical)}
-          className="w-full rounded-md border border-border px-3 py-2 text-sm focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent/50"
+          className={formControlClass}
         >
           <option value="" disabled>
             Select vertical…
@@ -110,7 +115,7 @@ export function HostVenueForm({ initial }: Props) {
       </div>
       {vertical === "OTHER" && (
         <div>
-          <label className="mb-1 block text-sm font-medium text-muted">
+          <label className={formLabelClass}>
             Other label
           </label>
           <input
@@ -118,12 +123,12 @@ export function HostVenueForm({ initial }: Props) {
             value={otherLabel}
             onChange={(e) => setOtherLabel(e.target.value)}
             placeholder="Describe the vertical"
-            className="w-full rounded-md border border-border px-3 py-2 text-sm focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent/50"
+            className={formControlClass}
           />
         </div>
       )}
       <div>
-        <label className="mb-1 block text-sm font-medium text-muted">
+        <label className={formLabelClass}>
           Timezone (IANA)
         </label>
         <input
@@ -131,51 +136,54 @@ export function HostVenueForm({ initial }: Props) {
           value={timezone}
           onChange={(e) => setTimezone(e.target.value)}
           placeholder="America/Denver"
-          className="w-full rounded-md border border-border px-3 py-2 text-sm focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent/50"
+          className={formControlClass}
         />
       </div>
-      <div>
-        <label className="mb-1 block text-sm font-medium text-muted">
-          Offline play policy
-        </label>
-        <select
-          value={offlinePolicy}
-          onChange={(e) => setOfflinePolicy(e.target.value)}
-          className="w-full rounded-md border border-border px-3 py-2 text-sm focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent/50"
-        >
-          <option value="PLAY_CACHE">Play cache (loop last playlist)</option>
-          <option value="BLACKOUT">Blackout immediately when offline</option>
-        </select>
-        <p className="mt-1 text-xs text-muted">
-          When the player cannot reach AdNabbit: keep looping the last playlist, or go dark.
-        </p>
+      <div className="space-y-4 rounded-xl border border-border bg-surface p-4 sm:p-5">
+        <div>
+          <h3 className="text-sm font-semibold text-foreground">Offline play policy</h3>
+          <p className="mt-1 text-xs text-muted">
+            When the player cannot reach AdNabbit: keep looping the last playlist, or go dark.
+          </p>
+        </div>
+        <div>
+          <label className={formLabelClass}>Policy</label>
+          <select
+            value={offlinePolicy}
+            onChange={(e) => setOfflinePolicy(e.target.value)}
+            className={formControlClass}
+          >
+            <option value="PLAY_CACHE">Play cache (loop last playlist)</option>
+            <option value="BLACKOUT">Blackout immediately when offline</option>
+          </select>
+        </div>
+        <div>
+          <label className={formLabelClass}>
+            Offline cache TTL (hours)
+          </label>
+          <input
+            type="number"
+            min={0}
+            max={8760}
+            required
+            value={offlineCacheTtlHours}
+            onChange={(e) => setOfflineCacheTtlHours(e.target.value)}
+            className={formControlClass}
+          />
+          <p className={formHintClass}>
+            Default 24. Set 0 to blackout as soon as the player goes offline.
+          </p>
+        </div>
       </div>
       <div>
-        <label className="mb-1 block text-sm font-medium text-muted">
-          Offline cache TTL (hours)
-        </label>
-        <input
-          type="number"
-          min={0}
-          max={8760}
-          required
-          value={offlineCacheTtlHours}
-          onChange={(e) => setOfflineCacheTtlHours(e.target.value)}
-          className="w-full rounded-md border border-border px-3 py-2 text-sm focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent/50"
-        />
-        <p className="mt-1 text-xs text-muted">
-          Default 24. Set 0 to blackout as soon as the player goes offline.
-        </p>
-      </div>
-      <div>
-        <label className="mb-1 block text-sm font-medium text-muted">
+        <label className={formLabelClass}>
           Notes (optional)
         </label>
         <textarea
           value={notes}
           onChange={(e) => setNotes(e.target.value)}
           rows={3}
-          className="w-full rounded-md border border-border px-3 py-2 text-sm focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent/50"
+          className={formControlClass}
         />
       </div>
       <button

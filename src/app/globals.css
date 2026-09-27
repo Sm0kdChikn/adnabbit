@@ -29,6 +29,8 @@
   --status-danger-fg: #be123c;
   --status-neutral-bg: rgba(100, 116, 139, 0.12);
   --status-neutral-fg: #475569;
+  --status-info-bg: rgba(139, 92, 246, 0.12);
+  --status-info-fg: #6d28d9;
 
   --shadow-card: 0 1px 0 rgba(15, 23, 42, 0.04), 0 8px 24px rgba(15, 23, 42, 0.08);
   --body-glow-1: rgba(0, 168, 192, 0.06);
@@ -62,6 +64,8 @@
   --status-danger-fg: #fb7185;
   --status-neutral-bg: rgba(148, 163, 184, 0.12);
   --status-neutral-fg: #94a3b8;
+  --status-info-bg: rgba(139, 92, 246, 0.2);
+  --status-info-fg: #c4b5fd;
 
   --shadow-card: 0 1px 0 rgba(255, 255, 255, 0.03), 0 8px 24px rgba(0, 0, 0, 0.35);
   --body-glow-1: rgba(0, 229, 255, 0.07);

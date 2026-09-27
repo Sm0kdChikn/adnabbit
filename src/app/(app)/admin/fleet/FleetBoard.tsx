@@ -4,6 +4,11 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { DeviceStatusBadge } from "@/components/DeviceStatusBadge";
+import {
+  HoursStatusChip,
+  OfflinePolicyChip,
+  StatusChip,
+} from "@/components/StatusBadge";
 import { Button, Card, CardList, CardListItem } from "@/components/ui";
 import type { FleetScreenHealth } from "@/lib/fleet";
 import type { DeviceGroupListItem } from "@/lib/device-groups";
@@ -409,7 +414,7 @@ export function FleetBoard({
               <li
                 key={`${r.screenId}-${i}`}
                 className={
-                  r.ok ? "text-emerald-400" : "text-[var(--status-danger-fg)]"
+                  r.ok ? "text-[var(--status-success-fg)]" : "text-[var(--status-danger-fg)]"
                 }
               >
                 {r.screenName || r.screenId || "—"}:{" "}
@@ -433,13 +438,13 @@ export function FleetBoard({
             <CardListItem key={s.screenId}>
               <Card
                 glow
-                className={`flex h-full flex-col p-4 ${
+                className={`flex h-full flex-col p-3 ${
                   !s.online || s.emptyPlaylist
                     ? "ring-1 ring-[var(--status-danger-fg)]/30"
                     : ""
                 } ${checked ? "ring-1 ring-accent/50" : ""}`}
               >
-                <div className="flex flex-1 flex-col gap-3">
+                <div className="flex flex-1 flex-col gap-2">
                   <div className="flex flex-wrap items-start justify-between gap-2">
                     <label className="flex min-w-0 cursor-pointer items-start gap-2">
                       <input
@@ -473,93 +478,79 @@ export function FleetBoard({
                         </p>
                       </div>
                     </label>
-                    <DeviceStatusBadge status={s.displayStatus} />
                   </div>
 
-                  <dl className="grid grid-cols-2 gap-x-3 gap-y-1 text-xs text-muted sm:grid-cols-3">
-                    <div>
-                      <dt className="text-muted-strong">Last seen</dt>
-                      <dd className="text-foreground">
-                        {formatLastSeen(s.lastSeenAt)}
-                      </dd>
-                    </div>
-                    <div>
-                      <dt className="text-muted-strong">Hours</dt>
-                      <dd className="text-foreground">
-                        {s.maintenanceActive
-                          ? s.maintenanceEndsAt
-                            ? `Maintenance · ends ${new Date(s.maintenanceEndsAt).toLocaleString()}`
-                            : "Maintenance"
-                          : s.playbackAllowed
-                            ? s.forceLiveActive
-                              ? "Open (force live)"
-                              : "Open"
-                            : "Closed hours"}
-                      </dd>
-                    </div>
-                    <div>
-                      <dt className="text-muted-strong">Active items</dt>
-                      <dd className="text-foreground">
-                        {s.activeItemCount}
-                        {s.emptyPlaylist ? (
-                          <span className="ml-1 text-amber-300">· empty</span>
-                        ) : null}
-                      </dd>
-                    </div>
-                    <div>
-                      <dt className="text-muted-strong">Player</dt>
-                      <dd className="text-foreground">
-                        {versionLabel(s.versionStatus, s.playerVersion)}
-                      </dd>
-                    </div>
-                    <div>
-                      <dt className="text-muted-strong">Disk</dt>
-                      <dd className="text-foreground">
-                        {s.diskCritical === true
-                          ? "Critical"
-                          : s.diskFreeBytes != null
-                            ? `${Math.round(s.diskFreeBytes / (1024 * 1024))} MB free`
-                            : "— (TODO)"}
-                      </dd>
-                    </div>
-                    <div>
-                      <dt className="text-muted-strong">Playback</dt>
-                      <dd className="text-foreground">
-                        {s.playbackState || "—"}
-                      </dd>
-                    </div>
-                    <div>
-                      <dt className="text-muted-strong">Offline policy</dt>
-                      <dd className="text-foreground">
-                        {!s.online ? (
-                          s.mayPlayCache ? (
-                            <span title="Best-effort: host PLAY_CACHE + TTL > 0">
-                              Offline · may play cache ({s.offlineCacheTtlHours}
-                              h)
-                            </span>
-                          ) : (
-                            <span>
-                              Offline ·{" "}
-                              {s.offlinePolicy === "BLACKOUT" ||
-                              s.offlineCacheTtlHours === 0
-                                ? "blackout"
-                                : s.offlinePolicy}
-                            </span>
-                          )
-                        ) : s.offlinePolicy === "BLACKOUT" ? (
-                          "BLACKOUT"
-                        ) : (
-                          `Play cache ${s.offlineCacheTtlHours}h`
-                        )}
-                      </dd>
-                    </div>
-                  </dl>
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    <DeviceStatusBadge status={s.displayStatus} />
+                    {s.maintenanceActive ? (
+                      <StatusChip
+                        tone="info"
+                        title={
+                          s.maintenanceEndsAt
+                            ? `Ends ${new Date(s.maintenanceEndsAt).toLocaleString()}`
+                            : "Maintenance soft blackout"
+                        }
+                      >
+                        MAINTENANCE
+                      </StatusChip>
+                    ) : (
+                      <HoursStatusChip
+                        open={s.playbackAllowed}
+                        openLabel="OPEN"
+                        closedLabel="CLOSED"
+                        forceLive={s.forceLiveActive}
+                      />
+                    )}
+                    <OfflinePolicyChip
+                      online={s.online}
+                      policy={s.offlinePolicy}
+                      ttlHours={s.offlineCacheTtlHours}
+                      mayPlayCache={s.mayPlayCache}
+                    />
+                    <StatusChip
+                      tone={
+                        s.versionStatus === "lag"
+                          ? "warning"
+                          : s.versionStatus === "missing"
+                            ? "neutral"
+                            : "neutral"
+                      }
+                      title="Player version"
+                    >
+                      {versionLabel(s.versionStatus, s.playerVersion)}
+                    </StatusChip>
+                    {s.playbackState ? (
+                      <StatusChip tone="neutral" title="Playback / output state">
+                        {s.playbackState}
+                      </StatusChip>
+                    ) : null}
+                    {s.emptyPlaylist ? (
+                      <StatusChip tone="warning">Empty playlist</StatusChip>
+                    ) : (
+                      <StatusChip tone="neutral">
+                        {s.activeItemCount} item
+                        {s.activeItemCount === 1 ? "" : "s"}
+                      </StatusChip>
+                    )}
+                    {s.diskCritical === true ? (
+                      <StatusChip tone="danger">Disk critical</StatusChip>
+                    ) : null}
+                    {s.openAlertKinds.length > 0 ? (
+                      <StatusChip tone="danger">
+                        Alert: {s.openAlertKinds.join(", ")}
+                      </StatusChip>
+                    ) : null}
+                  </div>
 
-                  {s.openAlertKinds.length > 0 ? (
-                    <p className="text-xs text-[var(--status-danger-fg)]">
-                      Open alert: {s.openAlertKinds.join(", ")}
-                    </p>
-                  ) : null}
+                  <p className="text-xs text-muted">
+                    Last seen {formatLastSeen(s.lastSeenAt)}
+                    {s.diskFreeBytes != null
+                      ? ` · ${Math.round(s.diskFreeBytes / (1024 * 1024))} MB free`
+                      : ""}
+                    {s.maintenanceActive && s.maintenanceEndsAt
+                      ? ` · maint ends ${new Date(s.maintenanceEndsAt).toLocaleString()}`
+                      : ""}
+                  </p>
                 </div>
               </Card>
             </CardListItem>

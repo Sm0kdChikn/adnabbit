@@ -1,6 +1,6 @@
 # AdNabbit Web MVP
 
-Advertiser signup/login, creative upload (image/video), submit for review, admin approve/reject, **Ticket A — Host/screen inventory**, and **Ticket B — Advertiser public profiles**, and **Ticket C — Placement requests**, and **Ticket D — Scheduling**, and **Ticket E — Recurring dayparts**, and **Ticket E2 — Schedule calendar view**, and **Ticket G — Host self-serve portal**, and **Ticket J — device claim / playlist APIs**, and **Ticket K — admin folders**, and **Ticket O — playlist refresh**, and **Ticket P — admin remote view (screenshot relay)**, and **Ticket P.1 — admin remote mouse/keyboard control**, and **Ticket P.1.1 — kiosk lock/unlock toggle**, and **Ticket P.1.2 — admin device reboot**, and **Ticket Q — venue open hours / soft blackout / PoP mute**, and **Ticket R — fleet health + offline/empty alerts**, and **Ticket S — campaign windows + emergency take-down**, and **Ticket T — host / advertiser / admin analytics (schedule fill)**, and **Ticket U — download/quiet hours + fleet bulk ops**, and **Ticket V — offline play policy**, and **Ticket W — audit log**, and **Ticket X — maintenance windows**, and **Ticket Y — volume / brightness remote**, and **Ticket Z — device groups**, and **Ticket F2 — first-party PlayLog / PoP persistence**, and **Ticket BH — bug hunt (Q.1 overnight wrap + harden)**.
+Advertiser signup/login, creative upload (image/video), submit for review, admin approve/reject, **Ticket A — Host/screen inventory**, and **Ticket B — Advertiser public profiles**, and **Ticket C — Placement requests**, and **Ticket D — Scheduling**, and **Ticket E — Recurring dayparts**, and **Ticket E2 — Schedule calendar view**, and **Ticket G — Host self-serve portal**, and **Ticket J — device claim / playlist APIs**, and **Ticket K — admin folders**, and **Ticket O — playlist refresh**, and **Ticket P — admin remote view (screenshot relay)**, and **Ticket P.1 — admin remote mouse/keyboard control**, and **Ticket P.1.1 — kiosk lock/unlock toggle**, and **Ticket P.1.2 — admin device reboot**, and **Ticket Q — venue open hours / soft blackout / PoP mute**, and **Ticket R — fleet health + offline/empty alerts**, and **Ticket S — campaign windows + emergency take-down**, and **Ticket T — host / advertiser / admin analytics (schedule fill)**, and **Ticket U — download/quiet hours + fleet bulk ops**, and **Ticket V — offline play policy**, and **Ticket W — audit log**, and **Ticket X — maintenance windows**, and **Ticket Y — volume / brightness remote**, and **Ticket Z — device groups**, and **Ticket F2 — first-party PlayLog / PoP persistence**, and **Ticket BH — bug hunt (Q.1 overnight wrap + harden)**, and **Ticket UP — UI polish**.
 
 **Repo target:** https://github.com/Sm0kdChikn/adnabbit
 
@@ -851,4 +851,33 @@ Response **200** `{ accepted, persisted, skipped: [{ clientEventId, reason }] }`
 ### Soft misses / out
 
 Rich charts; durable offline queue beyond simple retry. Out: OptiSigns cutover, Looker parity, fill-vs-paid, websockets, digests.
+
+## Ticket UP — UI polish
+
+Polish-only pass after BH. Charcoal/cyan visual consistency across admin / host / advertiser — **no new features, schema, or APIs** unless a polish bug is P0.
+
+### What landed
+
+| Area | Change |
+|------|--------|
+| Shared chips | `StatusChip`, `HoursStatusChip`, `MaintenanceStatusChip`, `OnlineStatusChip`, `OfflinePolicyChip` on `StatusBadge.tsx`; `DeviceStatusBadge` / `TakeDownBadge` reuse `badgeBase` + CSS status tokens (`--status-info` for maintenance) |
+| Empty states | Analytics + key lists use shared `EmptyState`; F2 Plays empty copy never re-stubs Plays |
+| Fleet + Remote | Dense status chip row (hours / offline-cache / maint / version / output / items); less scroll noise |
+| Analytics | Adjacent **Scheduled** vs **Played (F2)** labels on fill / heat / campaigns / plays |
+| Forms | Shared `FormPanel` / `FormFeedback` / control classes for hours, download hours, maintenance, output, offline policy, take-down |
+
+### Demo paths
+
+- `/admin/fleet` — dense chip row
+- `/admin/screens/[id]` — Remote view status chips + output / hours / maintenance panels
+- `/admin/analytics` (also `/host/analytics`, `/analytics`) — Scheduled vs Played (F2)
+- Host / admin host edit — aligned offline + output panels next to hours editors
+
+### Soft misses
+
+Mobile layout polish; dark-mode novelty beyond existing theme tokens; full redesign; exhaustive EmptyState migration on every legacy dashed box; fleet disk / volume chips when not on the wire.
+
+### Out of scope
+
+New tickets / features; OptiSigns cutover; deploy epic; Ticket M; Lobby hardware.
 

@@ -2,7 +2,8 @@
 
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
-import { Button, Textarea } from "@/components/ui";
+import { Button, Textarea, FormFeedback, FormPanel } from "@/components/ui";
+import { MaintenanceStatusChip } from "@/components/StatusBadge";
 
 export type MaintenanceWindowListItem = {
   id: string;
@@ -173,25 +174,17 @@ export function MaintenanceWindowPanel({
   }
 
   return (
-    <section className="space-y-4 rounded-xl border border-border bg-surface p-4 sm:p-5">
+    <FormPanel>
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h2 className="text-lg font-semibold text-foreground">{title}</h2>
           <p className="mt-1 text-sm text-muted">{description}</p>
         </div>
-        {effectiveActive ? (
-          <span className="inline-flex items-center rounded-full bg-violet-500/20 px-2.5 py-0.5 text-xs font-semibold text-violet-300 ring-1 ring-violet-400/40">
-            Active
-            {effectiveScope ? ` · ${effectiveScope}` : ""}
-            {effectiveEndsAt
-              ? ` · ends ${formatWhen(effectiveEndsAt)}`
-              : ""}
-          </span>
-        ) : (
-          <span className="inline-flex items-center rounded-full bg-slate-500/20 px-2.5 py-0.5 text-xs font-semibold text-slate-300">
-            Not in maintenance
-          </span>
-        )}
+        <MaintenanceStatusChip
+          active={effectiveActive}
+          endsAt={effectiveEndsAt}
+          scope={effectiveScope}
+        />
       </div>
 
       {effectiveActive && effectiveNote ? (
@@ -244,8 +237,7 @@ export function MaintenanceWindowPanel({
         </Button>
       </div>
 
-      {error ? <p className="text-sm text-[var(--status-danger-fg)]">{error}</p> : null}
-      {okMsg ? <p className="text-sm text-emerald-400">{okMsg}</p> : null}
+      <FormFeedback error={error} ok={okMsg} />
 
       {upcoming.length > 0 ? (
         <ul className="divide-y divide-border rounded-lg border border-border">
@@ -257,7 +249,7 @@ export function MaintenanceWindowPanel({
               <div>
                 <p className="font-medium text-foreground">
                   {w.active ? (
-                    <span className="mr-2 text-violet-300">● Active</span>
+                    <span className="mr-2 text-[var(--status-info-fg)]">● Active</span>
                   ) : (
                     <span className="mr-2 text-muted">Scheduled</span>
                   )}
@@ -303,6 +295,6 @@ export function MaintenanceWindowPanel({
         Soft miss: recurring schedules and bulk create. Auto-reboot into window,
         OptiSigns, and email alerts are out of scope.
       </p>
-    </section>
+    </FormPanel>
   );
 }

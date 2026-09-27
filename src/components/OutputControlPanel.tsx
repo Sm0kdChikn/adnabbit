@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { Button } from "@/components/ui";
+import { Button, FormFeedback, FormPanel } from "@/components/ui";
 
 type Props = {
   screenId: string;
@@ -116,13 +116,7 @@ export function OutputControlPanel({
   }
 
   return (
-    <section
-      className={
-        compact
-          ? "space-y-3 rounded-lg border border-border bg-background/50 p-3"
-          : "space-y-4 rounded-xl border border-border bg-surface p-4 sm:p-5"
-      }
-    >
+    <FormPanel compact={compact}>
       <div>
         <h2
           className={
@@ -238,10 +232,7 @@ export function OutputControlPanel({
         </Button>
       </div>
 
-      {error ? (
-        <p className="text-sm text-[var(--status-danger-fg)]">{error}</p>
-      ) : null}
-      {okMsg ? <p className="text-sm text-emerald-400">{okMsg}</p> : null}
-    </section>
+      <FormFeedback error={error} ok={okMsg} />
+    </FormPanel>
   );
 }

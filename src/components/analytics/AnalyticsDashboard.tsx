@@ -10,10 +10,9 @@ import {
   WEEKDAY_LABELS,
 } from "@/lib/analytics";
 import { WindowPhaseBadge } from "@/components/StatusBadge";
+import { StatusChip } from "@/components/StatusBadge";
 import {
-  Card,
-  CardBody,
-  CardHeader,
+  EmptyState,
   PageHeader,
   SectionTitle,
   StatPill,
@@ -125,11 +124,20 @@ export function AnalyticsDashboard({
         {range.preset !== "custom" ? (
           <span className="text-muted-strong"> (last {range.preset} days)</span>
         ) : null}
-        . Metrics from open hours + ACTIVE schedules — not device plays.
+        .{" "}
+        <span className="text-foreground">Scheduled</span> = open hours + ACTIVE
+        schedules (fill / heat / campaigns).{" "}
+        <span className="text-foreground">Played (F2)</span> = first-party{" "}
+        <code className="text-muted-strong">PlayLog</code> device counts.
       </p>
 
+      <div className="flex flex-wrap items-center gap-2">
+        <StatusChip tone="neutral">Scheduled — fill / heat / campaigns</StatusChip>
+        <StatusChip tone="success">Played (F2) — device PlayLog</StatusChip>
+      </div>
+
       <section className="space-y-3">
-        <SectionTitle>Schedule fill</SectionTitle>
+        <SectionTitle>Scheduled — fill</SectionTitle>
         <StatRow className="lg:grid-cols-4">
           <StatPill
             label="Paid minutes"
@@ -154,9 +162,7 @@ export function AnalyticsDashboard({
         </StatRow>
 
         {displayRows.length === 0 ? (
-          <p className="rounded-xl border border-dashed border-border bg-surface p-6 text-center text-sm text-muted">
-            No screen/day rows in range.
-          </p>
+          <EmptyState>No screen/day rows in range for Scheduled fill.</EmptyState>
         ) : (
           <div className="overflow-x-auto rounded-xl border border-border bg-surface shadow-sm">
             <table className="min-w-full text-left text-sm">
@@ -185,9 +191,9 @@ export function AnalyticsDashboard({
                     <td className="px-3 py-2 font-medium text-foreground">
                       {r.screenName}
                       {r.takenDown ? (
-                        <span className="ml-2 rounded bg-[var(--status-danger-bg)] px-1.5 py-0.5 text-[10px] text-[var(--status-danger-fg)]">
+                        <StatusChip tone="danger" className="ml-2 !text-[10px]">
                           take-down
-                        </span>
+                        </StatusChip>
                       ) : null}
                     </td>
                     <td className="px-3 py-2 text-muted">{r.hostName}</td>
@@ -224,7 +230,7 @@ export function AnalyticsDashboard({
       </section>
 
       <section className="space-y-3">
-        <SectionTitle>Daypart heat</SectionTitle>
+        <SectionTitle>Scheduled — daypart heat</SectionTitle>
         <p className="text-xs text-muted">
           Scheduled paid minutes by weekday × hour (host TZ; hint{" "}
           <span className="text-foreground">{heat.timezoneHint}</span>). Total{" "}
@@ -270,7 +276,7 @@ export function AnalyticsDashboard({
       </section>
 
       <section className="space-y-3">
-        <SectionTitle>Campaign windows</SectionTitle>
+        <SectionTitle>Scheduled — campaign windows</SectionTitle>
         <StatRow className="lg:grid-cols-5">
           <StatPill label="Active" value={campaigns.counts.ACTIVE || 0} />
           <StatPill label="Scheduled" value={campaigns.counts.SCHEDULED || 0} />
@@ -279,9 +285,7 @@ export function AnalyticsDashboard({
           <StatPill label="Cancelled" value={campaigns.counts.CANCELLED || 0} />
         </StatRow>
         {campaigns.rows.length === 0 ? (
-          <p className="rounded-xl border border-dashed border-border bg-surface p-6 text-center text-sm text-muted">
-            No schedules in scope.
-          </p>
+          <EmptyState>No schedules in scope.</EmptyState>
         ) : (
           <div className="overflow-x-auto rounded-xl border border-border bg-surface shadow-sm">
             <table className="min-w-full text-left text-sm">
@@ -323,11 +327,12 @@ export function AnalyticsDashboard({
       </section>
 
       <section className="space-y-3">
-        <SectionTitle>Plays (first-party)</SectionTitle>
+        <SectionTitle>Played (F2) — first-party plays</SectionTitle>
         <p className="text-xs text-muted">
-          Device <code className="text-muted-strong">PlayLog</code> soak counts
-          for this range. OptiSigns CSV + Looker remain production PoP until
-          cutover.
+          <span className="font-medium text-foreground">Played (F2)</span> —
+          device <code className="text-muted-strong">PlayLog</code> soak counts
+          for this range (adjacent to Scheduled fill / heat above). OptiSigns CSV
+          + Looker remain production PoP until cutover.
         </p>
         <StatRow className="lg:grid-cols-4">
           <StatPill label="Plays" value={String(playsSummary.playCount)} />
@@ -345,9 +350,15 @@ export function AnalyticsDashboard({
           />
         </StatRow>
         {playRows.length === 0 ? (
-          <p className="rounded-xl border border-dashed border-border bg-surface p-6 text-center text-sm text-muted">
-            No first-party plays in this range yet.
-          </p>
+          <EmptyState>
+            <p className="font-medium text-foreground">No Played (F2) rows yet</p>
+            <p>
+              Zero first-party <code className="text-muted-strong">PlayLog</code>{" "}
+              events in this range. Scheduled fill / heat above still reflect
+              open hours + ACTIVE schedules — Plays stay empty until devices
+              report (never stubbed).
+            </p>
+          </EmptyState>
         ) : (
           <div className="overflow-x-auto rounded-xl border border-border bg-surface shadow-sm">
             <table className="min-w-full text-left text-sm">

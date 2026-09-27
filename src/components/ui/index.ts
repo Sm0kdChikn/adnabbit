@@ -7,3 +7,13 @@ export { PageHeader, SectionTitle, StatPill, StatRow } from "./PageHeader";
 export { ViewToggle } from "./ViewToggle";
 export { useListView } from "./useListView";
 export type { ListViewMode } from "./useListView";
+export {
+  FormPanel,
+  FormPanelHeader,
+  FormFeedback,
+  formPanelClass,
+  formPanelCompactClass,
+  formLabelClass,
+  formControlClass,
+  formHintClass,
+} from "./FormPanel";

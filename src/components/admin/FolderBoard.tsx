@@ -9,6 +9,7 @@ import {
 } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { StatusChip } from "@/components/StatusBadge";
 import {
   Button,
   Card,
@@ -82,9 +83,9 @@ function HostCard({ h }: { h: HostFolderItem }) {
               {h.name}
             </Link>
             {h.playbackTakenDownAt ? (
-              <span className="rounded-full bg-[var(--status-danger-bg)] px-2 py-0.5 text-[10px] font-semibold text-[var(--status-danger-fg)]">
+              <StatusChip tone="danger" className="!text-[10px]">
                 Playback killed
-              </span>
+              </StatusChip>
             ) : null}
           </div>
           <p className="text-sm text-muted">
@@ -123,9 +124,9 @@ function AdvertiserCard({ a }: { a: AdvertiserFolderItem }) {
               {a.name || "Unnamed"}
             </Link>
             {a.takenDownAt ? (
-              <span className="rounded-full bg-[var(--status-danger-bg)] px-2 py-0.5 text-[10px] font-semibold text-[var(--status-danger-fg)]">
+              <StatusChip tone="danger" className="!text-[10px]">
                 Taken down
-              </span>
+              </StatusChip>
             ) : null}
           </div>
           <p className="text-sm text-accent">{a.email}</p>

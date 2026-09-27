@@ -2,7 +2,8 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { Button, Textarea } from "@/components/ui";
+import { Button, Textarea, FormFeedback, formPanelClass } from "@/components/ui";
+import { badgeBase, statusTone } from "@/components/StatusBadge";
 
 type Target = "creative" | "advertiser" | "host" | "screen";
 
@@ -64,7 +65,7 @@ export function TakeDownBadge({
       : takenDownAt;
   return (
     <span
-      className="inline-flex flex-wrap items-center gap-1 rounded-full bg-[var(--status-danger-bg)] px-2.5 py-0.5 text-xs font-semibold text-[var(--status-danger-fg)] ring-1 ring-inset ring-border"
+      className={`${badgeBase} ${statusTone.danger} flex-wrap gap-1`}
       title={reason || undefined}
     >
       {label}
@@ -131,7 +132,7 @@ export function TakeDownPanel({
       className={
         compact
           ? "space-y-2"
-          : "space-y-3 rounded-xl border border-border bg-surface p-4"
+          : formPanelClass
       }
     >
       {!compact && (
@@ -177,10 +178,7 @@ export function TakeDownPanel({
           </Button>
         )}
       </div>
-      {error && (
-        <p className="text-xs text-[var(--status-danger-fg)]">{error}</p>
-      )}
-      {msg && <p className="text-xs text-muted">{msg}</p>}
+      <FormFeedback error={error || null} ok={msg || null} />
     </div>
   );
 }

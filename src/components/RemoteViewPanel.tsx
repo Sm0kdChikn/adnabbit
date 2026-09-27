@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui";
 import { DeviceStatusBadge } from "@/components/DeviceStatusBadge";
+import { HoursStatusChip, StatusChip } from "@/components/StatusBadge";
 import { OutputControlPanel } from "@/components/OutputControlPanel";
 import type { DeviceDisplayStatus } from "@/lib/open-hours";
 
@@ -545,24 +546,27 @@ export function RemoteViewPanel({
             <strong>Reboot device</strong> queues a full OS reboot (Ticket P.1.2).
           </p>
           {displayStatus && (
-            <div className="mt-2 flex flex-wrap items-center gap-2">
+            <div className="mt-2 flex flex-wrap items-center gap-1.5">
               <DeviceStatusBadge status={displayStatus} />
-              {hoursSummary ? (
-                <span className="text-xs text-muted">{hoursSummary}</span>
+              {displayStatus === "MAINTENANCE" ? (
+                <StatusChip tone="info" title="Beats force-live; PoP muted">
+                  MAINTENANCE
+                </StatusChip>
+              ) : displayStatus === "BLACKOUT" ? (
+                <HoursStatusChip open={false} closedLabel="CLOSED" />
+              ) : typeof hoursOpen === "boolean" ? (
+                <HoursStatusChip
+                  open={hoursOpen}
+                  forceLive={!!forceLiveUntil}
+                />
               ) : null}
               {forceLiveUntil ? (
-                <span className="text-xs text-accent">
-                  Force live until {new Date(forceLiveUntil).toLocaleString()}
-                </span>
+                <StatusChip tone="success" title="Force-live bypass">
+                  Force live · {new Date(forceLiveUntil).toLocaleString()}
+                </StatusChip>
               ) : null}
-              {displayStatus === "MAINTENANCE" ? (
-                <span className="text-xs text-violet-300">
-                  Maintenance — soft blackout (beats force-live), PoP muted
-                </span>
-              ) : displayStatus === "BLACKOUT" ? (
-                <span className="text-xs text-muted">
-                  Soft blackout — player dark, PoP muted
-                </span>
+              {hoursSummary ? (
+                <span className="text-xs text-muted">{hoursSummary}</span>
               ) : null}
             </div>
           )}
@@ -740,16 +744,10 @@ export function RemoteViewPanel({
         compact
       />
 
-      {hasDevice && deviceOnline && displayStatus === "MAINTENANCE" && (
-        <p className="text-sm text-muted">
-          Device is online but dark due to a maintenance window (soft blackout).
-          Maintenance beats force-live; proof-of-play is muted until the window ends.
-        </p>
-      )}
-      {hasDevice && deviceOnline && displayStatus === "BLACKOUT" && (
-        <p className="text-sm text-muted">
-          Device is online but dark due to closed venue hours (soft blackout).
-          Proof-of-play is muted until open / force-live.
+      {hasDevice && deviceOnline && (displayStatus === "MAINTENANCE" || displayStatus === "BLACKOUT") && (
+        <p className="text-xs text-muted">
+          Soft blackout — player dark, PoP muted
+          {displayStatus === "MAINTENANCE" ? " (maintenance beats force-live)" : ""}.
         </p>
       )}
 
