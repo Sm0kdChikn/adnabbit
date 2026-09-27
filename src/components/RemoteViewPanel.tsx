@@ -533,7 +533,11 @@ export function RemoteViewPanel({
                   Force live until {new Date(forceLiveUntil).toLocaleString()}
                 </span>
               ) : null}
-              {displayStatus === "BLACKOUT" ? (
+              {displayStatus === "MAINTENANCE" ? (
+                <span className="text-xs text-violet-300">
+                  Maintenance — soft blackout (beats force-live), PoP muted
+                </span>
+              ) : displayStatus === "BLACKOUT" ? (
                 <span className="text-xs text-muted">
                   Soft blackout — player dark, PoP muted
                 </span>
@@ -695,6 +699,12 @@ export function RemoteViewPanel({
             ? " — note: venue would also be outside open hours right now"
             : ""}
           .
+        </p>
+      )}
+      {hasDevice && deviceOnline && displayStatus === "MAINTENANCE" && (
+        <p className="text-sm text-muted">
+          Device is online but dark due to a maintenance window (soft blackout).
+          Maintenance beats force-live; proof-of-play is muted until the window ends.
         </p>
       )}
       {hasDevice && deviceOnline && displayStatus === "BLACKOUT" && (

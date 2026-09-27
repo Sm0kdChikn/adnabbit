@@ -14,6 +14,11 @@ import {
   resolveOpenHoursForScreen,
 } from "@/lib/open-hours";
 import { isDeviceRecentlySeen } from "@/lib/device";
+import { MaintenanceWindowPanel } from "@/components/MaintenanceWindowPanel";
+import {
+  listMaintenanceWindows,
+  resolveMaintenanceForScreen,
+} from "@/lib/maintenance";
 
 export default async function HostScreenDetailPage({
   params,
@@ -55,12 +60,22 @@ export default async function HostScreenDetailPage({
   if (!screen) notFound();
 
   const hours = await resolveOpenHoursForScreen(screen.id);
+  const maintenance = await resolveMaintenanceForScreen(screen.id);
+  const screenWindows = await listMaintenanceWindows({
+    scope: "SCREEN",
+    targetId: screen.id,
+  });
+  const hostWindows = await listMaintenanceWindows({
+    scope: "HOST",
+    targetId: host.id,
+  });
   const online = isDeviceRecentlySeen(screen.device?.lastSeenAt);
   const displayStatus = deriveDeviceDisplayStatus({
     hasDevice: !!screen.device,
     online,
     hours,
     playbackState: screen.device?.playbackState,
+    maintenanceActive: maintenance.active,
   });
 
   return (
@@ -117,8 +132,18 @@ export default async function HostScreenDetailPage({
             ? "Always open (no hours set)"
             : formatHoursSummary(hours.weekly)
         }
-        isOpenNow={hours.isOpenNow}
+        isOpenNow={!maintenance.active && hours.isOpenNow}
         savePath={`/api/host/screens/${screen.id}/hours`}
+      />
+      <MaintenanceWindowPanel
+        apiPath={`/api/host/screens/${screen.id}/maintenance`}
+        title="Screen maintenance"
+        initialWindows={screenWindows}
+        hostWindows={hostWindows}
+        effectiveActive={maintenance.active}
+        effectiveEndsAt={maintenance.endsAt}
+        effectiveScope={maintenance.scope}
+        effectiveNote={maintenance.note}
       />
 
       <section className="space-y-3">

@@ -295,11 +295,15 @@ export function FleetBoard({ screens }: { screens: FleetScreenHealth[] }) {
                     <div>
                       <dt className="text-muted-strong">Hours</dt>
                       <dd className="text-foreground">
-                        {s.playbackAllowed
-                          ? s.forceLiveActive
-                            ? "Open (force live)"
-                            : "Open"
-                          : "Closed hours"}
+                        {s.maintenanceActive
+                          ? s.maintenanceEndsAt
+                            ? `Maintenance · ends ${new Date(s.maintenanceEndsAt).toLocaleString()}`
+                            : "Maintenance"
+                          : s.playbackAllowed
+                            ? s.forceLiveActive
+                              ? "Open (force live)"
+                              : "Open"
+                            : "Closed hours"}
                       </dd>
                     </div>
                     <div>

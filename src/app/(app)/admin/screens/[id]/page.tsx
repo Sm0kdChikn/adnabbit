@@ -16,6 +16,11 @@ import {
   resolveOpenHoursForScreen,
 } from "@/lib/open-hours";
 import { TakeDownPanel } from "@/components/TakeDownPanel";
+import { MaintenanceWindowPanel } from "@/components/MaintenanceWindowPanel";
+import {
+  listMaintenanceWindows,
+  resolveMaintenanceForScreen,
+} from "@/lib/maintenance";
 
 export default async function EditScreenPage({ params }: { params: { id: string } }) {
   const session = await getServerSession(authOptions);
@@ -33,12 +38,22 @@ export default async function EditScreenPage({ params }: { params: { id: string 
   if (!screen) notFound();
 
   const hours = await resolveOpenHoursForScreen(screen.id);
+  const maintenance = await resolveMaintenanceForScreen(screen.id);
+  const screenWindows = await listMaintenanceWindows({
+    scope: "SCREEN",
+    targetId: screen.id,
+  });
+  const hostWindows = await listMaintenanceWindows({
+    scope: "HOST",
+    targetId: screen.hostId,
+  });
   const online = isDeviceRecentlySeen(screen.device?.lastSeenAt);
   const displayStatus = deriveDeviceDisplayStatus({
     hasDevice: !!screen.device,
     online,
     hours,
     playbackState: screen.device?.playbackState,
+    maintenanceActive: maintenance.active,
   });
 
   const hosts = await prisma.host.findMany({
@@ -98,8 +113,18 @@ export default async function EditScreenPage({ params }: { params: { id: string 
             ? "Always open (no hours set)"
             : formatHoursSummary(hours.weekly)
         }
-        isOpenNow={hours.isOpenNow}
+        isOpenNow={!maintenance.active && hours.isOpenNow}
         savePath={`/api/admin/screens/${screen.id}/hours`}
+      />
+      <MaintenanceWindowPanel
+        apiPath={`/api/admin/screens/${screen.id}/maintenance`}
+        title="Screen maintenance"
+        initialWindows={screenWindows}
+        hostWindows={hostWindows}
+        effectiveActive={maintenance.active}
+        effectiveEndsAt={maintenance.endsAt}
+        effectiveScope={maintenance.scope}
+        effectiveNote={maintenance.note}
       />
       <div className="flex flex-wrap items-center gap-2 text-sm text-muted">
         <span>Device status:</span>

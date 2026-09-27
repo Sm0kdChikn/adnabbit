@@ -11,6 +11,7 @@ import { DEFAULT_TIMEZONE } from "@/lib/schedules";
 import { resolveOpenHoursForScreen } from "@/lib/open-hours";
 import { resolveDownloadHoursForScreen } from "@/lib/download-hours";
 import { resolveOfflinePolicyForScreen } from "@/lib/offline-policy";
+import { resolveMaintenanceForScreen } from "@/lib/maintenance";
 
 const bodySchema = z.object({
   code: z.string().min(1),
@@ -97,9 +98,14 @@ export async function POST(req: Request) {
       timezone: string;
       deviceId: string;
     };
-    const hours = await resolveOpenHoursForScreen(claimed.screenId);
-    const downloadHours = await resolveDownloadHoursForScreen(claimed.screenId);
-    const offlinePolicy = await resolveOfflinePolicyForScreen(claimed.screenId);
+    const [hours, downloadHours, offlinePolicy, maintenance] =
+      await Promise.all([
+        resolveOpenHoursForScreen(claimed.screenId),
+        resolveDownloadHoursForScreen(claimed.screenId),
+        resolveOfflinePolicyForScreen(claimed.screenId),
+        resolveMaintenanceForScreen(claimed.screenId),
+      ]);
+    const playbackAllowed = !maintenance.active && hours.isOpenNow;
     return NextResponse.json({
       deviceToken: claimed.deviceToken,
       screenId: claimed.screenId,
@@ -109,7 +115,21 @@ export async function POST(req: Request) {
       hours,
       downloadHours,
       downloadAllowed: downloadHours.downloadAllowed,
-      playbackAllowed: hours.isOpenNow,
+      playbackAllowed,
+      // Ticket X
+      maintenance: {
+        active: maintenance.active,
+        endsAt: maintenance.endsAt ?? undefined,
+        scope: maintenance.scope ?? undefined,
+        note: maintenance.note ?? undefined,
+      },
+      statusReason: maintenance.active
+        ? "MAINTENANCE"
+        : hours.isOpenNow
+          ? hours.forceLiveActive
+            ? "FORCE_LIVE"
+            : "OPEN"
+          : "CLOSED_HOURS",
       // Ticket V
       offlinePolicy: offlinePolicy.offlinePolicy,
       offlineCacheTtlHours: offlinePolicy.offlineCacheTtlHours,

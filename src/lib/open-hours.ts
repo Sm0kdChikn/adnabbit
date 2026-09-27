@@ -52,6 +52,7 @@ export type DeviceDisplayStatus =
   | "OFFLINE"
   | "LIVE"
   | "BLACKOUT"
+  | "MAINTENANCE"
   | "IDLE"
   | "EMPTY";
 
@@ -406,14 +407,19 @@ export function deriveDeviceDisplayStatus(opts: {
   online: boolean;
   hours: Pick<OpenHoursPayload, "isOpenNow" | "alwaysOpen" | "forceLiveActive">;
   playbackState?: string | null;
+  /** Ticket X — maintenance soft blackout beats force-live / open hours */
+  maintenanceActive?: boolean;
 }): DeviceDisplayStatus {
   if (!opts.hasDevice) return "UNPAIRED";
   if (!opts.online) return "OFFLINE";
+  // Ticket X — maintenance before closed-hours / player-reported
+  if (opts.maintenanceActive) return "MAINTENANCE";
   if (!opts.hours.isOpenNow) return "BLACKOUT";
   const ps = (opts.playbackState || "").toUpperCase();
   if (ps === "LIVE") return "LIVE";
   if (ps === "EMPTY") return "EMPTY";
   if (ps === "IDLE") return "IDLE";
+  if (ps === "MAINTENANCE") return "MAINTENANCE";
   if (ps === "BLACKOUT") return "BLACKOUT";
   return "IDLE";
 }

@@ -9,6 +9,8 @@ export const AUDIT_ACTION_OPTIONS: { value: string; label: string }[] = [
   { value: "open_hours.save", label: "Open hours save" },
   { value: "download_hours.save", label: "Download hours save" },
   { value: "offline_policy.save", label: "Offline policy save" },
+  { value: "maintenance.create", label: "Maintenance create" },
+  { value: "maintenance.clear", label: "Maintenance clear" },
 ];
 
 export const AUDIT_TARGET_TYPE_OPTIONS = [

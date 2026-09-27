@@ -22,7 +22,7 @@
 // Ticket U: DownloadHours (host quiet hours) + admin fleet bulk ops
 // Ticket V: Host.offlinePolicy + offlineCacheTtlHours (player offline play)
 // Ticket W: AuditEvent append-only admin audit log
-// Ticket W: AuditEvent append-only admin audit log
+// Ticket X: MaintenanceWindow one-off HOST|SCREEN soft blackout (beats force-live)
 
 generator client {
   provider = "prisma-client-js"
@@ -454,4 +454,26 @@ model AuditEvent {
   @@index([action])
   @@index([actorUserId])
   @@index([targetType, targetId])
+}
+
+/// Ticket X — one-off maintenance window (HOST venue or SCREEN).
+/// Active = now ∈ [startsAt, endsAt). Screen overlapping window wins; else inherit host.
+/// Soft blackout + PoP mute; beats force-live. Soft miss: recurring / bulk.
+model MaintenanceWindow {
+  id          String   @id @default(cuid())
+  /// HOST | SCREEN
+  scope       String
+  /// Host.id or Screen.id
+  targetId    String
+  /// UTC inclusive start
+  startsAt    DateTime
+  /// UTC exclusive end
+  endsAt      DateTime
+  createdById String
+  note        String?
+  createdAt   DateTime @default(now())
+
+  @@index([scope, targetId])
+  @@index([startsAt, endsAt])
+  @@index([endsAt])
 }

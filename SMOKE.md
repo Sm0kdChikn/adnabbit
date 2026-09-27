@@ -1172,3 +1172,48 @@ CSV export; host/advertiser self-view.
 - Open/download hours + offline policy saves logged
 - Fleet bulk → one `fleet.bulk` event with `meta.results[]`
 - `/admin/audit` 200 admin; advertiser API → 401/403
+
+---
+
+# Ticket X — Maintenance windows smoke
+
+**Prereq:** migrated DB (`MaintenanceWindow`), seed admin + demo host, `npm run dev` on :3000. Player tip with Ticket X honor.
+
+## X1. Schema — PASS expected
+
+```bash
+npx prisma db execute --stdin <<< "SELECT name FROM sqlite_master WHERE name='MaintenanceWindow';"
+```
+
+## X2. Create host window → heartbeat maintenance — PASS expected
+
+1. Admin login → `POST /api/admin/hosts/{hostId}/maintenance` with `startsAt` (now−1m) / `endsAt` (now+1h).
+2. Device `POST /api/device/heartbeat` → `maintenance.active=true`, `playbackAllowed=false`, `statusReason=MAINTENANCE`.
+3. Fleet board / screen remote view → **Maintenance** badge.
+
+## X3. Maintenance beats force-live — PASS expected
+
+1. While maintenance active, set screen `forceLiveUntil` far future via hours API.
+2. Heartbeat still `playbackAllowed=false` / `statusReason=MAINTENANCE`.
+
+## X4. Screen overrides host — PASS expected
+
+1. Clear host windows. Create SCREEN window active now.
+2. Resolve → `scope=SCREEN`. Host-only window with no screen overlap → `scope=HOST`.
+
+## X5. Clear resumes playback — PASS expected
+
+`DELETE /api/admin/screens/{id}/maintenance` (or host) → `maintenance.active=false`, `playbackAllowed` follows open hours again. Audit `maintenance.clear`.
+
+## X6. Player honor — PASS expected
+
+Paired player: during window → soft blackout titled Maintenance, play-logs muted (`reason=maintenance`); after clear → resumes.
+
+## Soft misses (not tested)
+
+Recurring / bulk create.
+
+## Out of scope
+
+Auto-reboot-into-window, OptiSigns, email; Tickets Y–Z.
+

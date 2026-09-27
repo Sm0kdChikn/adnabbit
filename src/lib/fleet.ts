@@ -1,8 +1,8 @@
 /**
  * Ticket R — fleet health + offline/empty alerts (admin).
  * Online = lastSeenAt within PLAYER_ONLINE_GRACE_MS (5m).
- * Empty = playbackAllowed (open hours / force-live) AND 0 active playlist items.
- * CLOSED_HOURS is never Offline/Empty fault — blackout is separate.
+ * Empty = playbackAllowed (open hours / force-live, not maintenance) AND 0 active items.
+ * CLOSED_HOURS / MAINTENANCE are never Offline/Empty faults — blackout is separate.
  */
 import { prisma } from "./prisma";
 import {
@@ -15,6 +15,7 @@ import {
   type DeviceDisplayStatus,
   type OpenHoursPayload,
 } from "./open-hours";
+import { resolveMaintenanceForScreen } from "./maintenance";
 import { buildPlaylistForScreen } from "./playlist";
 
 export const FLEET_ALERT_KINDS = ["OFFLINE", "EMPTY"] as const;
@@ -43,10 +44,13 @@ export type FleetScreenHealth = {
   paired: boolean;
   online: boolean;
   lastSeenAt: string | null;
-  /** hours.isOpenNow — playbackAllowed gate */
+  /** !maintenance && hours.isOpenNow — playbackAllowed gate */
   playbackAllowed: boolean;
   hoursReason: OpenHoursPayload["reason"];
   forceLiveActive: boolean;
+  /** Ticket X */
+  maintenanceActive: boolean;
+  maintenanceEndsAt: string | null;
   playbackState: string | null;
   displayStatus: DeviceDisplayStatus;
   activeItemCount: number;
@@ -154,10 +158,14 @@ export async function listFleetHealth(opts?: {
   const out: FleetScreenHealth[] = [];
 
   for (const screen of screens) {
-    const hours = await resolveOpenHoursForScreen(screen.id, now);
+    const [hours, maintenance] = await Promise.all([
+      resolveOpenHoursForScreen(screen.id, now),
+      resolveMaintenanceForScreen(screen.id, now),
+    ]);
     const device = screen.device;
     const online = isDeviceRecentlySeen(device?.lastSeenAt, now);
-    const playbackAllowed = hours.isOpenNow;
+    // Ticket X — maintenance beats force-live / open hours
+    const playbackAllowed = !maintenance.active && hours.isOpenNow;
 
     let activeItemCount = 0;
     if (device) {
@@ -170,7 +178,7 @@ export async function listFleetHealth(opts?: {
       activeItemCount = countActiveItemsNow(playlist.items, now);
     }
 
-    // Empty only when playback allowed (open / force-live). Never during CLOSED_HOURS.
+    // Empty only when playback allowed. Never during CLOSED_HOURS / MAINTENANCE.
     const emptyPlaylist =
       !!device && online && playbackAllowed && activeItemCount === 0;
 
@@ -179,6 +187,7 @@ export async function listFleetHealth(opts?: {
       online,
       hours,
       playbackState: device?.playbackState,
+      maintenanceActive: maintenance.active,
     });
 
     const playerVersion = device?.playerVersion ?? null;
@@ -223,6 +232,8 @@ export async function listFleetHealth(opts?: {
       playbackAllowed,
       hoursReason: hours.reason,
       forceLiveActive: hours.forceLiveActive,
+      maintenanceActive: maintenance.active,
+      maintenanceEndsAt: maintenance.endsAt,
       playbackState: device?.playbackState ?? null,
       displayStatus,
       activeItemCount,

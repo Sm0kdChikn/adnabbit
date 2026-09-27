@@ -1,6 +1,6 @@
 # AdNabbit Web MVP
 
-Advertiser signup/login, creative upload (image/video), submit for review, admin approve/reject, **Ticket A — Host/screen inventory**, and **Ticket B — Advertiser public profiles**, and **Ticket C — Placement requests**, and **Ticket D — Scheduling**, and **Ticket E — Recurring dayparts**, and **Ticket E2 — Schedule calendar view**, and **Ticket G — Host self-serve portal**, and **Ticket J — device claim / playlist APIs**, and **Ticket K — admin folders**, and **Ticket O — playlist refresh**, and **Ticket P — admin remote view (screenshot relay)**, and **Ticket P.1 — admin remote mouse/keyboard control**, and **Ticket P.1.1 — kiosk lock/unlock toggle**, and **Ticket P.1.2 — admin device reboot**, and **Ticket Q — venue open hours / soft blackout / PoP mute**, and **Ticket R — fleet health + offline/empty alerts**, and **Ticket S — campaign windows + emergency take-down**, and **Ticket T — host / advertiser / admin analytics (schedule fill)**, and **Ticket U — download/quiet hours + fleet bulk ops**, and **Ticket V — offline play policy**, and **Ticket W — audit log**.
+Advertiser signup/login, creative upload (image/video), submit for review, admin approve/reject, **Ticket A — Host/screen inventory**, and **Ticket B — Advertiser public profiles**, and **Ticket C — Placement requests**, and **Ticket D — Scheduling**, and **Ticket E — Recurring dayparts**, and **Ticket E2 — Schedule calendar view**, and **Ticket G — Host self-serve portal**, and **Ticket J — device claim / playlist APIs**, and **Ticket K — admin folders**, and **Ticket O — playlist refresh**, and **Ticket P — admin remote view (screenshot relay)**, and **Ticket P.1 — admin remote mouse/keyboard control**, and **Ticket P.1.1 — kiosk lock/unlock toggle**, and **Ticket P.1.2 — admin device reboot**, and **Ticket Q — venue open hours / soft blackout / PoP mute**, and **Ticket R — fleet health + offline/empty alerts**, and **Ticket S — campaign windows + emergency take-down**, and **Ticket T — host / advertiser / admin analytics (schedule fill)**, and **Ticket U — download/quiet hours + fleet bulk ops**, and **Ticket V — offline play policy**, and **Ticket W — audit log**, and **Ticket X — maintenance windows**.
 
 **Repo target:** https://github.com/Sm0kdChikn/adnabbit
 
@@ -345,7 +345,7 @@ Software-first Linux kiosk player spike (companion repo: `Sm0kdChikn/adnabbit-pl
 
 ### Data model
 
-- **Device**: 1:1 with Screen (`screenId` unique); stores **sha256** of bearer token only; `lastSeenAt`; **Ticket O** `playlistEpoch`; **Ticket P** `screenshotEpoch` / `screenshotCapturedEpoch` + single overwrite JPEG under `uploads/device-previews/{deviceId}.jpg`; **Ticket P.1** `pendingInputJson` remote-control queue; **Ticket Q** `playbackState` + `OpenHours` / `forceLiveUntil`; **Ticket R** `playerVersion` / optional `disk*` + `FleetAlert`; **Ticket S** take-down stamps on Creative/User/Host/Screen; **Ticket U** `DownloadHours` (host quiet hours) + fleet bulk refresh/reboot/kiosk; **Ticket V** `Host.offlinePolicy` / `offlineCacheTtlHours`; **Ticket W** `AuditEvent` append-only log
+- **Device**: 1:1 with Screen (`screenId` unique); stores **sha256** of bearer token only; `lastSeenAt`; **Ticket O** `playlistEpoch`; **Ticket P** `screenshotEpoch` / `screenshotCapturedEpoch` + single overwrite JPEG under `uploads/device-previews/{deviceId}.jpg`; **Ticket P.1** `pendingInputJson` remote-control queue; **Ticket Q** `playbackState` + `OpenHours` / `forceLiveUntil`; **Ticket R** `playerVersion` / optional `disk*` + `FleetAlert`; **Ticket S** take-down stamps on Creative/User/Host/Screen; **Ticket U** `DownloadHours` (host quiet hours) + fleet bulk refresh/reboot/kiosk; **Ticket V** `Host.offlinePolicy` / `offlineCacheTtlHours`; **Ticket W** `AuditEvent` append-only log; **Ticket X** `MaintenanceWindow` HOST|SCREEN soft blackout (beats force-live)
 - **ScreenClaim**: one-time 6–8 char codes from `A–Z0–9` excluding `0O1I`; TTL **15 minutes**; reminting a screen **supersedes** prior unused live codes
 
 ### Device APIs (Bearer device token)
@@ -723,4 +723,55 @@ Append-only **AuditEvent** for admin (and host self-serve hour/policy) actions. 
 ### Soft misses
 
 CSV export; host/advertiser self-view of own-related events.
+
+## Ticket X — Maintenance windows
+
+One-off **MaintenanceWindow** soft blackout for a venue (`HOST`) or single `SCREEN`. Active = now ∈ `[startsAt, endsAt)` (UTC). **Screen overlapping window wins**; else inherit host windows. **Maintenance beats force-live** (and open hours). Soft blackout + play-log mute like closed hours. Hold Tickets Y (volume) and Z (groups).
+
+| Field | Notes |
+|-------|-------|
+| `scope` / `targetId` | `HOST` \| `SCREEN` + Host.id or Screen.id |
+| `startsAt` / `endsAt` | UTC; half-open `[start, end)` |
+| `createdById` / `note?` | Actor + optional note |
+
+### Gate precedence
+
+1. Take-down (empty paid playlist) / **MAINTENANCE** (soft blackout)
+2. Force-live
+3. Open hours
+
+### Wire
+
+Claim / heartbeat / playlist include:
+
+```json
+{
+  "maintenance": { "active": true, "endsAt": "…", "scope": "HOST|SCREEN", "note": "…" },
+  "playbackAllowed": false,
+  "statusReason": "MAINTENANCE"
+}
+```
+
+Fleet / Remote **DeviceStatusBadge** → `MAINTENANCE` (violet). Player soft-blackouts and mutes PoP; reports `MAINTENANCE` playback state.
+
+### UI / API
+
+| Piece | Path |
+|-------|------|
+| Admin venue | `/admin/hosts/[id]` — create/clear host windows |
+| Admin screen | `/admin/screens/[id]` — screen + inherited host list |
+| Host venue | `/host/edit` — own venue |
+| Host screen | `/host/screens/[id]` — own screens |
+| Admin APIs | `GET/POST/DELETE /api/admin/hosts/[id]/maintenance`, `…/screens/[id]/maintenance` |
+| Host APIs | `GET/POST/DELETE /api/host/maintenance`, `…/screens/[id]/maintenance` |
+
+Audit: `maintenance.create` / `maintenance.clear` (Ticket W).
+
+### Soft misses
+
+Recurring windows; bulk create across screens.
+
+### Out of scope
+
+Auto-reboot-into-window; OptiSigns; email; Ticket Y volume; Ticket Z groups.
 

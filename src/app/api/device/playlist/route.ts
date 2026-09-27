@@ -4,6 +4,7 @@ import { buildPlaylistForScreen } from "@/lib/playlist";
 import { resolveOpenHoursForScreen } from "@/lib/open-hours";
 import { resolveDownloadHoursForScreen } from "@/lib/download-hours";
 import { resolveOfflinePolicyForScreen } from "@/lib/offline-policy";
+import { resolveMaintenanceForScreen } from "@/lib/maintenance";
 import { prisma } from "@/lib/prisma";
 
 function apiBaseFromRequest(req: Request): string {
@@ -24,16 +25,20 @@ export async function GET(req: Request) {
     select: { playlistEpoch: true },
   });
 
-  const [playlist, hours, downloadHours, offlinePolicy] = await Promise.all([
-    buildPlaylistForScreen({
-      screenId: auth.device.screenId,
-      apiBase: apiBaseFromRequest(req),
-      now,
-    }),
-    resolveOpenHoursForScreen(auth.device.screenId, now),
-    resolveDownloadHoursForScreen(auth.device.screenId, now),
-    resolveOfflinePolicyForScreen(auth.device.screenId),
-  ]);
+  const [playlist, hours, downloadHours, offlinePolicy, maintenance] =
+    await Promise.all([
+      buildPlaylistForScreen({
+        screenId: auth.device.screenId,
+        apiBase: apiBaseFromRequest(req),
+        now,
+      }),
+      resolveOpenHoursForScreen(auth.device.screenId, now),
+      resolveDownloadHoursForScreen(auth.device.screenId, now),
+      resolveOfflinePolicyForScreen(auth.device.screenId),
+      resolveMaintenanceForScreen(auth.device.screenId, now),
+    ]);
+
+  const playbackAllowed = !maintenance.active && hours.isOpenNow;
 
   return NextResponse.json({
     screenId: auth.device.screenId,
@@ -46,7 +51,21 @@ export async function GET(req: Request) {
     hours,
     downloadHours,
     downloadAllowed: downloadHours.downloadAllowed,
-    playbackAllowed: hours.isOpenNow,
+    playbackAllowed,
+    // Ticket X
+    maintenance: {
+      active: maintenance.active,
+      endsAt: maintenance.endsAt ?? undefined,
+      scope: maintenance.scope ?? undefined,
+      note: maintenance.note ?? undefined,
+    },
+    statusReason: maintenance.active
+      ? "MAINTENANCE"
+      : hours.isOpenNow
+        ? hours.forceLiveActive
+          ? "FORCE_LIVE"
+          : "OPEN"
+        : "CLOSED_HOURS",
     // Ticket V
     offlinePolicy: offlinePolicy.offlinePolicy,
     offlineCacheTtlHours: offlinePolicy.offlineCacheTtlHours,

@@ -8,8 +8,15 @@ import {
 import { resolveOpenHoursForScreen } from "@/lib/open-hours";
 import { resolveDownloadHoursForScreen } from "@/lib/download-hours";
 import { resolveOfflinePolicyForScreen } from "@/lib/offline-policy";
+import { resolveMaintenanceForScreen } from "@/lib/maintenance";
 
-const PLAYBACK_STATES = new Set(["LIVE", "BLACKOUT", "IDLE", "EMPTY"]);
+const PLAYBACK_STATES = new Set([
+  "LIVE",
+  "BLACKOUT",
+  "MAINTENANCE",
+  "IDLE",
+  "EMPTY",
+]);
 
 function parseOptionalInt(v: unknown): number | undefined {
   if (typeof v === "number" && Number.isFinite(v) && v >= 0) {
@@ -78,13 +85,16 @@ export async function POST(req: Request) {
     },
   });
 
-  const [hours, downloadHours, offlinePolicy] = await Promise.all([
+  const [hours, downloadHours, offlinePolicy, maintenance] = await Promise.all([
     resolveOpenHoursForScreen(updated.screenId, now),
     resolveDownloadHoursForScreen(updated.screenId, now),
     resolveOfflinePolicyForScreen(updated.screenId),
+    resolveMaintenanceForScreen(updated.screenId, now),
   ]);
   const captureScreenshot = needsScreenshotCapture(updated);
   const inputPending = hasPendingInput(updated.pendingInputJson);
+  // Ticket X — maintenance beats force-live / open hours
+  const playbackAllowed = !maintenance.active && hours.isOpenNow;
 
   return NextResponse.json({
     ok: true,
@@ -97,7 +107,21 @@ export async function POST(req: Request) {
     hours,
     downloadHours,
     downloadAllowed: downloadHours.downloadAllowed,
-    playbackAllowed: hours.isOpenNow,
+    playbackAllowed,
+    // Ticket X
+    maintenance: {
+      active: maintenance.active,
+      endsAt: maintenance.endsAt ?? undefined,
+      scope: maintenance.scope ?? undefined,
+      note: maintenance.note ?? undefined,
+    },
+    statusReason: maintenance.active
+      ? "MAINTENANCE"
+      : hours.isOpenNow
+        ? hours.forceLiveActive
+          ? "FORCE_LIVE"
+          : "OPEN"
+        : "CLOSED_HOURS",
     // Ticket V
     offlinePolicy: offlinePolicy.offlinePolicy,
     offlineCacheTtlHours: offlinePolicy.offlineCacheTtlHours,

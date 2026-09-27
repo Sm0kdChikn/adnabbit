@@ -16,6 +16,8 @@ import {
 } from "@/lib/open-hours";
 import { resolveDownloadHoursForHost } from "@/lib/download-hours";
 import { TakeDownPanel } from "@/components/TakeDownPanel";
+import { MaintenanceWindowPanel } from "@/components/MaintenanceWindowPanel";
+import { listMaintenanceWindows } from "@/lib/maintenance";
 
 export default async function EditHostPage({ params }: { params: { id: string } }) {
   const session = await getServerSession(authOptions);
@@ -41,6 +43,11 @@ export default async function EditHostPage({ params }: { params: { id: string } 
     forceLiveUntil: null,
   });
   const downloadHours = await resolveDownloadHoursForHost(host.id, host.timezone);
+  const maintenanceWindows = await listMaintenanceWindows({
+    scope: "HOST",
+    targetId: host.id,
+  });
+  const activeMaint = maintenanceWindows.find((w) => w.active) || null;
 
   return (
     <div className="space-y-8">
@@ -85,8 +92,19 @@ export default async function EditHostPage({ params }: { params: { id: string } 
             ? "Always open (no hours set)"
             : formatHoursSummary(weekly)
         }
-        isOpenNow={evaled.isOpenNow}
+        isOpenNow={evaled.isOpenNow && !activeMaint}
         savePath={`/api/admin/hosts/${host.id}/hours`}
+      />
+
+      <MaintenanceWindowPanel
+        apiPath={`/api/admin/hosts/${host.id}/maintenance`}
+        title="Venue maintenance"
+        description="One-off soft blackout for all screens at this venue (unless a screen-level window overlaps). Beats force-live. Soft mute of proof-of-play."
+        initialWindows={maintenanceWindows}
+        effectiveActive={!!activeMaint}
+        effectiveEndsAt={activeMaint?.endsAt ?? null}
+        effectiveScope={activeMaint ? "HOST" : null}
+        effectiveNote={activeMaint?.note ?? null}
       />
 
       <OpenHoursEditorClient

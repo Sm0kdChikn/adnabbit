@@ -12,6 +12,8 @@ import {
   loadWeeklyForTarget,
 } from "@/lib/open-hours";
 import { resolveDownloadHoursForHost } from "@/lib/download-hours";
+import { MaintenanceWindowPanel } from "@/components/MaintenanceWindowPanel";
+import { listMaintenanceWindows } from "@/lib/maintenance";
 
 export default async function HostEditPage() {
   const session = await getServerSession(authOptions);
@@ -32,6 +34,11 @@ export default async function HostEditPage() {
     forceLiveUntil: null,
   });
   const downloadHours = await resolveDownloadHoursForHost(host.id, host.timezone);
+  const maintenanceWindows = await listMaintenanceWindows({
+    scope: "HOST",
+    targetId: host.id,
+  });
+  const activeMaint = maintenanceWindows.find((w) => w.active) || null;
 
   return (
     <div className="space-y-6">
@@ -63,8 +70,18 @@ export default async function HostEditPage() {
             ? "Always open (no hours set)"
             : formatHoursSummary(weekly)
         }
-        isOpenNow={evaled.isOpenNow}
+        isOpenNow={evaled.isOpenNow && !activeMaint}
         savePath="/api/host/hours"
+      />
+      <MaintenanceWindowPanel
+        apiPath="/api/host/maintenance"
+        title="Venue maintenance"
+        description="One-off soft blackout for all screens at your venue (unless a screen sets its own overlapping window). Beats force-live."
+        initialWindows={maintenanceWindows}
+        effectiveActive={!!activeMaint}
+        effectiveEndsAt={activeMaint?.endsAt ?? null}
+        effectiveScope={activeMaint ? "HOST" : null}
+        effectiveNote={activeMaint?.note ?? null}
       />
       <OpenHoursEditorClient
         timezone={host.timezone}

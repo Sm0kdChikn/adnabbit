@@ -20,7 +20,9 @@ export type AuditAction =
   | "force_live.clear"
   | "open_hours.save"
   | "download_hours.save"
-  | "offline_policy.save";
+  | "offline_policy.save"
+  | "maintenance.create"
+  | "maintenance.clear";
 
 export type WriteAuditInput = {
   actorUserId: string;
