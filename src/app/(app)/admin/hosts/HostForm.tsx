@@ -15,6 +15,8 @@ type Props = {
     timezone: string;
     offlinePolicy?: string;
     offlineCacheTtlHours?: number;
+    defaultVolume?: number | null;
+    defaultBrightness?: number | null;
   };
 };
 
@@ -33,6 +35,12 @@ export function HostForm({ mode, hostId, initial }: Props) {
   const [offlineCacheTtlHours, setOfflineCacheTtlHours] = useState(
     String(initial?.offlineCacheTtlHours ?? 24)
   );
+  const [defaultVolume, setDefaultVolume] = useState(
+    initial?.defaultVolume != null ? String(initial.defaultVolume) : ""
+  );
+  const [defaultBrightness, setDefaultBrightness] = useState(
+    initial?.defaultBrightness != null ? String(initial.defaultBrightness) : ""
+  );
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
@@ -47,6 +55,26 @@ export function HostForm({ mode, hostId, initial }: Props) {
         setSaving(false);
         return;
       }
+      let defVol: number | null = null;
+      if (defaultVolume.trim() !== "") {
+        const v = parseInt(defaultVolume, 10);
+        if (!Number.isFinite(v) || v < 0 || v > 100) {
+          setError("Default volume must be blank (inherit) or 0–100");
+          setSaving(false);
+          return;
+        }
+        defVol = v;
+      }
+      let defBri: number | null = null;
+      if (defaultBrightness.trim() !== "") {
+        const v = parseInt(defaultBrightness, 10);
+        if (!Number.isFinite(v) || v < 0 || v > 100) {
+          setError("Default brightness must be blank (built-in 100) or 0–100");
+          setSaving(false);
+          return;
+        }
+        defBri = v;
+      }
       const payload = {
         name,
         vertical,
@@ -55,6 +83,8 @@ export function HostForm({ mode, hostId, initial }: Props) {
         timezone,
         offlinePolicy,
         offlineCacheTtlHours: ttl,
+        defaultVolume: defVol,
+        defaultBrightness: defBri,
       };
       const url =
         mode === "create" ? "/api/admin/hosts" : `/api/admin/hosts/${hostId}`;
@@ -192,6 +222,42 @@ export function HostForm({ mode, hostId, initial }: Props) {
         <p className="mt-1 text-xs text-muted">
           Default 24. 0 = blackout as soon as offline (even under Play cache).
         </p>
+      </div>
+      <div className="grid gap-4 sm:grid-cols-2">
+        <div>
+          <label className="mb-1 block text-sm font-medium text-muted">
+            Default volume (0–100)
+          </label>
+          <input
+            type="number"
+            min={0}
+            max={100}
+            value={defaultVolume}
+            onChange={(e) => setDefaultVolume(e.target.value)}
+            placeholder="80 (built-in)"
+            className="w-full rounded-md border border-border px-3 py-2 text-sm focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent/50"
+          />
+          <p className="mt-1 text-xs text-muted">
+            Ticket Y — screens with null volume inherit this (blank → 80).
+          </p>
+        </div>
+        <div>
+          <label className="mb-1 block text-sm font-medium text-muted">
+            Default brightness (0–100)
+          </label>
+          <input
+            type="number"
+            min={0}
+            max={100}
+            value={defaultBrightness}
+            onChange={(e) => setDefaultBrightness(e.target.value)}
+            placeholder="100 (built-in)"
+            className="w-full rounded-md border border-border px-3 py-2 text-sm focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent/50"
+          />
+          <p className="mt-1 text-xs text-muted">
+            Ticket Y — screens with null brightness inherit this (blank → 100).
+          </p>
+        </div>
       </div>
       <div>
         <label className="mb-1 block text-sm font-medium text-muted">

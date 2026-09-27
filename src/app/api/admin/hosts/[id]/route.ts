@@ -9,6 +9,7 @@ import {
   isOfflinePolicy,
   normalizeOfflineCacheTtlHours,
 } from "@/lib/offline-policy";
+import { parseOutputLevel } from "@/lib/output";
 
 type Ctx = { params: { id: string } };
 
@@ -42,6 +43,8 @@ export async function PATCH(req: Request, { params }: Ctx) {
     timezone?: string;
     offlinePolicy?: string;
     offlineCacheTtlHours?: number | string;
+    defaultVolume?: number | string | null;
+    defaultBrightness?: number | string | null;
   };
   try {
     body = await req.json();
@@ -106,6 +109,24 @@ export async function PATCH(req: Request, { params }: Ctx) {
     offlineCacheTtlHours = ttl;
   }
 
+  let defaultVolume = existing.defaultVolume;
+  if (body.defaultVolume !== undefined) {
+    const parsed = parseOutputLevel(body.defaultVolume, "defaultVolume");
+    if (!parsed.ok) {
+      return NextResponse.json({ error: parsed.error }, { status: 400 });
+    }
+    if (parsed.value !== undefined) defaultVolume = parsed.value;
+  }
+
+  let defaultBrightness = existing.defaultBrightness;
+  if (body.defaultBrightness !== undefined) {
+    const parsed = parseOutputLevel(body.defaultBrightness, "defaultBrightness");
+    if (!parsed.ok) {
+      return NextResponse.json({ error: parsed.error }, { status: 400 });
+    }
+    if (parsed.value !== undefined) defaultBrightness = parsed.value;
+  }
+
   const policyChanged =
     offlinePolicy !== existing.offlinePolicy ||
     offlineCacheTtlHours !== existing.offlineCacheTtlHours;
@@ -120,6 +141,8 @@ export async function PATCH(req: Request, { params }: Ctx) {
       timezone,
       offlinePolicy,
       offlineCacheTtlHours,
+      defaultVolume,
+      defaultBrightness,
     },
   });
 

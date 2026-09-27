@@ -56,6 +56,8 @@ export async function POST(req: Request, { params }: Ctx) {
     event?: unknown;
     command?: unknown;
     enabled?: unknown;
+    volume?: unknown;
+    brightness?: unknown;
   } | null;
 
   const rawList: unknown[] = [];
@@ -71,6 +73,13 @@ export async function POST(req: Request, { params }: Ctx) {
     // Ticket P.1.1 — { command: "setKiosk", enabled: true|false }
     if (typeof body.enabled === "boolean") {
       cmd.enabled = body.enabled;
+    }
+    // Ticket Y — { command: "setOutput", volume?, brightness? }
+    if (typeof body.volume === "number") {
+      cmd.volume = body.volume;
+    }
+    if (typeof body.brightness === "number") {
+      cmd.brightness = body.brightness;
     }
     rawList.push(cmd);
   }

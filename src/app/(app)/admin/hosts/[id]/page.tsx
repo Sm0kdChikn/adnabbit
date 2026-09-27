@@ -72,6 +72,8 @@ export default async function EditHostPage({ params }: { params: { id: string } 
           timezone: host.timezone,
           offlinePolicy: host.offlinePolicy,
           offlineCacheTtlHours: host.offlineCacheTtlHours,
+          defaultVolume: host.defaultVolume,
+          defaultBrightness: host.defaultBrightness,
         }}
       />
 

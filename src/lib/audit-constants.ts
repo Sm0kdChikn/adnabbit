@@ -11,6 +11,8 @@ export const AUDIT_ACTION_OPTIONS: { value: string; label: string }[] = [
   { value: "offline_policy.save", label: "Offline policy save" },
   { value: "maintenance.create", label: "Maintenance create" },
   { value: "maintenance.clear", label: "Maintenance clear" },
+  { value: "output.save", label: "Output save" },
+  { value: "output.apply", label: "Output apply" },
 ];
 
 export const AUDIT_TARGET_TYPE_OPTIONS = [

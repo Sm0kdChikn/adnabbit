@@ -17,6 +17,8 @@ import {
 } from "@/lib/open-hours";
 import { TakeDownPanel } from "@/components/TakeDownPanel";
 import { MaintenanceWindowPanel } from "@/components/MaintenanceWindowPanel";
+import { OutputControlPanel } from "@/components/OutputControlPanel";
+import { resolveOutputForScreen } from "@/lib/output";
 import {
   listMaintenanceWindows,
   resolveMaintenanceForScreen,
@@ -31,7 +33,17 @@ export default async function EditScreenPage({ params }: { params: { id: string 
   const screen = await prisma.screen.findUnique({
     where: { id: params.id },
     include: {
-      host: { select: { id: true, name: true, vertical: true, otherLabel: true, timezone: true } },
+      host: {
+        select: {
+          id: true,
+          name: true,
+          vertical: true,
+          otherLabel: true,
+          timezone: true,
+          defaultVolume: true,
+          defaultBrightness: true,
+        },
+      },
       device: true,
     },
   });
@@ -39,6 +51,7 @@ export default async function EditScreenPage({ params }: { params: { id: string 
 
   const hours = await resolveOpenHoursForScreen(screen.id);
   const maintenance = await resolveMaintenanceForScreen(screen.id);
+  const output = await resolveOutputForScreen(screen.id);
   const screenWindows = await listMaintenanceWindows({
     scope: "SCREEN",
     targetId: screen.id,
@@ -100,6 +113,31 @@ export default async function EditScreenPage({ params }: { params: { id: string 
             : formatHoursSummary(hours.weekly)
         }
         forceLiveUntil={hours.forceLiveUntil}
+        stickyVolume={screen.volume}
+        stickyBrightness={screen.brightness}
+        resolvedVolume={output.volume}
+        resolvedBrightness={output.brightness}
+        volumeSource={output.volumeSource}
+        brightnessSource={output.brightnessSource}
+        hostDefaultVolume={screen.host.defaultVolume}
+        hostDefaultBrightness={screen.host.defaultBrightness}
+        lastAppliedVolume={screen.device?.lastAppliedVolume ?? null}
+        lastAppliedBrightness={screen.device?.lastAppliedBrightness ?? null}
+      />
+      <OutputControlPanel
+        screenId={screen.id}
+        stickyVolume={screen.volume}
+        stickyBrightness={screen.brightness}
+        resolvedVolume={output.volume}
+        resolvedBrightness={output.brightness}
+        volumeSource={output.volumeSource}
+        brightnessSource={output.brightnessSource}
+        hostDefaultVolume={screen.host.defaultVolume}
+        hostDefaultBrightness={screen.host.defaultBrightness}
+        lastAppliedVolume={screen.device?.lastAppliedVolume ?? null}
+        lastAppliedBrightness={screen.device?.lastAppliedBrightness ?? null}
+        hasDevice={!!screen.device}
+        deviceOnline={online}
       />
       <OpenHoursEditorClient
         timezone={hours.timezone}

@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui";
 import { DeviceStatusBadge } from "@/components/DeviceStatusBadge";
+import { OutputControlPanel } from "@/components/OutputControlPanel";
 import type { DeviceDisplayStatus } from "@/lib/open-hours";
 
 type Props = {
@@ -15,6 +16,17 @@ type Props = {
   hoursOpen?: boolean;
   hoursSummary?: string | null;
   forceLiveUntil?: string | null;
+  /** Ticket Y — volume / brightness */
+  stickyVolume?: number | null;
+  stickyBrightness?: number | null;
+  resolvedVolume?: number;
+  resolvedBrightness?: number;
+  volumeSource?: string;
+  brightnessSource?: string;
+  hostDefaultVolume?: number | null;
+  hostDefaultBrightness?: number | null;
+  lastAppliedVolume?: number | null;
+  lastAppliedBrightness?: number | null;
 };
 
 type Status =
@@ -120,6 +132,16 @@ export function RemoteViewPanel({
   hoursOpen,
   hoursSummary,
   forceLiveUntil,
+  stickyVolume = null,
+  stickyBrightness = null,
+  resolvedVolume = 80,
+  resolvedBrightness = 100,
+  volumeSource = "default",
+  brightnessSource = "default",
+  hostDefaultVolume = null,
+  hostDefaultBrightness = null,
+  lastAppliedVolume = null,
+  lastAppliedBrightness = null,
 }: Props) {
   const [status, setStatus] = useState<Status>("idle");
   const [error, setError] = useState("");
@@ -701,6 +723,23 @@ export function RemoteViewPanel({
           .
         </p>
       )}
+      <OutputControlPanel
+        screenId={screenId}
+        stickyVolume={stickyVolume}
+        stickyBrightness={stickyBrightness}
+        resolvedVolume={resolvedVolume}
+        resolvedBrightness={resolvedBrightness}
+        volumeSource={volumeSource}
+        brightnessSource={brightnessSource}
+        hostDefaultVolume={hostDefaultVolume}
+        hostDefaultBrightness={hostDefaultBrightness}
+        lastAppliedVolume={lastAppliedVolume}
+        lastAppliedBrightness={lastAppliedBrightness}
+        hasDevice={hasDevice}
+        deviceOnline={deviceOnline}
+        compact
+      />
+
       {hasDevice && deviceOnline && displayStatus === "MAINTENANCE" && (
         <p className="text-sm text-muted">
           Device is online but dark due to a maintenance window (soft blackout).

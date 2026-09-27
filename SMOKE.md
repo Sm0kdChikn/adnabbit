@@ -1215,5 +1215,49 @@ Recurring / bulk create.
 
 ## Out of scope
 
-Auto-reboot-into-window, OptiSigns, email; Tickets Y–Z.
+Auto-reboot-into-window, OptiSigns, email; Ticket Z.
 
+---
+
+# Ticket Y — Volume / brightness remote smoke
+
+**Prereq:** migrated DB (`Screen.volume/brightness`, `Host.default*`, `Device.lastApplied*`), seed admin, `npm run dev` on :3000. Player tip with Ticket Y honor.
+
+## Y1. Schema — PASS expected
+
+```bash
+npx prisma db execute --stdin <<< "PRAGMA table_info(Screen);"
+# expect volume, brightness columns
+```
+
+## Y2. Resolve inherit — PASS expected
+
+1. Leave screen volume/brightness null; host defaults null → resolved 80 / 100.
+2. Set host `defaultVolume=50` → screen inherit → 50.
+3. Set screen `volume=30` → resolved 30 (screen wins).
+
+## Y3. Save + apply → setOutput queued — PASS expected
+
+1. Paired online device. Admin `PATCH /api/admin/screens/{id}/output` `{ volume: 40, brightness: 70, apply: true }`.
+2. Response `queued: true`. Device `pendingInputJson` contains `setOutput`.
+3. Audit `output.apply`.
+
+## Y4. Unpaired / stale → 409 — PASS expected
+
+Apply with no device or stale heartbeat → HTTP 409 (prefs may still save with `prefsSaved: true`).
+
+## Y5. Heartbeat last-applied — PASS expected
+
+Player heartbeats `{ output: { volume, brightness } }` → Device `lastApplied*`; UI shows last-applied.
+
+## Y6. Player honor — PASS expected
+
+`setOutput` → video volume applied; brightness via sysfs/xrandr or soft-fail log + CSS filter.
+
+## Soft misses (not tested)
+
+Host self-service; fleet bulk.
+
+## Out of scope
+
+CEC TV, sensors, per-creative gain, OptiSigns; Ticket Z groups.

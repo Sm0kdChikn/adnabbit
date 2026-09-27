@@ -9,6 +9,7 @@ import {
   DEFAULT_OFFLINE_POLICY,
   DEFAULT_OFFLINE_CACHE_TTL_HOURS,
 } from "@/lib/offline-policy";
+import { parseOutputLevel } from "@/lib/output";
 
 export async function GET() {
   const auth = await requireAdminApi();
@@ -36,6 +37,8 @@ export async function POST(req: Request) {
     timezone?: string;
     offlinePolicy?: string;
     offlineCacheTtlHours?: number | string;
+    defaultVolume?: number | string | null;
+    defaultBrightness?: number | string | null;
   };
   try {
     body = await req.json();
@@ -94,6 +97,23 @@ export async function POST(req: Request) {
     offlineCacheTtlHours = ttl;
   }
 
+  let defaultVolume: number | null = null;
+  if (body.defaultVolume !== undefined) {
+    const parsed = parseOutputLevel(body.defaultVolume, "defaultVolume");
+    if (!parsed.ok) {
+      return NextResponse.json({ error: parsed.error }, { status: 400 });
+    }
+    if (parsed.value !== undefined) defaultVolume = parsed.value;
+  }
+  let defaultBrightness: number | null = null;
+  if (body.defaultBrightness !== undefined) {
+    const parsed = parseOutputLevel(body.defaultBrightness, "defaultBrightness");
+    if (!parsed.ok) {
+      return NextResponse.json({ error: parsed.error }, { status: 400 });
+    }
+    if (parsed.value !== undefined) defaultBrightness = parsed.value;
+  }
+
   const host = await prisma.host.create({
     data: {
       name,
@@ -103,6 +123,8 @@ export async function POST(req: Request) {
       timezone,
       offlinePolicy,
       offlineCacheTtlHours,
+      defaultVolume,
+      defaultBrightness,
     },
   });
 

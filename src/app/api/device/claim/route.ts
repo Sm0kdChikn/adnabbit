@@ -12,6 +12,10 @@ import { resolveOpenHoursForScreen } from "@/lib/open-hours";
 import { resolveDownloadHoursForScreen } from "@/lib/download-hours";
 import { resolveOfflinePolicyForScreen } from "@/lib/offline-policy";
 import { resolveMaintenanceForScreen } from "@/lib/maintenance";
+import {
+  resolveOutputForScreen,
+  toOutputWire,
+} from "@/lib/output";
 
 const bodySchema = z.object({
   code: z.string().min(1),
@@ -98,12 +102,13 @@ export async function POST(req: Request) {
       timezone: string;
       deviceId: string;
     };
-    const [hours, downloadHours, offlinePolicy, maintenance] =
+    const [hours, downloadHours, offlinePolicy, maintenance, resolvedOutput] =
       await Promise.all([
         resolveOpenHoursForScreen(claimed.screenId),
         resolveDownloadHoursForScreen(claimed.screenId),
         resolveOfflinePolicyForScreen(claimed.screenId),
         resolveMaintenanceForScreen(claimed.screenId),
+        resolveOutputForScreen(claimed.screenId),
       ]);
     const playbackAllowed = !maintenance.active && hours.isOpenNow;
     return NextResponse.json({
@@ -133,6 +138,8 @@ export async function POST(req: Request) {
       // Ticket V
       offlinePolicy: offlinePolicy.offlinePolicy,
       offlineCacheTtlHours: offlinePolicy.offlineCacheTtlHours,
+      // Ticket Y
+      output: toOutputWire(resolvedOutput),
     });
   } catch (e) {
     console.error("device claim failed", e);

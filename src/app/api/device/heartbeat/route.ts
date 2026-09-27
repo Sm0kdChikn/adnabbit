@@ -9,6 +9,10 @@ import { resolveOpenHoursForScreen } from "@/lib/open-hours";
 import { resolveDownloadHoursForScreen } from "@/lib/download-hours";
 import { resolveOfflinePolicyForScreen } from "@/lib/offline-policy";
 import { resolveMaintenanceForScreen } from "@/lib/maintenance";
+import {
+  resolveOutputForScreen,
+  toOutputWire,
+} from "@/lib/output";
 
 const PLAYBACK_STATES = new Set([
   "LIVE",
@@ -37,6 +41,8 @@ export async function POST(req: Request) {
   let playerVersion: string | undefined;
   let diskFreeBytes: number | undefined;
   let diskTotalBytes: number | undefined;
+  let lastAppliedVolume: number | undefined;
+  let lastAppliedBrightness: number | undefined;
 
   try {
     const body = await req.json().catch(() => null);
@@ -55,6 +61,14 @@ export async function POST(req: Request) {
       const total = parseOptionalInt(body.diskTotalBytes);
       if (free !== undefined) diskFreeBytes = free;
       if (total !== undefined) diskTotalBytes = total;
+      // Ticket Y — last-applied volume/brightness from player
+      if (body.output && typeof body.output === "object") {
+        const o = body.output as Record<string, unknown>;
+        const ov = parseOptionalInt(o.volume);
+        const ob = parseOptionalInt(o.brightness);
+        if (ov !== undefined && ov <= 100) lastAppliedVolume = ov;
+        if (ob !== undefined && ob <= 100) lastAppliedBrightness = ob;
+      }
     }
   } catch {
     /* body optional */
@@ -71,6 +85,12 @@ export async function POST(req: Request) {
       ...(playerVersion !== undefined ? { playerVersion } : {}),
       ...(diskFreeBytes !== undefined ? { diskFreeBytes } : {}),
       ...(diskTotalBytes !== undefined ? { diskTotalBytes } : {}),
+      ...(lastAppliedVolume !== undefined
+        ? { lastAppliedVolume }
+        : {}),
+      ...(lastAppliedBrightness !== undefined
+        ? { lastAppliedBrightness }
+        : {}),
     },
     select: {
       screenId: true,
@@ -82,15 +102,19 @@ export async function POST(req: Request) {
       playerVersion: true,
       diskFreeBytes: true,
       diskTotalBytes: true,
+      lastAppliedVolume: true,
+      lastAppliedBrightness: true,
     },
   });
 
-  const [hours, downloadHours, offlinePolicy, maintenance] = await Promise.all([
-    resolveOpenHoursForScreen(updated.screenId, now),
-    resolveDownloadHoursForScreen(updated.screenId, now),
-    resolveOfflinePolicyForScreen(updated.screenId),
-    resolveMaintenanceForScreen(updated.screenId, now),
-  ]);
+  const [hours, downloadHours, offlinePolicy, maintenance, resolvedOutput] =
+    await Promise.all([
+      resolveOpenHoursForScreen(updated.screenId, now),
+      resolveDownloadHoursForScreen(updated.screenId, now),
+      resolveOfflinePolicyForScreen(updated.screenId),
+      resolveMaintenanceForScreen(updated.screenId, now),
+      resolveOutputForScreen(updated.screenId),
+    ]);
   const captureScreenshot = needsScreenshotCapture(updated);
   const inputPending = hasPendingInput(updated.pendingInputJson);
   // Ticket X — maintenance beats force-live / open hours
@@ -125,6 +149,12 @@ export async function POST(req: Request) {
     // Ticket V
     offlinePolicy: offlinePolicy.offlinePolicy,
     offlineCacheTtlHours: offlinePolicy.offlineCacheTtlHours,
+    // Ticket Y — desired sticky-resolved levels + echo last-applied
+    output: toOutputWire(resolvedOutput),
+    lastAppliedOutput: {
+      volume: updated.lastAppliedVolume,
+      brightness: updated.lastAppliedBrightness,
+    },
     commands: {
       captureScreenshot,
       inputPending,

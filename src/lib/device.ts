@@ -153,6 +153,7 @@ export const REMOTE_COMMAND_NAMES = [
   "setKiosk",
   "reboot",
   "restartApp",
+  "setOutput",
 ] as const;
 export type RemoteCommandName = (typeof REMOTE_COMMAND_NAMES)[number];
 
@@ -179,6 +180,10 @@ export type RemoteCommandEvent = {
   name: RemoteCommandName;
   /** Required when name is setKiosk — true = lock, false = unlock. */
   enabled?: boolean;
+  /** Ticket Y — setOutput volume 0–100 (omit = leave unchanged). */
+  volume?: number;
+  /** Ticket Y — setOutput brightness 0–100 (omit = leave unchanged). */
+  brightness?: number;
 };
 
 export type RemoteInputEvent =
@@ -259,6 +264,39 @@ export function normalizeRemoteInputEvent(raw: unknown): RemoteInputEvent | null
         name: "setKiosk",
         enabled: e.enabled,
       };
+    }
+    if (e.name === "setOutput") {
+      const out: RemoteCommandEvent = {
+        type: "command",
+        name: "setOutput",
+      };
+      let has = false;
+      if (e.volume !== undefined) {
+        if (
+          typeof e.volume !== "number" ||
+          !Number.isFinite(e.volume) ||
+          e.volume < 0 ||
+          e.volume > 100
+        ) {
+          return null;
+        }
+        out.volume = Math.round(e.volume);
+        has = true;
+      }
+      if (e.brightness !== undefined) {
+        if (
+          typeof e.brightness !== "number" ||
+          !Number.isFinite(e.brightness) ||
+          e.brightness < 0 ||
+          e.brightness > 100
+        ) {
+          return null;
+        }
+        out.brightness = Math.round(e.brightness);
+        has = true;
+      }
+      if (!has) return null;
+      return out;
     }
     return { type: "command", name: e.name as RemoteCommandName };
   }

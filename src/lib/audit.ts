@@ -22,7 +22,9 @@ export type AuditAction =
   | "download_hours.save"
   | "offline_policy.save"
   | "maintenance.create"
-  | "maintenance.clear";
+  | "maintenance.clear"
+  | "output.save"
+  | "output.apply";
 
 export type WriteAuditInput = {
   actorUserId: string;

@@ -23,6 +23,7 @@
 // Ticket V: Host.offlinePolicy + offlineCacheTtlHours (player offline play)
 // Ticket W: AuditEvent append-only admin audit log
 // Ticket X: MaintenanceWindow one-off HOST|SCREEN soft blackout (beats force-live)
+// Ticket Y: Screen/Host volume+brightness prefs; Device last-applied; setOutput queue
 
 generator client {
   provider = "prisma-client-js"
@@ -95,6 +96,10 @@ model Host {
   offlinePolicy         String   @default("PLAY_CACHE")
   /// Ticket V — hours to keep looping last cached playlist (0 = blackout immediately when offline)
   offlineCacheTtlHours  Int      @default(24)
+  /// Ticket Y — venue default volume 0–100 (null → built-in default 80)
+  defaultVolume         Int?
+  /// Ticket Y — venue default brightness 0–100 (null → built-in default 100)
+  defaultBrightness     Int?
   notes      String?
   /// Ticket G — owning HOST user (null = unclaimed). One login owns one Host for MVP.
   userId     String?  @unique
@@ -130,6 +135,10 @@ model Screen {
   playbackTakenDownAt     DateTime?
   playbackTakenDownById   String?
   playbackTakenDownReason String?
+  /// Ticket Y — sticky volume 0–100 (null → inherit host defaultVolume → 80)
+  volume            Int?
+  /// Ticket Y — sticky brightness 0–100 (null → inherit host defaultBrightness → 100)
+  brightness        Int?
   /// Ticket R — fleet health alerts
   fleetAlerts       FleetAlert[]
   createdAt         DateTime           @default(now())
@@ -318,6 +327,9 @@ model Device {
   /// Ticket R — optional disk stats (bytes); null until player reports (no fake metrics)
   diskFreeBytes   Int?
   diskTotalBytes  Int?
+  /// Ticket Y — last player-applied volume/brightness from heartbeat output
+  lastAppliedVolume     Int?
+  lastAppliedBrightness Int?
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
