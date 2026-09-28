@@ -157,9 +157,10 @@ export async function handlePlaysGet(
     filters,
     summary: data.summary,
     rows: data.rows,
+    charts: data.charts,
     notes: [
-      "Plays are first-party device PlayLog counts (Ticket F2 soak).",
-      "OptiSigns CSV import + Looker remain production proof-of-play until cutover.",
+      "Played charts use first-party PlayLog only (Ticket POP-CHARTS / F2).",
+      "Never blended with OptiSigns PlayEvent. Scheduled fill/heat remain Ticket T.",
       "Mute paths (closed hours / maintenance / take-down) produce zero new rows.",
     ],
   });

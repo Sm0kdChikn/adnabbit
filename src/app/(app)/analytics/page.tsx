@@ -83,6 +83,8 @@ export default async function AdvertiserAnalyticsPage({
       campaigns={campaigns}
       playsSummary={plays.summary}
       playRows={plays.rows}
+      playedCharts={plays.charts}
+      role="ADVERTISER"
       screens={screens.map((s) => ({
         id: s.id,
         label: `${s.host.name} · ${s.name}`,

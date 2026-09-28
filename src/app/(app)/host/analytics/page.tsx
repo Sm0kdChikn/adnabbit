@@ -75,6 +75,8 @@ export default async function HostAnalyticsPage({
       campaigns={campaigns}
       playsSummary={plays.summary}
       playRows={plays.rows}
+      playedCharts={plays.charts}
+      role="HOST"
       screens={host.screens.map((s) => ({ id: s.id, label: s.name }))}
       showScreenFilter
     />

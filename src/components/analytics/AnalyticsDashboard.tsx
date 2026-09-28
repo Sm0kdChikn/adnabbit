@@ -1,10 +1,12 @@
 import { Suspense } from "react";
 import {
+  type AnalyticsRole,
   type CampaignRollup,
   type DaypartHeatResult,
   type DateRange,
   type FillRow,
   type FillSummary,
+  type PlayedChartsResult,
   type PlayRow,
   type PlaysSummary,
   WEEKDAY_LABELS,
@@ -19,6 +21,7 @@ import {
   StatRow,
 } from "@/components/ui";
 import { AnalyticsFilters } from "./AnalyticsFilters";
+import { PlayedCharts } from "./PlayedCharts";
 
 function fmtDurMs(ms: number): string {
   if (ms <= 0) return "0s";
@@ -63,6 +66,8 @@ export function AnalyticsDashboard({
   campaigns,
   playsSummary,
   playRows = [],
+  playedCharts,
+  role,
   hosts = [],
   screens = [],
   advertisers = [],
@@ -81,6 +86,8 @@ export function AnalyticsDashboard({
   campaigns: CampaignRollup;
   playsSummary: PlaysSummary;
   playRows?: PlayRow[];
+  playedCharts: PlayedChartsResult;
+  role: AnalyticsRole;
   hosts?: Option[];
   screens?: Option[];
   advertisers?: Option[];
@@ -121,7 +128,9 @@ export function AnalyticsDashboard({
       <p className="text-xs text-muted">
         Range <span className="text-foreground">{range.fromYmd}</span> →{" "}
         <span className="text-foreground">{range.toYmd}</span>
-        {range.preset !== "custom" ? (
+        {range.preset === "24h" ? (
+          <span className="text-muted-strong"> (last 24 hours)</span>
+        ) : range.preset !== "custom" ? (
           <span className="text-muted-strong"> (last {range.preset} days)</span>
         ) : null}
         .{" "}
@@ -325,6 +334,12 @@ export function AnalyticsDashboard({
           </div>
         )}
       </section>
+
+      <PlayedCharts
+        charts={playedCharts}
+        role={role}
+        totalPlays={playsSummary.playCount}
+      />
 
       <section className="space-y-3">
         <SectionTitle>Played (F2) — first-party plays</SectionTitle>

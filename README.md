@@ -1,6 +1,6 @@
 # AdNabbit Web MVP
 
-Advertiser signup/login, creative upload (image/video), submit for review, admin approve/reject, **Ticket A — Host/screen inventory**, and **Ticket B — Advertiser public profiles**, and **Ticket C — Placement requests**, and **Ticket D — Scheduling**, and **Ticket E — Recurring dayparts**, and **Ticket E2 — Schedule calendar view**, and **Ticket G — Host self-serve portal**, and **Ticket J — device claim / playlist APIs**, and **Ticket K — admin folders**, and **Ticket O — playlist refresh**, and **Ticket P — admin remote view (screenshot relay)**, and **Ticket P.1 — admin remote mouse/keyboard control**, and **Ticket P.1.1 — kiosk lock/unlock toggle**, and **Ticket P.1.2 — admin device reboot**, and **Ticket Q — venue open hours / soft blackout / PoP mute**, and **Ticket R — fleet health + offline/empty alerts**, and **Ticket S — campaign windows + emergency take-down**, and **Ticket T — host / advertiser / admin analytics (schedule fill)**, and **Ticket U — download/quiet hours + fleet bulk ops**, and **Ticket V — offline play policy**, and **Ticket W — audit log**, and **Ticket X — maintenance windows**, and **Ticket Y — volume / brightness remote**, and **Ticket Z — device groups**, and **Ticket F2 — first-party PlayLog / PoP persistence**, and **Ticket BH — bug hunt (Q.1 overnight wrap + harden)**, and **Ticket UP — UI polish**.
+Advertiser signup/login, creative upload (image/video), submit for review, admin approve/reject, **Ticket A — Host/screen inventory**, and **Ticket B — Advertiser public profiles**, and **Ticket C — Placement requests**, and **Ticket D — Scheduling**, and **Ticket E — Recurring dayparts**, and **Ticket E2 — Schedule calendar view**, and **Ticket G — Host self-serve portal**, and **Ticket J — device claim / playlist APIs**, and **Ticket K — admin folders**, and **Ticket O — playlist refresh**, and **Ticket P — admin remote view (screenshot relay)**, and **Ticket P.1 — admin remote mouse/keyboard control**, and **Ticket P.1.1 — kiosk lock/unlock toggle**, and **Ticket P.1.2 — admin device reboot**, and **Ticket Q — venue open hours / soft blackout / PoP mute**, and **Ticket R — fleet health + offline/empty alerts**, and **Ticket S — campaign windows + emergency take-down**, and **Ticket T — host / advertiser / admin analytics (schedule fill)**, and **Ticket U — download/quiet hours + fleet bulk ops**, and **Ticket V — offline play policy**, and **Ticket W — audit log**, and **Ticket X — maintenance windows**, and **Ticket Y — volume / brightness remote**, and **Ticket Z — device groups**, and **Ticket F2 — first-party PlayLog / PoP persistence**, and **Ticket BH — bug hunt (Q.1 overnight wrap + harden)**, and **Ticket UP — UI polish**, and **Ticket POP-CHARTS — in-app PlayLog proof-of-play charts**.
 
 **Repo target:** https://github.com/Sm0kdChikn/adnabbit
 
@@ -825,6 +825,22 @@ Nested groups; host-owned groups; group-scoped fleet count chips.
 ### Out of scope
 
 Auto-geo groups; new roles; OptiSigns cutover; bug hunt.
+
+## Ticket POP-CHARTS — In-app PlayLog proof-of-play charts
+
+Clean dark-shell charts on existing analytics pages (advertiser `/analytics`, host `/host/analytics`, admin `/admin/analytics`). **No Grafana.** Data is **PlayLog only** (never OptiSigns `PlayEvent`).
+
+| Chart | Notes |
+| --- | --- |
+| Played over time | Area by day (default); Day/Hour toggle when range ≤ 7d or 24h |
+| Daypart plays | PlayLog counts by hour-of-day (separate from Scheduled daypart heat minutes) |
+| Breakdown | Top creatives (advertiser + admin); top screens (host + admin); top advertisers (admin) |
+
+Date presets: **24h / 7d / 30d / custom** (hard cap 90 days). Role scoping reuses Ticket T analytics auth. Empty states when no PlayLog rows.
+
+API: existing `…/analytics/plays` JSON now includes `charts` (`byDay`, `byHour`, `daypart`, `byCreative`, `byScreen`, `byAdvertiser`). Chart lib: **recharts**.
+
+Local demo: `npx tsx scripts/seed-pop-charts.ts` then open analytics.
 
 ## Ticket F2 — First-party PlayLog / PoP persistence
 

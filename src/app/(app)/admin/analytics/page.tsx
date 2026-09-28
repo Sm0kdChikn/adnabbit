@@ -77,6 +77,8 @@ export default async function AdminAnalyticsPage({
       campaigns={campaigns}
       playsSummary={plays.summary}
       playRows={plays.rows}
+      playedCharts={plays.charts}
+      role="ADMIN"
       hosts={hosts.map((h) => ({ id: h.id, label: h.name }))}
       screens={screens.map((s) => ({
         id: s.id,

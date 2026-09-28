@@ -44,6 +44,8 @@ export function AnalyticsFilters({
       params.set("range", "custom");
     } else if (r === "30") {
       params.set("range", "30");
+    } else if (r === "24h") {
+      params.set("range", "24h");
     } else {
       params.set("range", "7");
     }
@@ -110,9 +112,10 @@ export function AnalyticsFilters({
             onChange={(e) => setRange(e.target.value)}
             className="rounded-md border border-border bg-background px-2 py-1.5 text-sm text-foreground"
           >
+            <option value="24h">Last 24 hours</option>
             <option value="7">Last 7 days</option>
             <option value="30">Last 30 days</option>
-            <option value="custom">Custom</option>
+            <option value="custom">Custom (max 90d)</option>
           </select>
         </div>
         {range === "custom" ? (

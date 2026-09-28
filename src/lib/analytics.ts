@@ -47,7 +47,10 @@ export type AnalyticsScope = {
 export type DateRange = {
   fromYmd: string;
   toYmd: string;
-  preset: "7" | "30" | "custom";
+  preset: "24h" | "7" | "30" | "custom";
+  /** Rolling window when preset is 24h (UTC instants). */
+  fromInstant?: Date;
+  toInstant?: Date;
 };
 
 export type AnalyticsFilters = {
@@ -120,8 +123,15 @@ export function parseAnalyticsDateRange(
 ): DateRange {
   const reportingTz = DEFAULT_TIMEZONE;
   const today = todayYmdInZone(reportingTz, now);
-  const rangeRaw = (params.range || "").trim();
+  const rangeRaw = (params.range || "").trim().toLowerCase();
 
+  if (rangeRaw === "24h" || rangeRaw === "24") {
+    const fromInstant = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+    const toInstant = now;
+    const fromYmd = formatInTimeZone(fromInstant, reportingTz, "yyyy-MM-dd");
+    const toYmd = formatInTimeZone(toInstant, reportingTz, "yyyy-MM-dd");
+    return { fromYmd, toYmd, preset: "24h", fromInstant, toInstant };
+  }
   if (rangeRaw === "30") {
     return { fromYmd: addYmd(today, -29), toYmd: today, preset: "30" };
   }
@@ -869,12 +879,75 @@ export type PlaysSummary = {
   creativeCount: number;
 };
 
+export type PlayedTimePoint = {
+  key: string;
+  label: string;
+  playCount: number;
+  totalDurationMs: number;
+};
+
+export type PlayedDaypartHour = {
+  hour: number;
+  label: string;
+  playCount: number;
+  totalDurationMs: number;
+};
+
+export type PlayedBreakdownRow = {
+  id: string;
+  label: string;
+  sublabel?: string;
+  playCount: number;
+  totalDurationMs: number;
+};
+
+/** Ticket POP-CHARTS — PlayLog-only chart series (never PlayEvent). */
+export type PlayedChartsResult = {
+  byDay: PlayedTimePoint[];
+  byHour: PlayedTimePoint[];
+  daypart: PlayedDaypartHour[];
+  byCreative: PlayedBreakdownRow[];
+  byScreen: PlayedBreakdownRow[];
+  byAdvertiser: PlayedBreakdownRow[];
+  /** True when range span ≤ 7 calendar days (or 24h) — UI may toggle day vs hour. */
+  allowHourToggle: boolean;
+  timezone: string;
+};
+
 export type PlaysResult = {
   summary: PlaysSummary;
   rows: PlayRow[];
+  charts: PlayedChartsResult;
 };
 
+function emptyPlayedCharts(tz = DEFAULT_TIMEZONE): PlayedChartsResult {
+  return {
+    byDay: [],
+    byHour: [],
+    daypart: Array.from({ length: 24 }, (_, hour) => ({
+      hour,
+      label: `${String(hour).padStart(2, "0")}:00`,
+      playCount: 0,
+      totalDurationMs: 0,
+    })),
+    byCreative: [],
+    byScreen: [],
+    byAdvertiser: [],
+    allowHourToggle: true,
+    timezone: tz,
+  };
+}
+
+function spanAllowsHourToggle(range: DateRange): boolean {
+  if (range.preset === "24h" || range.preset === "7") return true;
+  const days = eachYmdInclusive(range.fromYmd, range.toYmd);
+  return days.length <= 7;
+}
+
 function rangeToUtcBounds(range: DateRange): { from: Date; toExclusive: Date } {
+  if (range.preset === "24h" && range.fromInstant && range.toInstant) {
+    return { from: range.fromInstant, toExclusive: range.toInstant };
+  }
   const tz = DEFAULT_TIMEZONE;
   const from = fromZonedTime(`${range.fromYmd} 00:00:00`, tz);
   // inclusive toYmd → exclusive next day
@@ -917,6 +990,7 @@ export async function computePlays(
           creativeCount: 0,
         },
         rows: [],
+        charts: emptyPlayedCharts(),
       };
     }
     where.screen = { hostId: scope.hostId };
@@ -940,6 +1014,7 @@ export async function computePlays(
           creativeCount: 0,
         },
         rows: [],
+        charts: emptyPlayedCharts(),
       };
     }
     where.creativeId = { in: advertiserCreativeIds };
@@ -958,6 +1033,7 @@ export async function computePlays(
           creativeCount: 0,
         },
         rows: [],
+        charts: emptyPlayedCharts(),
       };
     }
     where.creativeId = { in: ids };
@@ -969,6 +1045,7 @@ export async function computePlays(
       screenId: true,
       creativeId: true,
       durationMs: true,
+      startedAt: true,
       screen: {
         select: {
           name: true,
@@ -978,7 +1055,7 @@ export async function computePlays(
       creative: {
         select: {
           name: true,
-          advertiser: { select: { id: true, email: true } },
+          advertiser: { select: { id: true, email: true, name: true } },
         },
       },
     },
@@ -1002,6 +1079,26 @@ export async function computePlays(
   const screenSet = new Set<string>();
   const creativeSet = new Set<string>();
 
+  const tz = DEFAULT_TIMEZONE;
+  const dayMap = new Map<string, { playCount: number; totalDurationMs: number }>();
+  const hourMap = new Map<string, { playCount: number; totalDurationMs: number }>();
+  const daypart = Array.from({ length: 24 }, () => ({
+    playCount: 0,
+    totalDurationMs: 0,
+  }));
+  const creativeMap = new Map<
+    string,
+    { label: string; sublabel?: string; playCount: number; totalDurationMs: number }
+  >();
+  const screenMap = new Map<
+    string,
+    { label: string; sublabel?: string; playCount: number; totalDurationMs: number }
+  >();
+  const advertiserMap = new Map<
+    string,
+    { label: string; sublabel?: string; playCount: number; totalDurationMs: number }
+  >();
+
   for (const log of logs) {
     const key = `${log.screenId}|${log.creativeId}`;
     let row = map.get(key);
@@ -1020,12 +1117,63 @@ export async function computePlays(
       };
       map.set(key, row);
     }
+    const dur = log.durationMs ?? 0;
     row.playCount += 1;
-    row.totalDurationMs += log.durationMs ?? 0;
+    row.totalDurationMs += dur;
     playCount += 1;
-    totalDurationMs += log.durationMs ?? 0;
+    totalDurationMs += dur;
     screenSet.add(log.screenId);
     creativeSet.add(log.creativeId);
+
+    const dayKey = formatInTimeZone(log.startedAt, tz, "yyyy-MM-dd");
+    const hourKey = formatInTimeZone(log.startedAt, tz, "yyyy-MM-dd HH:00");
+    const hourOfDay = Number(formatInTimeZone(log.startedAt, tz, "H"));
+
+    const d = dayMap.get(dayKey) || { playCount: 0, totalDurationMs: 0 };
+    d.playCount += 1;
+    d.totalDurationMs += dur;
+    dayMap.set(dayKey, d);
+
+    const h = hourMap.get(hourKey) || { playCount: 0, totalDurationMs: 0 };
+    h.playCount += 1;
+    h.totalDurationMs += dur;
+    hourMap.set(hourKey, h);
+
+    if (hourOfDay >= 0 && hourOfDay <= 23) {
+      daypart[hourOfDay].playCount += 1;
+      daypart[hourOfDay].totalDurationMs += dur;
+    }
+
+    const cAcc = creativeMap.get(log.creativeId) || {
+      label: log.creative.name,
+      sublabel: log.creative.advertiser.email,
+      playCount: 0,
+      totalDurationMs: 0,
+    };
+    cAcc.playCount += 1;
+    cAcc.totalDurationMs += dur;
+    creativeMap.set(log.creativeId, cAcc);
+
+    const sAcc = screenMap.get(log.screenId) || {
+      label: log.screen.name,
+      sublabel: log.screen.host.name,
+      playCount: 0,
+      totalDurationMs: 0,
+    };
+    sAcc.playCount += 1;
+    sAcc.totalDurationMs += dur;
+    screenMap.set(log.screenId, sAcc);
+
+    const aId = log.creative.advertiser.id;
+    const aAcc = advertiserMap.get(aId) || {
+      label: log.creative.advertiser.name || log.creative.advertiser.email,
+      sublabel: log.creative.advertiser.email,
+      playCount: 0,
+      totalDurationMs: 0,
+    };
+    aAcc.playCount += 1;
+    aAcc.totalDurationMs += dur;
+    advertiserMap.set(aId, aAcc);
   }
 
   const rows = Array.from(map.values()).sort(
@@ -1036,6 +1184,82 @@ export async function computePlays(
       a.creativeName.localeCompare(b.creativeName)
   );
 
+  // Fill every day in range so sparse charts show zeros honestly
+  const byDay: PlayedTimePoint[] = [];
+  for (const day of eachYmdInclusive(range.fromYmd, range.toYmd)) {
+    const hit = dayMap.get(day);
+    byDay.push({
+      key: day,
+      label: day.slice(5), // MM-DD
+      playCount: hit?.playCount ?? 0,
+      totalDurationMs: hit?.totalDurationMs ?? 0,
+    });
+  }
+
+  const byHour: PlayedTimePoint[] = Array.from(hourMap.entries())
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([key, v]) => ({
+      key,
+      label: key.slice(5), // MM-DD HH:00
+      playCount: v.playCount,
+      totalDurationMs: v.totalDurationMs,
+    }));
+
+  // For 24h / short ranges with no plays, still expose hour buckets in window
+  if (byHour.length === 0 && spanAllowsHourToggle(range)) {
+    const { from, toExclusive } = rangeToUtcBounds(range);
+    let cursor = new Date(from);
+    cursor.setMinutes(0, 0, 0);
+    // align to reporting-TZ hour labels via walking UTC hours
+    while (cursor < toExclusive) {
+      const key = formatInTimeZone(cursor, tz, "yyyy-MM-dd HH:00");
+      if (!byHour.some((p) => p.key === key)) {
+        byHour.push({
+          key,
+          label: key.slice(5),
+          playCount: 0,
+          totalDurationMs: 0,
+        });
+      }
+      cursor = new Date(cursor.getTime() + 60 * 60 * 1000);
+    }
+    byHour.sort((a, b) => a.key.localeCompare(b.key));
+  }
+
+  const topN = 10;
+  const toBreakdown = (
+    m: Map<
+      string,
+      { label: string; sublabel?: string; playCount: number; totalDurationMs: number }
+    >
+  ): PlayedBreakdownRow[] =>
+    Array.from(m.entries())
+      .map(([id, v]) => ({
+        id,
+        label: v.label,
+        sublabel: v.sublabel,
+        playCount: v.playCount,
+        totalDurationMs: v.totalDurationMs,
+      }))
+      .sort((a, b) => b.playCount - a.playCount || a.label.localeCompare(b.label))
+      .slice(0, topN);
+
+  const charts: PlayedChartsResult = {
+    byDay,
+    byHour,
+    daypart: daypart.map((d, hour) => ({
+      hour,
+      label: `${String(hour).padStart(2, "0")}:00`,
+      playCount: d.playCount,
+      totalDurationMs: d.totalDurationMs,
+    })),
+    byCreative: toBreakdown(creativeMap),
+    byScreen: toBreakdown(screenMap),
+    byAdvertiser: toBreakdown(advertiserMap),
+    allowHourToggle: spanAllowsHourToggle(range),
+    timezone: tz,
+  };
+
   return {
     summary: {
       playCount,
@@ -1044,6 +1268,7 @@ export async function computePlays(
       creativeCount: creativeSet.size,
     },
     rows,
+    charts,
   };
 }
 
