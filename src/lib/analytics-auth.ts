@@ -74,3 +74,11 @@ export function analyticsPagePath(role: AnalyticsRole): string {
   if (role === "HOST") return "/host/analytics";
   return "/analytics";
 }
+
+/**
+ * Ticket POP-EXPORT — alias for shared PlayLog scope resolution.
+ * Charts and exports must both resolve authority from session, never client ids.
+ */
+export async function resolvePlayLogScope() {
+  return requireAnalyticsScope();
+}

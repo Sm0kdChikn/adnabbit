@@ -1,6 +1,6 @@
 # AdNabbit Web MVP
 
-Advertiser signup/login, creative upload (image/video), submit for review, admin approve/reject, **Ticket A — Host/screen inventory**, and **Ticket B — Advertiser public profiles**, and **Ticket C — Placement requests**, and **Ticket D — Scheduling**, and **Ticket E — Recurring dayparts**, and **Ticket E2 — Schedule calendar view**, and **Ticket G — Host self-serve portal**, and **Ticket J — device claim / playlist APIs**, and **Ticket K — admin folders**, and **Ticket O — playlist refresh**, and **Ticket P — admin remote view (screenshot relay)**, and **Ticket P.1 — admin remote mouse/keyboard control**, and **Ticket P.1.1 — kiosk lock/unlock toggle**, and **Ticket P.1.2 — admin device reboot**, and **Ticket Q — venue open hours / soft blackout / PoP mute**, and **Ticket R — fleet health + offline/empty alerts**, and **Ticket S — campaign windows + emergency take-down**, and **Ticket T — host / advertiser / admin analytics (schedule fill)**, and **Ticket U — download/quiet hours + fleet bulk ops**, and **Ticket V — offline play policy**, and **Ticket W — audit log**, and **Ticket X — maintenance windows**, and **Ticket Y — volume / brightness remote**, and **Ticket Z — device groups**, and **Ticket F2 — first-party PlayLog / PoP persistence**, and **Ticket BH — bug hunt (Q.1 overnight wrap + harden)**, and **Ticket UP — UI polish**, and **Ticket POP-CHARTS — in-app PlayLog proof-of-play charts**.
+Advertiser signup/login, creative upload (image/video), submit for review, admin approve/reject, **Ticket A — Host/screen inventory**, and **Ticket B — Advertiser public profiles**, and **Ticket C — Placement requests**, and **Ticket D — Scheduling**, and **Ticket E — Recurring dayparts**, and **Ticket E2 — Schedule calendar view**, and **Ticket G — Host self-serve portal**, and **Ticket J — device claim / playlist APIs**, and **Ticket K — admin folders**, and **Ticket O — playlist refresh**, and **Ticket P — admin remote view (screenshot relay)**, and **Ticket P.1 — admin remote mouse/keyboard control**, and **Ticket P.1.1 — kiosk lock/unlock toggle**, and **Ticket P.1.2 — admin device reboot**, and **Ticket Q — venue open hours / soft blackout / PoP mute**, and **Ticket R — fleet health + offline/empty alerts**, and **Ticket S — campaign windows + emergency take-down**, and **Ticket T — host / advertiser / admin analytics (schedule fill)**, and **Ticket U — download/quiet hours + fleet bulk ops**, and **Ticket V — offline play policy**, and **Ticket W — audit log**, and **Ticket X — maintenance windows**, and **Ticket Y — volume / brightness remote**, and **Ticket Z — device groups**, and **Ticket F2 — first-party PlayLog / PoP persistence**, and **Ticket BH — bug hunt (Q.1 overnight wrap + harden)**, and **Ticket UP — UI polish**, and **Ticket POP-CHARTS — in-app PlayLog proof-of-play charts**, and **Ticket POP-EXPORT — PlayLog PDF + Excel export**.
 
 **Repo target:** https://github.com/Sm0kdChikn/adnabbit
 
@@ -841,6 +841,26 @@ Date presets: **24h / 7d / 30d / custom** (hard cap 90 days). Role scoping reuse
 API: existing `…/analytics/plays` JSON now includes `charts` (`byDay`, `byHour`, `daypart`, `byCreative`, `byScreen`, `byAdvertiser`). Chart lib: **recharts**.
 
 Local demo: `npx tsx scripts/seed-pop-charts.ts` then open analytics.
+
+
+## Ticket POP-EXPORT — PlayLog PDF + Excel export
+
+Download **Played (PlayLog)** from analytics (same date range / filters as on-screen). **PlayLog only** — never OptiSigns `PlayEvent`.
+
+| Format | Path (role-routed) | Contents |
+| --- | --- | --- |
+| Excel | `GET …/analytics/export.xlsx` | One sheet of raw plays: `playedAt`, creative id+name, campaign/schedule if present, screen id+name, venue/host, `durationMs`. Empty range → headers only. |
+| PDF | `GET …/analytics/export.pdf` | Printable summary: total plays, plays-by-day, top creatives (advertiser + admin) and/or top screens (host + admin). Empty range → “No plays in this range”. |
+
+Role-routed bases: admin `/api/admin/analytics`, host `/api/host/analytics`, advertiser `/api/analytics`. Scope is **session-only** via `resolvePlayLogScope` / `requireAnalyticsScope` + `buildPlayLogWhere` (shared with POP-CHARTS `computePlays`). Client `advertiserId` / `hostId` is never authority. Row cap **10,000** with a clear 400.
+
+UI: **Export Excel** / **Export PDF** charcoal/cyan buttons next to existing CSV on analytics pages.
+
+Libs: **exceljs** + **pdfkit**.
+
+### Soft misses / out
+
+Fancy branding; multi-sheet workbooks; compare-to-prior. Out: OptiSigns blend, Grafana, email digest, websockets.
 
 ## Ticket F2 — First-party PlayLog / PoP persistence
 

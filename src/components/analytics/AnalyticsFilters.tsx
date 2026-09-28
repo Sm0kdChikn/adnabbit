@@ -97,6 +97,14 @@ export function AnalyticsFilters({
     return `${exportBase}${qs ? `?${qs}` : `?table=${table}`}`;
   }
 
+  /** Derive /api/.../analytics from exportBase (.../export.csv). */
+  const apiBase = exportBase.replace(/\/export\.csv$/, "");
+
+  function playsExportHref(ext: "xlsx" | "pdf") {
+    const qs = exportQs.toString();
+    return `${apiBase}/export.${ext}${qs ? `?${qs}` : ""}`;
+  }
+
   return (
     <form
       onSubmit={apply}
@@ -242,6 +250,22 @@ export function AnalyticsFilters({
           className="rounded-md border border-accent/40 bg-accent-dim px-3 py-1.5 text-sm font-medium text-accent hover:border-accent/70"
         >
           Plays
+        </a>
+        <span className="mx-1 self-center text-border">|</span>
+        <span className="self-center text-xs uppercase tracking-wide text-muted-strong">
+          Played (PlayLog)
+        </span>
+        <a
+          href={playsExportHref("xlsx")}
+          className="rounded-md border border-accent/50 bg-[#0f172a] px-3 py-1.5 text-sm font-medium text-accent hover:border-accent hover:bg-[#111827]"
+        >
+          Export Excel
+        </a>
+        <a
+          href={playsExportHref("pdf")}
+          className="rounded-md border border-accent/50 bg-[#0f172a] px-3 py-1.5 text-sm font-medium text-accent hover:border-accent hover:bg-[#111827]"
+        >
+          Export PDF
         </a>
       </div>
     </form>

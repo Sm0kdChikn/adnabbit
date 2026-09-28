@@ -956,6 +956,187 @@ function rangeToUtcBounds(range: DateRange): { from: Date; toExclusive: Date } {
   return { from, toExclusive };
 }
 
+/** Soft row cap for PlayLog Excel/PDF dump (Ticket POP-EXPORT). */
+export const PLAY_LOG_EXPORT_ROW_CAP = 10_000;
+
+export type PlayLogWhere = {
+  startedAt: { gte: Date; lt: Date };
+  screenId?: string | { in: string[] };
+  creativeId?: { in: string[] };
+  screen?: { hostId?: string };
+};
+
+export type PlayLogExportRow = {
+  playedAt: string;
+  creativeId: string;
+  creativeName: string;
+  scheduleId: string;
+  scheduleLabel: string;
+  screenId: string;
+  screenName: string;
+  hostId: string;
+  hostName: string;
+  durationMs: number;
+};
+
+function emptyPlaysResult(): PlaysResult {
+  return {
+    summary: {
+      playCount: 0,
+      totalDurationMs: 0,
+      screenCount: 0,
+      creativeCount: 0,
+    },
+    rows: [],
+    charts: emptyPlayedCharts(),
+  };
+}
+
+function formatScheduleLabel(s: {
+  kind: string;
+  note: string | null;
+  startAt: Date | null;
+  endAt: Date | null;
+  campaignStartDate: string | null;
+  campaignEndDate: string | null;
+  startTime: string | null;
+  endTime: string | null;
+} | null): string {
+  if (!s) return "";
+  if (s.note?.trim()) return s.note.trim();
+  if (s.kind === "RECURRING") {
+    const dates =
+      s.campaignStartDate && s.campaignEndDate
+        ? `${s.campaignStartDate}→${s.campaignEndDate}`
+        : s.campaignStartDate || "";
+    const times =
+      s.startTime && s.endTime ? `${s.startTime}-${s.endTime}` : "";
+    return [s.kind, dates, times].filter(Boolean).join(" ");
+  }
+  if (s.startAt) {
+    const end = s.endAt ? s.endAt.toISOString() : "";
+    return `${s.kind} ${s.startAt.toISOString()}${end ? `→${end}` : ""}`;
+  }
+  return s.kind;
+}
+
+/**
+ * Ticket POP-EXPORT / POP-CHARTS — server-side PlayLog where from session scope.
+ * NEVER trusts client advertiserId/hostId as authority for HOST/ADVERTISER.
+ */
+export async function buildPlayLogWhere(
+  scope: AnalyticsScope,
+  range: DateRange,
+  filters: AnalyticsFilters
+): Promise<{ where: PlayLogWhere } | { empty: true }> {
+  const { from, toExclusive } = rangeToUtcBounds(range);
+
+  const where: PlayLogWhere = {
+    startedAt: { gte: from, lt: toExclusive },
+  };
+
+  if (filters.screenId) {
+    where.screenId = filters.screenId;
+  }
+
+  if (scope.role === "HOST") {
+    if (!scope.hostId) return { empty: true };
+    // Session hostId only — ignore client-supplied hostId for authority
+    where.screen = { hostId: scope.hostId };
+  } else if (filters.hostId) {
+    where.screen = { hostId: filters.hostId };
+  }
+
+  if (scope.role === "ADVERTISER" && scope.advertiserId) {
+    const creatives = await prisma.creative.findMany({
+      where: { advertiserId: scope.advertiserId },
+      select: { id: true },
+    });
+    const advertiserCreativeIds = creatives.map((c) => c.id);
+    if (advertiserCreativeIds.length === 0) return { empty: true };
+    where.creativeId = { in: advertiserCreativeIds };
+  } else if (filters.advertiserId) {
+    const creatives = await prisma.creative.findMany({
+      where: { advertiserId: filters.advertiserId },
+      select: { id: true },
+    });
+    const ids = creatives.map((c) => c.id);
+    if (ids.length === 0) return { empty: true };
+    where.creativeId = { in: ids };
+  }
+
+  return { where };
+}
+
+/**
+ * Raw PlayLog rows for Excel export (playedAt + creative/screen/host/schedule).
+ * Returns overCap when count exceeds PLAY_LOG_EXPORT_ROW_CAP.
+ */
+export async function fetchPlayLogExportRows(
+  scope: AnalyticsScope,
+  range: DateRange,
+  filters: AnalyticsFilters
+): Promise<
+  | { rows: PlayLogExportRow[]; overCap?: undefined; count?: undefined }
+  | { rows?: undefined; overCap: true; count: number }
+> {
+  const built = await buildPlayLogWhere(scope, range, filters);
+  if ("empty" in built) {
+    return { rows: [] };
+  }
+
+  const count = await prisma.playLog.count({ where: built.where });
+  if (count > PLAY_LOG_EXPORT_ROW_CAP) {
+    return { overCap: true, count };
+  }
+
+  const logs = await prisma.playLog.findMany({
+    where: built.where,
+    orderBy: { startedAt: "asc" },
+    select: {
+      startedAt: true,
+      durationMs: true,
+      creativeId: true,
+      screenId: true,
+      scheduleId: true,
+      screen: {
+        select: {
+          name: true,
+          host: { select: { id: true, name: true } },
+        },
+      },
+      creative: { select: { name: true } },
+      schedule: {
+        select: {
+          kind: true,
+          note: true,
+          startAt: true,
+          endAt: true,
+          campaignStartDate: true,
+          campaignEndDate: true,
+          startTime: true,
+          endTime: true,
+        },
+      },
+    },
+  });
+
+  const rows: PlayLogExportRow[] = logs.map((log) => ({
+    playedAt: log.startedAt.toISOString(),
+    creativeId: log.creativeId,
+    creativeName: log.creative.name,
+    scheduleId: log.scheduleId ?? "",
+    scheduleLabel: formatScheduleLabel(log.schedule),
+    screenId: log.screenId,
+    screenName: log.screen.name,
+    hostId: log.screen.host.id,
+    hostName: log.screen.host.name,
+    durationMs: log.durationMs ?? 0,
+  }));
+
+  return { rows };
+}
+
 /**
  * Aggregate COUNT + SUM(durationMs) from PlayLog, scoped like other analytics.
  * Admin: all (filters apply). Host: own screens. Advertiser: own creatives.
@@ -965,82 +1146,13 @@ export async function computePlays(
   range: DateRange,
   filters: AnalyticsFilters
 ): Promise<PlaysResult> {
-  const { from, toExclusive } = rangeToUtcBounds(range);
-
-  const where: {
-    startedAt: { gte: Date; lt: Date };
-    screenId?: string | { in: string[] };
-    creativeId?: { in: string[] };
-    screen?: { hostId?: string };
-  } = {
-    startedAt: { gte: from, lt: toExclusive },
-  };
-
-  if (filters.screenId) {
-    where.screenId = filters.screenId;
-  }
-
-  if (scope.role === "HOST") {
-    if (!scope.hostId) {
-      return {
-        summary: {
-          playCount: 0,
-          totalDurationMs: 0,
-          screenCount: 0,
-          creativeCount: 0,
-        },
-        rows: [],
-        charts: emptyPlayedCharts(),
-      };
-    }
-    where.screen = { hostId: scope.hostId };
-  } else if (filters.hostId) {
-    where.screen = { hostId: filters.hostId };
-  }
-
-  // Advertiser: only their creatives
-  if (scope.role === "ADVERTISER" && scope.advertiserId) {
-    const creatives = await prisma.creative.findMany({
-      where: { advertiserId: scope.advertiserId },
-      select: { id: true },
-    });
-    const advertiserCreativeIds = creatives.map((c) => c.id);
-    if (advertiserCreativeIds.length === 0) {
-      return {
-        summary: {
-          playCount: 0,
-          totalDurationMs: 0,
-          screenCount: 0,
-          creativeCount: 0,
-        },
-        rows: [],
-        charts: emptyPlayedCharts(),
-      };
-    }
-    where.creativeId = { in: advertiserCreativeIds };
-  } else if (filters.advertiserId) {
-    const creatives = await prisma.creative.findMany({
-      where: { advertiserId: filters.advertiserId },
-      select: { id: true },
-    });
-    const ids = creatives.map((c) => c.id);
-    if (ids.length === 0) {
-      return {
-        summary: {
-          playCount: 0,
-          totalDurationMs: 0,
-          screenCount: 0,
-          creativeCount: 0,
-        },
-        rows: [],
-        charts: emptyPlayedCharts(),
-      };
-    }
-    where.creativeId = { in: ids };
+  const built = await buildPlayLogWhere(scope, range, filters);
+  if ("empty" in built) {
+    return emptyPlaysResult();
   }
 
   const logs = await prisma.playLog.findMany({
-    where,
+    where: built.where,
     select: {
       screenId: true,
       creativeId: true,

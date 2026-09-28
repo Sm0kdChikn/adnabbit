@@ -9,13 +9,17 @@ import {
   computeFill,
   computePlays,
   daypartHeatToCsv,
+  fetchPlayLogExportRows,
   fillRowsToCsv,
   playsToCsv,
   parseAnalyticsDateRange,
   parseAnalyticsFilters,
+  PLAY_LOG_EXPORT_ROW_CAP,
+  type AnalyticsFilters,
   type AnalyticsScope,
 } from "./analytics";
 import { requireAnalyticsScope } from "./analytics-auth";
+import { playLogRowsToXlsx, playsSummaryToPdf } from "./analytics-export";
 
 function queryFrom(req: Request) {
   const url = new URL(req.url);
@@ -46,6 +50,27 @@ async function withScope(
   // Hosts/advertisers may not pass hostId/advertiserId that escapes scope —
   // filters are still applied but scope clamps ownership in compute*.
   return auth;
+}
+
+/** Clamp client filters so HOST/ADVERTISER cannot widen via query params. */
+export function clampAnalyticsFilters(
+  scope: AnalyticsScope,
+  filters: AnalyticsFilters
+): AnalyticsFilters {
+  if (scope.role === "HOST") {
+    return {
+      ...filters,
+      hostId: scope.hostId,
+      advertiserId: null,
+    };
+  }
+  if (scope.role === "ADVERTISER") {
+    return {
+      ...filters,
+      advertiserId: scope.advertiserId,
+    };
+  }
+  return filters;
 }
 
 export async function handleFillGet(
@@ -209,6 +234,88 @@ export async function handleExportGet(
     status: 200,
     headers: {
       "Content-Type": "text/csv; charset=utf-8",
+      "Content-Disposition": `attachment; filename="${filename}"`,
+    },
+  });
+}
+
+/** Ticket POP-EXPORT — Excel dump of raw PlayLog rows (same filters as UI). */
+export async function handlePlaysExportXlsxGet(
+  req: Request,
+  allowed: Array<AnalyticsScope["role"]>
+) {
+  const auth = await withScope(allowed);
+  if (auth.error) return auth.error;
+  const q = queryFrom(req);
+  const range = parseAnalyticsDateRange(q);
+  const filters = clampAnalyticsFilters(
+    auth.scope,
+    parseAnalyticsFilters(q)
+  );
+
+  const fetched = await fetchPlayLogExportRows(auth.scope, range, filters);
+  if (fetched.overCap) {
+    return NextResponse.json(
+      {
+        error: `Too many PlayLog rows (${fetched.count}). Cap is ${PLAY_LOG_EXPORT_ROW_CAP}. Narrow the date range or filters.`,
+        count: fetched.count,
+        cap: PLAY_LOG_EXPORT_ROW_CAP,
+      },
+      { status: 400 }
+    );
+  }
+
+  const buf = await playLogRowsToXlsx(fetched.rows, {
+    role: auth.scope.role,
+    range,
+  });
+  const filename = `adnabbit-plays-${range.fromYmd}_${range.toYmd}.xlsx`;
+  return new NextResponse(new Uint8Array(buf), {
+    status: 200,
+    headers: {
+      "Content-Type":
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      "Content-Disposition": `attachment; filename="${filename}"`,
+    },
+  });
+}
+
+/** Ticket POP-EXPORT — printable PDF summary (PlayLog totals / by-day / tops). */
+export async function handlePlaysExportPdfGet(
+  req: Request,
+  allowed: Array<AnalyticsScope["role"]>
+) {
+  const auth = await withScope(allowed);
+  if (auth.error) return auth.error;
+  const q = queryFrom(req);
+  const range = parseAnalyticsDateRange(q);
+  const filters = clampAnalyticsFilters(
+    auth.scope,
+    parseAnalyticsFilters(q)
+  );
+
+  // Reuse computePlays aggregates (same scope helper as charts)
+  const data = await computePlays(auth.scope, range, filters);
+  if (data.summary.playCount > PLAY_LOG_EXPORT_ROW_CAP) {
+    return NextResponse.json(
+      {
+        error: `Too many PlayLog rows (${data.summary.playCount}). Cap is ${PLAY_LOG_EXPORT_ROW_CAP}. Narrow the date range or filters.`,
+        count: data.summary.playCount,
+        cap: PLAY_LOG_EXPORT_ROW_CAP,
+      },
+      { status: 400 }
+    );
+  }
+
+  const buf = await playsSummaryToPdf(data, {
+    role: auth.scope.role,
+    range,
+  });
+  const filename = `adnabbit-plays-${range.fromYmd}_${range.toYmd}.pdf`;
+  return new NextResponse(new Uint8Array(buf), {
+    status: 200,
+    headers: {
+      "Content-Type": "application/pdf",
       "Content-Disposition": `attachment; filename="${filename}"`,
     },
   });
